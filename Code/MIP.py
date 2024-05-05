@@ -4,7 +4,6 @@
 
 
 
-
 def main(): 
 
     ### Here you can define variables 
