@@ -24,3 +24,12 @@ One main task per day per cohort for the planning horizont, which has to be in t
 1. Define Neigborhoods
 2. Change solution and check for feasibility!
 3. Change until no improvements possible!
+
+## :construction: What needs to be implemented 
+
+1. Constructive Heuristic
+2. Solution class
+3. Class to assess solution
+4. Output class
+
+
