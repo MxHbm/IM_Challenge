@@ -241,9 +241,9 @@ class InputData:
         return self.__maxRouteDuration
 
 
-def write_json_solution_mip(objVal:int, var_y, var_x, data:InputData, distances, filepath:str):
+def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str):
 
-
+    number_all_tasks = 0
     days = {}
     for day in range(data.days):
         day_list = []
@@ -253,16 +253,38 @@ def write_json_solution_mip(objVal:int, var_y, var_x, data:InputData, distances,
             route_list = []
             profit_route = 0
             start_time = 0
+            pre_selected_nodes = []
+            u_nodes = []
 
-            for i in range(1,len(data.optionalTasks[0:10])):
+            for i in range(1,len(data.optionalTasks[0:150])):
                 #for j in range(1,len(data.optionalTasks[0:10])):
                     if var_y[i,cohort,day].X == 1:
+
+                        number_all_tasks += 1
+                        pre_selected_nodes.append(i)
+                        u_nodes.append(var_u[i,cohort,day].X)
+
                         profit_route += data.optionalTasks[i].profit
                         #start_time += distances[i][j]
 
-                        route_list.append({"StartTime" : start_time,
-                                        "SelectedDay" : day + 1,
-                                        "ID" : data.optionalTasks[i].ID})
+            if len(pre_selected_nodes) > 0:
+                # Pair the lists together
+                paired_lists = list(zip(u_nodes, pre_selected_nodes))
+
+                # Sort the pairs based on the first list
+                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
+
+                # Separate the pairs back into two lists
+                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
+
+                start_node = 0
+                for i in sorted_nodes:
+                    start_time += distances[start_node][i]            
+                    route_list.append({"StartTime" : start_time,
+                                            "SelectedDay" : day + 1,
+                                            "ID" : data.optionalTasks[i].ID})
+                    
+                    start_node = i
                 
             cohort_dict = {"CohortID"   : cohort,
                            "Profit"     : profit_route,
@@ -277,15 +299,15 @@ def write_json_solution_mip(objVal:int, var_y, var_x, data:InputData, distances,
                 
     
     results = {
-        "Instance": data.main_tasks_path.split("/")[-1],
+        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
         "Objective": objVal,
-        "NumberOfAllTasks": 0,#len(res.vars.y),
+        "NumberOfAllTasks": number_all_tasks,#len(res.vars.y),
         "UseMainTasks" : False,
         "Days" : days
     }
 
     # Write the dictionary to a JSON file
     with open(filepath, 'w') as json_file:
-        json.dump(results, json_file, indent=4)
+        json.dump(results, json_file, indent=2)
 
     print(f"JSON file has been created at {filepath}")

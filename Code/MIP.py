@@ -22,7 +22,7 @@ def calculate_distance(task_1:OptionalTask, task_2:OptionalTask) -> float:
 
     distance = math.sqrt((task_1.latitude - task_2.latitude)**2 + (task_1.longitude - task_2.longitude)**2)
 
-    time = distance * 17100 # time in seconds
+    time = int(round(distance * 17100,0)) # time in seconds
 
     return time
 
@@ -61,14 +61,13 @@ def main():
 
     #### PARAMETERS ####
     print("Initialize Parameters \n \n")
-    P = get_profits(data.optionalTasks[0:10])
+    P = get_profits(data.optionalTasks[0:150])
     days = data.days
     T_max = 21600           # Time Units of one "Day" = 6 hours = 21600 seconds
     M_m = list(range(data.cohort_no))    # Number of available Teams --> Routes
-    N = get_N(data.optionalTasks[0:10])
-    d = get_distance_matrix(data.optionalTasks[0:10])
-
-
+    N = get_N(data.optionalTasks[0:150])
+    d = get_distance_matrix(data.optionalTasks[0:150])
+    
     # Model
     print("Start Model \n \n")
     model = gp.Model()
@@ -100,13 +99,18 @@ def main():
 
     # Constraints
     for t in T:
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]), "Constraint 3.2a")
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == len(M), "Constraint 3.2b")
-        model.addConstr(gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]) == len(M), "Constraint 3.2c")
+        model.addConstr(gp.quicksum(x[0,j,m,t] for m in M for j in J[1:]) == gp.quicksum(x[i, J[-1], m, t] for m in M for i in I[:-1]), "Constraint 3.2a")
+        model.addConstr(gp.quicksum(x[0,j,m,t] for m in M for j in J[1:]) <= len(M), "Constraint 3.2b")
+        model.addConstr(gp.quicksum(x[i, J[-1], m, t] for m in M for i in I[:-1]) <= len(M), "Constraint 3.2c")
 
     ## Visit every node maximum once per Team and in the whole timespan  - Profit should be 18
     for k in I[1:-1]:
-        model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) <= 1, "Constraint 3.3")
+        model.addConstr(gp.quicksum(y[k,m,t] for m in M for t in T) <= 1, "Constraint 3.3")
+    
+    for k in I:
+      for t in T:
+            for m in M:
+               model.addConstr(gp.quicksum(x[k,j,m,t] for j in J) <= 1, "Constraint_new")
     
     
     for m in M:
@@ -118,9 +122,7 @@ def main():
 
     for m in  M:
         for t in T:
-
-            model.addConstr(gp.quicksum(d[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
-
+            model.addConstr(gp.quicksum(d[i][j] * x[i,j,m,t] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
 
     for m in M:
         for i in I[1:]:
@@ -146,6 +148,6 @@ def main():
     # You can now use the outputFolder path in your script
     print(f"Output folder created at: {outputFolder}")
 
-    write_json_solution_mip(round(model.getAttr("ObjVal")),y,x,data,d, outputFolder + "/solution.json")
+    write_json_solution_mip(round(model.getAttr("ObjVal")),y,x,u,data,d, outputFolder + "/solution.json")
 
 main()
