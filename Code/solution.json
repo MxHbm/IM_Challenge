@@ -1,0 +1,129 @@
+{
+    "Instance": "Instance7_2_1.json",
+    "Objective": 16,
+    "NumberOfAllTasks": 0,
+    "UseMainTasks": false,
+    "Days": {
+        "1": [
+            {
+                "CohortID": 0,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 1,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 2,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 3,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 4,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 5,
+                "Profit": 6,
+                "Route": [
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 1,
+                        "ID": "PE-FWI-3-5292"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 1,
+                        "ID": "PE-FWI-3-2483"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 1,
+                        "ID": "PE-FWI-2-7312"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 1,
+                        "ID": "PE-FWI-2-2814"
+                    }
+                ]
+            },
+            {
+                "CohortID": 6,
+                "Profit": 0,
+                "Route": []
+            }
+        ],
+        "2": [
+            {
+                "CohortID": 0,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 1,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 2,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 3,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 4,
+                "Profit": 0,
+                "Route": []
+            },
+            {
+                "CohortID": 5,
+                "Profit": 10,
+                "Route": [
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 2,
+                        "ID": "PE-FWI-3-4048"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 2,
+                        "ID": "PE-FWI-2-7618"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 2,
+                        "ID": "PE-FWI-2-5570"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 2,
+                        "ID": "PE-FWI-2-4346"
+                    },
+                    {
+                        "StartTime": 0,
+                        "SelectedDay": 2,
+                        "ID": "PE-FWI-4-7458"
+                    }
+                ]
+            },
+            {
+                "CohortID": 6,
+                "Profit": 0,
+                "Route": []
+            }
+        ]
+    }
+}

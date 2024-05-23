@@ -1,34 +1,76 @@
 import gurobipy as gp
 import os
+from IO import *
+import math
 
+def get_profits(tasks:list[OptionalTask]) -> list[int]:
+    ''' Get the profit of the tasks in the data and add zeros for the depots to run the model'''
 
-### Here you can define other needed functions
+    # Fill profits vector
+    print("Get Profits")
+    profits = [task.profit for task in tasks]
+
+    # Last value = profit of depot again
+    profits.append(profits[0])
+
+    return profits
+
+def calculate_distance(task_1:OptionalTask, task_2:OptionalTask) -> float:
+    ''' Calculate the distance between two tasks using the euclidean distance formula
+        and return the time it takes to travel between them in seconds
+    '''
+
+    distance = math.sqrt((task_1.latitude - task_2.latitude)**2 + (task_1.longitude - task_2.longitude)**2)
+
+    time = distance * 17100 # time in seconds
+
+    return time
+
+def get_distance_matrix(tasks:list[OptionalTask]) -> list[list[float]]:
+    ''' Get the distance matrix of the tasks in the data and add zeros for the depots to run the model'''
+
+    # Add the depot again to the tasks at the end
+    tasks.append(tasks[0])
+
+    distances = [[0 for i in range(len(tasks))] for j in range(len(tasks))]
+
+    print("Calculate Distances")
+
+    for task_i_id in range(len(tasks)):
+        for task_j_id in range(task_i_id): 
+            # Calculate the distance between the two tasks
+                distances[task_i_id][task_j_id] = distances[task_j_id][task_i_id] = calculate_distance(tasks[task_i_id], tasks[task_j_id])
+
+    return distances
+
+def get_N(tasks:list[OptionalTask]) -> list[int]:
+
+    # Number of positions plus depot 
+    number = len(tasks) + 1
+
+    return list(range(number))
+
 
 def main():
 
-    # Example TOP Vansteenwegen p.23 --> Szeanrio Flexi IM Challenge
-
-    # Paramters
-
-    N = list(range(6))      # Locations: First and Last Index --> Depot
-    days = 2                           # Number of Days
-                            # 4 Locations and 1 Depot
-
-    P_i = [0,5,8,1,4,0]     # Profit for Locations
-                            # Profit for Depot is 0
+    #### INITIALIZE DATA ####
+    print("Initialize Data \n \n")
+    main_tasks_path = "Data/Instanzen/Instance7_2_1.json"
+    data = InputData(main_tasks_path)
 
 
-    M_m = list(range(2))    # Number of available Days or Teams --> Routes
-    T_max = 15           # Time Units of one "Day"
+    #### PARAMETERS ####
+    print("Initialize Parameters \n \n")
+    P = get_profits(data.optionalTasks[0:10])
+    days = data.days
+    T_max = 21600           # Time Units of one "Day" = 6 hours = 21600 seconds
+    M_m = list(range(data.cohort_no))    # Number of available Teams --> Routes
+    N = get_N(data.optionalTasks[0:10])
+    d = get_distance_matrix(data.optionalTasks[0:10])
 
-    t_ij = [[0,3,6,6,3,0],
-            [3,0,4,5,3,3],
-            [6,4,0,3,5,6],
-            [6,5,3,0,4,6],
-            [3,3,5,4,0,3],
-            [0,3,6,6,3,0]] # Travel duration between Locations
-    
+
     # Model
+    print("Start Model \n \n")
     model = gp.Model()
 
     # Get the current working directory (cwd)
@@ -53,7 +95,8 @@ def main():
 
     # Objective Function
 
-    model.setObjective(gp.quicksum(P_i[i] * y[t,m,i] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
+    model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
+
 
     # Constraints
     for t in T:
@@ -75,7 +118,9 @@ def main():
 
     for m in  M:
         for t in T:
-            model.addConstr(gp.quicksum(t_ij[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
+
+            model.addConstr(gp.quicksum(d[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
+
 
     for m in M:
         for i in I[1:]:
@@ -100,5 +145,7 @@ def main():
     model.write(os.path.join(outputFolder,"model.lp"))
     # You can now use the outputFolder path in your script
     print(f"Output folder created at: {outputFolder}")
+
+    write_json_solution_mip(round(model.getAttr("ObjVal")),y,x,data,d, outputFolder + "/solution.json")
 
 main()

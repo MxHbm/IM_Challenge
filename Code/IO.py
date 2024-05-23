@@ -152,7 +152,7 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = "../Data/OptionalTasks.csv") -> None:
+    def __init__(self, main_tasks_path: str, optional_tasks_path: str = "Data/OptionalTasks.csv") -> None:
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
@@ -209,6 +209,16 @@ class InputData:
     def mainTasks(self):
         ''' Property to get the list of main tasks '''
         return self.__mainTasks
+    
+    @property
+    def optional_tasks_path(self):
+        ''' Property to get the path to the optional tasks file '''
+        return self.__optional_tasks_path
+    
+    @property
+    def main_tasks_path(self):  
+        ''' Property to get the path to the main tasks file '''
+        return self.__main_tasks_path
 
     @property
     def main_ID(self):
@@ -229,3 +239,53 @@ class InputData:
     def maxRouteDuration(self):
         ''' Property to get the maximum route duration '''
         return self.__maxRouteDuration
+
+
+def write_json_solution_mip(objVal:int, var_y, var_x, data:InputData, distances, filepath:str):
+
+
+    days = {}
+    for day in range(data.days):
+        day_list = []
+
+        for cohort in range(data.cohort_no):
+            
+            route_list = []
+            profit_route = 0
+            start_time = 0
+
+            for i in range(1,len(data.optionalTasks[0:10])):
+                #for j in range(1,len(data.optionalTasks[0:10])):
+                    if var_y[i,cohort,day].X == 1:
+                        profit_route += data.optionalTasks[i].profit
+                        #start_time += distances[i][j]
+
+                        route_list.append({"StartTime" : start_time,
+                                        "SelectedDay" : day + 1,
+                                        "ID" : data.optionalTasks[i].ID})
+                
+            cohort_dict = {"CohortID"   : cohort,
+                           "Profit"     : profit_route,
+                           "Route"    : route_list}
+            
+            
+            day_list.append(cohort_dict)
+
+
+        days[str(day + 1)] = day_list
+        
+                
+    
+    results = {
+        "Instance": data.main_tasks_path.split("/")[-1],
+        "Objective": objVal,
+        "NumberOfAllTasks": 0,#len(res.vars.y),
+        "UseMainTasks" : False,
+        "Days" : days
+    }
+
+    # Write the dictionary to a JSON file
+    with open(filepath, 'w') as json_file:
+        json.dump(results, json_file, indent=4)
+
+    print(f"JSON file has been created at {filepath}")
