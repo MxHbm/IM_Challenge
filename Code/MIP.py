@@ -11,7 +11,7 @@ def main():
     # Paramters
 
     N = list(range(6))      # Locations: First and Last Index --> Depot
-    days = 5                            # Number of Days
+    days = 2                           # Number of Days
                             # 4 Locations and 1 Depot
 
     P_i = [0,5,8,1,4,0]     # Profit for Locations
@@ -47,47 +47,47 @@ def main():
 
     # Variablen
 
-    x = model.addVars(I,J,M,T, name = "x", vtype=gp.GRB.BINARY)
-    y = model.addVars(I,M,T, name = "y", vtype=gp.GRB.BINARY)
-    u = model.addVars(I,M,T, name = "u", vtype=gp.GRB.INTEGER)
+    x = model.addVars(T,M,I,J, name = "x", vtype=gp.GRB.BINARY)
+    y = model.addVars(T,M,I, name = "y", vtype=gp.GRB.BINARY)
+    u = model.addVars(T,M,I, name = "u", vtype=gp.GRB.INTEGER)
 
     # Objective Function
 
-    model.setObjective(gp.quicksum(P_i[i] * y[i,m,t] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
+    model.setObjective(gp.quicksum(P_i[i] * y[t,m,i] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
 
     # Constraints
     for t in T:
-        model.addConstr(gp.quicksum(x[0,j,m,t] for m in M for j in J[1:]) == gp.quicksum(x[i, J[-1], m, t] for m in M for i in I[:-1]), "Constraint 3.2a")
-        model.addConstr(gp.quicksum(x[0,j,m,t] for m in M for j in J[1:]) == len(M), "Constraint 3.2b")
-        model.addConstr(gp.quicksum(x[i, J[-1], m, t] for m in M for i in I[:-1]) == len(M), "Constraint 3.2c")
+        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]), "Constraint 3.2a")
+        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == len(M), "Constraint 3.2b")
+        model.addConstr(gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]) == len(M), "Constraint 3.2c")
 
     ## Visit every node maximum once per Team and in the whole timespan  - Profit should be 18
     for k in I[1:-1]:
-        model.addConstr(gp.quicksum(y[k,m,t] for m in M for t in T) <= 1, "Constraint 3.3")
+        model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) <= 1, "Constraint 3.3")
     
     
     for m in M:
         for k in I[1:-1]:
             for t in T:
-                model.addConstr(gp.quicksum(x[i,k,m,t] for i in I[:-1]) == gp.quicksum(x[k,j,m,t] for j in J[1:]), "Constraint 3.4a")
-                model.addConstr(gp.quicksum(x[i,k,m,t] for i in I[:-1]) == y[k,m,t], "Constraint 3.4b")
-                model.addConstr(gp.quicksum(x[k,j,m,t] for j in J[1:]) == y[k,m,t] , "Constraint 3.4c")
+                model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == gp.quicksum(x[t,m,k,j] for j in J[1:]), "Constraint 3.4a")
+                model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == y[t,m,k], "Constraint 3.4b")
+                model.addConstr(gp.quicksum(x[t,m,k,j] for j in J[1:]) == y[t,m,k] , "Constraint 3.4c")
 
     for m in  M:
         for t in T:
-            model.addConstr(gp.quicksum(t_ij[i][j]*x[i,j,m,t] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
+            model.addConstr(gp.quicksum(t_ij[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) <= T_max, "Constraint 3.5")
 
     for m in M:
         for i in I[1:]:
             for t in T:
-                model.addConstr(u[i,m,t] >= 2, "Constraint 3.6a")
-                model.addConstr(u[i,m,t] <= len(N), "Constraint 3.6b")
+                model.addConstr(u[t,m,i] >= 2, "Constraint 3.6a")
+                model.addConstr(u[t,m,i] <= len(N), "Constraint 3.6b")
 
     for m in M:
         for i in I[1:]:
              for j in J[1:]:
                 for t in T:
-                    model.addConstr(u[i,m,t] - u[j,m,t] + 1 <= (len(N) - 1)*(1 - x[i,j,m,t]), "Constraint 3.7")
+                    model.addConstr(u[t,m,i] - u[t,m,j] + 1 <= (len(N) - 1)*(1 - x[t,m,i,j]), "Constraint 3.7")
 
     
     model.optimize()
