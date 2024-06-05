@@ -5,6 +5,7 @@ import csv
 class MainTask:
     ''' Class for the attributes of a main task '''
 
+
     def __init__(self, json_data):
         # Convert and assign each attribute with explicit data type conversion and make them private
         self.__ID = str(json_data.get('ID', ''))
