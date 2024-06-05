@@ -160,8 +160,8 @@ def main():
     model.printAttr(gp.GRB.Attr.X)
 
     
-
-    model.write(os.path.join(outputFolder,"model.lp"))
+    # Model file becomes to quick too big
+    #model.write(os.path.join(outputFolder,"model.lp"))
     # You can now use the outputFolder path in your script
     print(f"Output folder created at: {outputFolder}")
 
