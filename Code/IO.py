@@ -241,7 +241,7 @@ class InputData:
         return self.__maxRouteDuration
 
 
-def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str):
+def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str, number_tasks:int):
 
     number_all_tasks = 0
     days = {}
@@ -256,13 +256,13 @@ def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, dis
             pre_selected_nodes = []
             u_nodes = []
 
-            for i in range(1,len(data.optionalTasks[0:150])):
+            for i in range(1,len(data.optionalTasks[0:number_tasks])):
                 #for j in range(1,len(data.optionalTasks[0:10])):
-                    if var_y[i,cohort,day].X == 1:
+                    if var_y[day,cohort,i].X == 1:
 
                         number_all_tasks += 1
                         pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[i,cohort,day].X)
+                        u_nodes.append(var_u[day,cohort,i].X)
 
                         profit_route += data.optionalTasks[i].profit
                         #start_time += distances[i][j]
@@ -285,6 +285,7 @@ def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, dis
                                             "ID" : data.optionalTasks[i].ID})
                     
                     start_node = i
+                    start_time += data.optionalTasks[i].service_time
                 
             cohort_dict = {"CohortID"   : cohort,
                            "Profit"     : profit_route,
