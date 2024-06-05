@@ -313,3 +313,75 @@ def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, dis
         json.dump(results, json_file, indent=2)
 
     print(f"JSON file has been created at {filepath}")
+
+def write_txt_solution(gp_model, var_y, var_x, var_u, data:InputData, distances, file_path:str, number_tasks:int):
+    """
+    Writes optimization gap, runtime, number of constraints, and number of variables 
+    from a solved Gurobi model into a text file.
+
+    Parameters:
+    model (gurobipy.Model): The Gurobi model to extract information from.
+    y, x, u, data, d, define_range: Additional parameters (usage can be defined as needed).
+    file_path (str): The path to the output text file.
+    """
+    
+    # Retrieve optimization metrics
+    gap = gp_model.MIPGap
+    runtime = round(gp_model.Runtime,2)
+    num_constraints = gp_model.NumConstrs
+    num_variables = gp_model.NumVars
+    obj = round(gp_model.getAttr("ObjVal"))
+    
+    # Write the metrics to the output file
+    with open(file_path, 'w') as file:
+        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
+        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(number_tasks) + "\n \n")
+
+        for day in range(data.days):
+
+            file.write(str(day)+"\n")
+
+            for cohort in range(data.cohort_no):
+                
+                file.write("\t" +str(cohort) + " ")
+
+                route_list = []
+                profit_route = 0
+                start_time = 0
+                pre_selected_nodes = []
+                u_nodes = []
+
+                for i in range(1,len(data.optionalTasks[0:number_tasks])):
+                    if var_y[day,cohort,i].X == 1:
+
+                        pre_selected_nodes.append(i)
+                        u_nodes.append(var_u[day,cohort,i].X)
+
+                        profit_route += data.optionalTasks[i].profit
+
+                file.write("("+str(profit_route) + "): ")
+
+                if len(pre_selected_nodes) > 0:
+                    # Pair the lists together
+                    paired_lists = list(zip(u_nodes, pre_selected_nodes))
+
+                    # Sort the pairs based on the first list
+                    sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
+
+                    # Separate the pairs back into two lists
+                    sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
+
+                    sorted_nodes = list(sorted_nodes)
+
+                    start_node = 0
+                    sorted_nodes.append(start_node)
+                    sorted_nodes.insert(start_node, start_node)
+                    for i in sorted_nodes:
+                        
+                        file.write(str(i) +" ")
+
+                file.write("\n")
+                
+
+
+    print(f"Text file has been created at {file_path}")

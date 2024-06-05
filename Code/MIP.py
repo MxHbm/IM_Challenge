@@ -63,16 +63,18 @@ def get_N(tasks:list[OptionalTask]) -> list[int]:
 
 def main():
 
-    for no_days in [2,5,8,10]:
-        for instance_no in [1,2]:
-            for define_range in [50]:
+    for no_days in [2,5,8,10]: #[2,5,8,10]
+        # One Instance is enough because basic values dont change! 
+        for instance_no in [1]:
+            for define_range in [50,200,500,1000]:
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
                 # Get the current working directory (cwd)
                 cwd = os.getcwd() 
                 # Define the output folder path relative to the script location
-                outputFilePath = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+".json"
+                outputFilePath_1 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".txt"
+                outputFilePath_2 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".json"
 
 
                 #### INITIALIZE DATA ####
@@ -170,7 +172,7 @@ def main():
                 model.printAttr(gp.GRB.Attr.ObjVal)
                 model.printAttr(gp.GRB.Attr.X)
 
-                
-                write_json_solution_mip(round(model.getAttr("ObjVal")),y,x,u,data,d, outputFilePath, define_range)
+                write_txt_solution(model, y, x, u, data,d, outputFilePath_1, define_range)
+                write_json_solution_mip(round(model.getAttr("ObjVal")), y,x,u, data,d, outputFilePath_2, define_range)
 
 main()
