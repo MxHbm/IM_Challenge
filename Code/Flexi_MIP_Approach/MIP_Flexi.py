@@ -1,6 +1,6 @@
 import gurobipy as gp
 import os
-from IO import *
+from IO_MIP_Flexi import *
 import math
 
 def get_profits(tasks:list[OptionalTask]) -> list[int]:
@@ -63,23 +63,23 @@ def get_N(tasks:list[OptionalTask]) -> list[int]:
 
 def main():
 
-    for no_days in [2,5,8,10]: #[2,5,8,10]
+    for no_days in [2]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            for define_range in [50,200,500,1000]:
+            for define_range in [50]: #[50,200,500,1000]
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
                 # Get the current working directory (cwd)
                 cwd = os.getcwd() 
                 # Define the output folder path relative to the script location
-                outputFilePath_1 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".txt"
-                outputFilePath_2 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".json"
+                outputFilePath_1 = cwd + "/Data/Results_Flexi_MIP/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".txt"
+                outputFilePath_2 = cwd + "/Data/Results_Flexi_MIP/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".json"
 
 
                 #### INITIALIZE DATA ####
                 print("Initialize Data \n")
-                main_tasks_path = "Data/Instanzen/Instance7_"+str(no_days)+"_"+str(instance_no)+".json"
+                main_tasks_path = cwd + "/Data/Instanzen/Instance7_"+str(no_days)+"_"+str(instance_no)+".json"
                 data = InputData(main_tasks_path)
 
 
