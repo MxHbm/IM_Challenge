@@ -63,108 +63,118 @@ def get_N(tasks:list[OptionalTask]) -> list[int]:
 
 def main():
 
-    #### INITIALIZE DATA ####
-    print("Initialize Data \n \n")
-    main_tasks_path = "Data/Instanzen/Instance7_2_1.json"
-    data = InputData(main_tasks_path)
+    for no_days in [2,5,8,10]: #[2,5,8,10]
+        # One Instance is enough because basic values dont change! 
+        for instance_no in [1]:
+            for define_range in [50,200,500,1000]:
+
+                ### SETUP FOLDER STRUCTURE ### 
+                
+                # Get the current working directory (cwd)
+                cwd = os.getcwd() 
+                # Define the output folder path relative to the script location
+                outputFilePath_1 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".txt"
+                outputFilePath_2 = cwd + "/Data/Results/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".json"
 
 
-    #### PARAMETERS ####
-    print("Initialize Parameters \n \n")
-    define_range = 500
-    P = get_profits(data.optionalTasks[0:define_range])
-    days = data.days
-    T_max = 21600           # Time Units of one "Day" = 6 hours = 21600 seconds
-    M_m = list(range(data.cohort_no))    # Number of available Teams --> Routes
-    N = get_N(data.optionalTasks[0:define_range])
-    d = get_distance_matrix(data.optionalTasks[0:define_range])
-    s = get_service_times(data.optionalTasks[0:define_range])
-    
-    # Model
-    print("Start Model \n \n")
-    model = gp.Model()
-
-    # Get the current working directory (cwd)
-    cwd = os.getcwd() 
-    # Define the output folder path relative to the script location
-    outputFolder = cwd + "/Data/Results"
+                #### INITIALIZE DATA ####
+                print("Initialize Data \n")
+                main_tasks_path = "Data/Instanzen/Instance7_"+str(no_days)+"_"+str(instance_no)+".json"
+                data = InputData(main_tasks_path)
 
 
-    # Indices
+                #### PARAMETERS ####
+                print("Initialize Parameters \n")
+                P = get_profits(data.optionalTasks[0:define_range])
+                days = data.days
+                T_max = 21600           # Time Units of one "Day" = 6 hours = 21600 seconds
+                M_m = list(range(data.cohort_no))    # Number of available Teams --> Routes
+                N = get_N(data.optionalTasks[0:define_range])
+                d = get_distance_matrix(data.optionalTasks[0:define_range])
+                s = get_service_times(data.optionalTasks[0:define_range])
 
-    I = range(len(N))
-    J = range(len(N))
-    M = range(len(M_m))
-    T = range(days)
+                #### INDICES ####
 
-
-    # Variablen
-
-    x = model.addVars(T,M,I,J, name = "x", vtype=gp.GRB.BINARY)
-    y = model.addVars(T,M,I, name = "y", vtype=gp.GRB.BINARY)
-    u = model.addVars(T,M,I, name = "u", vtype=gp.GRB.INTEGER)
-
-    # Objective Function
-
-    model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
-
-    # Constraints
-    for t in T:
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]), "Constraint_3.2a")
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == len(M), "Constraint_3.2b")
-        model.addConstr(gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]) == len(M), "Constraint_3.2c")
-
-    
-    for k in I[1:-1]:
-        model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) <= 1, "Constraint_3.3")
-
-    for k in I:
-      for t in T:
-            for m in M:
-               model.addConstr(gp.quicksum(x[t,m,k,j] for j in J) <= 1, "Constraint_new")
-    
-    
-    for m in M:
-        for k in I[1:-1]:
-            for t in T:
-
-                model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == gp.quicksum(x[t,m,k,j] for j in J[1:]), "Constraint 3.4a")
-                model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == y[t,m,k], "Constraint 3.4b")
-                model.addConstr(gp.quicksum(x[t,m,k,j] for j in J[1:]) == y[t,m,k] , "Constraint 3.4c")
-
-    for m in  M:
-        for t in T:
-            model.addConstr(gp.quicksum(d[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) + gp.quicksum(y[t,m,i] * s[i] for i in I[1:])<= T_max, "Constraint_3.5")
-
-    for m in M:
-        for i in I[1:]:
-            for t in T:
-
-                model.addConstr(u[t,m,i] >= 2, "Constraint 3.6a")
-                model.addConstr(u[t,m,i] <= len(N), "Constraint 3.6b")
+                I = range(len(N))
+                J = range(len(N))
+                M = range(len(M_m))
+                T = range(days)
+                
+                #### MODEL ####
+                print("Start Model \n \n")
+                model = gp.Model()
 
 
-    for m in M:
-        for i in I[1:]:
-             for j in J[1:]:
+                #### VARIABLES ####
+
+                x = model.addVars(T,M,I,J, name = "x", vtype=gp.GRB.BINARY)
+                y = model.addVars(T,M,I, name = "y", vtype=gp.GRB.BINARY)
+                u = model.addVars(T,M,I, name = "u", vtype=gp.GRB.INTEGER)
+
+                #### OBJECTIVE FUNCTION ####
+
+                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in I[1:-1] for t in T), gp.GRB.MAXIMIZE)
+
+                #### CONSTRAINTS ####
+
                 for t in T:
-                    model.addConstr(u[t,m,i] - u[t,m,j] + 1 <= (len(N) - 1)*(1 - x[t,m,i,j]), "Constraint 3.7")
+                    model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]), "Constraint_3.2a")
+                    model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in J[1:]) == len(M), "Constraint_3.2b")
+                    model.addConstr(gp.quicksum(x[t,m,i, J[-1]] for m in M for i in I[:-1]) == len(M), "Constraint_3.2c")
+
+                
+                for k in I[1:-1]:
+                    model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) <= 1, "Constraint_3.3")
+
+
+                for k in I:
+                    for t in T:
+                        for m in M:
+                            model.addConstr(gp.quicksum(x[t,m,k,j] for j in J) <= 1, "Constraint_new")
+                
+                
+                for m in M:
+                    for k in I[1:-1]:
+                        for t in T:
+                            model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == gp.quicksum(x[t,m,k,j] for j in J[1:]), "Constraint 3.4a")
+                            model.addConstr(gp.quicksum(x[t,m,i,k] for i in I[:-1]) == y[t,m,k], "Constraint 3.4b")
+                            model.addConstr(gp.quicksum(x[t,m,k,j] for j in J[1:]) == y[t,m,k] , "Constraint 3.4c")
+
+
+                for m in  M:
+                    for t in T:
+                        model.addConstr(gp.quicksum(d[i][j]*x[t,m,i,j] for i in I[:-1] for j in J[1:]) + gp.quicksum(y[t,m,i] * s[i] for i in I[1:])<= T_max, "Constraint_3.5")
+
+
+                for m in M:
+                    for i in I[1:]:
+                        for t in T:
+                            model.addConstr(u[t,m,i] >= 2, "Constraint 3.6a")
+                            model.addConstr(u[t,m,i] <= len(N), "Constraint 3.6b")
+
+
+                for m in M:
+                    for i in I[1:]:
+                        for j in J[1:]:
+                            for t in T:
+                                model.addConstr(u[t,m,i] - u[t,m,j] + 1 <= (len(N) - 1)*(1 - x[t,m,i,j]), "Constraint 3.7")
 
 
 
-    # Set the relative MIP gap to 3%
-    model.Params.MIPGap = 0.00
-    model.optimize()
+                #### DEFINE OPTIMIZATION PARAMS ###
+                model.Params.MIPGap = 0.01 # Gap is 1%! 
+                model.Params.TimeLimit = 10800  # 2 hours
+                model.Params.Threads = 32
+                model.Params.PrePasses = 1000000
 
-    model.printAttr(gp.GRB.Attr.ObjVal)
-    model.printAttr(gp.GRB.Attr.X)
+                #### OPTIMIZE MODEL ####
+                model.optimize()
 
-    
-    # Model file becomes to quick too big
-    #model.write(os.path.join(outputFolder,"model.lp"))
-    # You can now use the outputFolder path in your script
-    print(f"Output folder created at: {outputFolder}")
+                #### EVALUATION ####
+                model.printAttr(gp.GRB.Attr.ObjVal)
+                model.printAttr(gp.GRB.Attr.X)
 
-    write_json_solution_mip(round(model.getAttr("ObjVal")),y,x,u,data,d, outputFolder + "/solution.json", define_range)
+                write_txt_solution(model, y, x, u, data,d, outputFilePath_1, define_range)
+                write_json_solution_mip(round(model.getAttr("ObjVal")), y,x,u, data,d, outputFilePath_2, define_range)
 
 main()
