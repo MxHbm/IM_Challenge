@@ -1,10 +1,11 @@
 import json
 import csv
+import math
+import os
 
 
 class MainTask:
     ''' Class for the attributes of a main task '''
-
 
     def __init__(self, json_data):
         # Convert and assign each attribute with explicit data type conversion and make them private
@@ -153,19 +154,28 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = "Data/OptionalTasks.csv") -> None:
+    def __init__(self, main_tasks_path: str, optional_tasks_path: str = "../Data/OptionalTasks.csv") -> None:
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
         :param optional_tasks_path: Path to the CSV file containing optional tasks
         :param main_tasks_path: Path to the JSON file containing main tasks
         '''
+
+        print(os.getcwd())
         self.__optional_tasks_path = optional_tasks_path
         self.__main_tasks_path = main_tasks_path 
 
         # Load and create task objects from file paths
         self.__Load_OptionalTasks()
         self.__Load_MainTasks()
+
+        # Create List with all Tasks
+        self.__allTasks = self.__mainTasks + self.__optionalTasks
+
+        # Create list with distances
+        self.__distances = self.__CreateDistances()
+
 
     def __Load_OptionalTasks(self) -> None:
         ''' Initialize the creation of a list of optional tasks based on the CSV file path'''
@@ -192,7 +202,7 @@ class InputData:
         data = json.load(json_file)  # Load JSON data as a dictionary
 
         # Extract and store the attributes from the JSON data
-        self.__main_ID = data["ID"]
+        self.__instance_ID = data["ID"]
         self.__cohort_no = int(data["Cohorts"])
         self.__days = int(data["Days"])
         self.__maxRouteDuration = int(data["MaxRouteDuration"])
@@ -201,187 +211,76 @@ class InputData:
         for task in data["MainTasks"]:
             self.__mainTasks.append(MainTask(task))
 
+    def __CalculateDistance(self, task_1, task_2) -> float:
+        ''' Calculate the distance between two tasks using the euclidean distance formula
+            and return the time it takes to travel between them in seconds
+        '''
+
+        distance = math.sqrt((task_1.latitude - task_2.latitude)**2 + (task_1.longitude - task_2.longitude)**2)
+
+        time = int(round(distance * 17100)) # time in seconds
+
+        return time
+
+    def __CreateDistances(self) -> list[list[int]]:
+        ''' Create a two-dimensional list with distances between all tasks '''
+
+        # Calculate the distances between all tasks
+        distances = [[0 for i in range(len(self.__allTasks))] for j in range(len(self.__allTasks))]
+
+        for task_i_id in range(len(self.__allTasks)):
+            for task_j_id in range(task_i_id): 
+                # Calculate the distance between the two tasks
+                    distances[task_i_id][task_j_id] = distances[task_j_id][task_i_id] = self.__CalculateDistance(self.__allTasks[task_i_id], self.__allTasks[task_j_id])
+
+        return distances
+
     @property
-    def optionalTasks(self):
+    def allTasks(self) -> list:
+        ''' Property to get the list of all available tasks '''
+        return self.__allTasks
+
+    @property
+    def optionalTasks(self)-> list[OptionalTask]:
         ''' Property to get the list of optional tasks '''
         return self.__optionalTasks
 
     @property
-    def mainTasks(self):
+    def mainTasks(self) -> list[MainTask]:
         ''' Property to get the list of main tasks '''
         return self.__mainTasks
     
     @property
-    def optional_tasks_path(self):
+    def distances(self) -> list[list[int]]:
+        ''' Get Two dimensional list with distances between all tasks'''
+        return self.__distances
+    
+    @property
+    def optional_tasks_path(self) -> str:
         ''' Property to get the path to the optional tasks file '''
         return self.__optional_tasks_path
     
     @property
-    def main_tasks_path(self):  
+    def main_tasks_path(self) -> str:  
         ''' Property to get the path to the main tasks file '''
         return self.__main_tasks_path
 
     @property
-    def main_ID(self):
-        ''' Property to get the main ID '''
-        return self.__main_ID
+    def instance_ID(self) -> str:
+        ''' Property to get the ID of instance of main tasks'''
+        return self.__instance_ID
 
     @property
-    def cohort_no(self):
+    def cohort_no(self) ->  int:
         ''' Property to get the number of cohorts '''
         return self.__cohort_no
 
     @property
-    def days(self):
+    def days(self) -> int:
         ''' Property to get the number of days '''
         return self.__days
 
     @property
-    def maxRouteDuration(self):
+    def maxRouteDuration(self) -> int:
         ''' Property to get the maximum route duration '''
         return self.__maxRouteDuration
-
-
-def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str, number_tasks:int):
-
-    number_all_tasks = 0
-    days = {}
-    for day in range(data.days):
-        day_list = []
-
-        for cohort in range(data.cohort_no):
-            
-            route_list = []
-            profit_route = 0
-            start_time = 0
-            pre_selected_nodes = []
-            u_nodes = []
-
-            for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                #for j in range(1,len(data.optionalTasks[0:10])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        number_all_tasks += 1
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-                        #start_time += distances[i][j]
-
-            if len(pre_selected_nodes) > 0:
-                # Pair the lists together
-                paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                # Sort the pairs based on the first list
-                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                # Separate the pairs back into two lists
-                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                start_node = 0
-                for i in sorted_nodes:
-                    start_time += distances[start_node][i]            
-                    route_list.append({"StartTime" : start_time,
-                                            "SelectedDay" : day + 1,
-                                            "ID" : data.optionalTasks[i].ID})
-                    
-                    start_node = i
-                    start_time += data.optionalTasks[i].service_time
-                
-            cohort_dict = {"CohortID"   : cohort,
-                           "Profit"     : profit_route,
-                           "Route"    : route_list}
-            
-            
-            day_list.append(cohort_dict)
-
-
-        days[str(day + 1)] = day_list
-        
-                
-    
-    results = {
-        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
-        "Objective": objVal,
-        "NumberOfAllTasks": number_all_tasks,#len(res.vars.y),
-        "UseMainTasks" : False,
-        "Days" : days
-    }
-
-    # Write the dictionary to a JSON file
-    with open(filepath, 'w') as json_file:
-        json.dump(results, json_file, indent=2)
-
-    print(f"JSON file has been created at {filepath}")
-
-def write_txt_solution(gp_model, var_y, var_x, var_u, data:InputData, distances, file_path:str, number_tasks:int):
-    """
-    Writes optimization gap, runtime, number of constraints, and number of variables 
-    from a solved Gurobi model into a text file.
-
-    Parameters:
-    model (gurobipy.Model): The Gurobi model to extract information from.
-    y, x, u, data, d, define_range: Additional parameters (usage can be defined as needed).
-    file_path (str): The path to the output text file.
-    """
-    
-    # Retrieve optimization metrics
-    gap = gp_model.MIPGap
-    runtime = round(gp_model.Runtime,2)
-    num_constraints = gp_model.NumConstrs
-    num_variables = gp_model.NumVars
-    obj = round(gp_model.getAttr("ObjVal"))
-    
-    # Write the metrics to the output file
-    with open(file_path, 'w') as file:
-        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
-        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(number_tasks) + "\n \n")
-
-        for day in range(data.days):
-
-            file.write(str(day)+"\n")
-
-            for cohort in range(data.cohort_no):
-                
-                file.write("\t" +str(cohort) + " ")
-
-                route_list = []
-                profit_route = 0
-                start_time = 0
-                pre_selected_nodes = []
-                u_nodes = []
-
-                for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-
-                file.write("("+str(profit_route) + "): ")
-
-                if len(pre_selected_nodes) > 0:
-                    # Pair the lists together
-                    paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                    # Sort the pairs based on the first list
-                    sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                    # Separate the pairs back into two lists
-                    sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                    sorted_nodes = list(sorted_nodes)
-
-                    start_node = 0
-                    sorted_nodes.append(start_node)
-                    sorted_nodes.insert(start_node, start_node)
-                    for i in sorted_nodes:
-                        
-                        file.write(str(i) +" ")
-
-                file.write("\n")
-                
-
-
-    print(f"Text file has been created at {file_path}")
