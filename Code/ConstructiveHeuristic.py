@@ -21,8 +21,9 @@ class ConstructiveHeuristics:
         #Iterate over all days and cohorts and add the respective main task to the route plan
         for day in range(inputData.days):
             routeplan[day] = []
-            for cohort in range(inputData.cohort_no):
-                routeplan[day].append([1000 + (cohort+1) * (day +1)])
+            for t in range(1001,len(inputData.allTasks)):
+                if inputData.allTasks[t].day == (day + 1):
+                    routeplan[day].append([0,t,0])
 
         #Return the prefilled route plan
         return routeplan
@@ -45,7 +46,7 @@ class ConstructiveHeuristics:
         self._SolutionPool.AddSolution(solution)
 
     def _Greedy(self, inputData:InputData) -> Solution:
-        ''' Sorts jobs from 0 to x. job and calculates makespan'''
+        ''' Greedy heuristic to create a first solution - fills blank spots between main tasks with optional tasks'''
 
         prefilled_route_plan = self._create_initial_route_plan(inputData)
 

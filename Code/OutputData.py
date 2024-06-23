@@ -17,28 +17,88 @@ from InputData import *
 '''
 
 class Solution:
-    ''' Creates an object with a list for the Outpout Jobs and an given permutation following the sequence
-        Additionally dummy results for Makespan, TotalTardiness and TotalWeightedTardiness are implemented.
-        '''
+    ''' 
+
+    '''
+
     def __init__(self, route_plan:dict, data:InputData):
         ''' Define the attributes for solution'''
 
         self._totalProfit = -1
         self._route_plan = route_plan
+        self._create_StartEndTimes(data)
 
     def __str__(self):
         '''Base Function for printing out the results'''
         return "The permutation " + str(self.Permutation) + " and the "+ str(self.lot_matrix) +" results in a Makespan of " + str(self.Makespan)
+    
+    
+    def _create_StartEndTimes(self, data:InputData):
+        ''' Calculate the start and the end times of the tasks of the given solution'''
+        
+        self._startTimes = {}
+        self._endTimes = {}
 
-    def setRoutePlan(self, permutation:list[int]) -> None:
-        ''' Sets a new permutation to the given solution'''
-        self.Permutation = permutation
+        day_index = 0
+        for day in self._route_plan.values():
+            cohort_list_start = []
+            cohort_list_end = []
+            for cohort in day:
+                route_list_start = [0]
+                route_list_end = [0]
+
+                if len(cohort) >= 0:
+                    previous_t = cohort[0]
+
+                for t in cohort[1:]:
+
+                    if t >= 1001:
+                        start_time = data.allTasks[t].start_time
+                    else: 
+                        start_time = data.distances[previous_t][t] + end_time_previous
+
+                    
+                    end_time = start_time + data.allTasks[t].service_time
+                    end_time_previous = end_time
+
+                    previous_t = t
+                    route_list_start.append(start_time)
+                    route_list_end.append(end_time)
+                
+                cohort_list_start.append(route_list_start)
+                cohort_list_end.append(route_list_end)
+            
+            self._startTimes[day_index] = cohort_list_start
+            self._endTimes[day_index] = cohort_list_end
+            day_index += 1
+
+
+    def setRoutePlan(self, route_plan, data:InputData) -> None:
+        ''' Sets a new route plan to the given solution'''
+        self._route_plan = route_plan
+        self._create_StartEndTimes(data)
+
+    def setTotalProfit(self, new_profit) -> None:
+        ''' Sets a new profit to the given solution'''
+        self._totalProfit = new_profit
 
     @property
     def TotalProfit(self) -> int: 
         ''' Returns Total Profit of Tour'''
 
         return self._totalProfit
+    
+    @property
+    def StartTimes(self) -> dict[str, list[list[int]]]: 
+        ''' Returns Total Start Times of Tour'''
+
+        return self._startTimes
+    
+    @property
+    def EndTimes(self) -> dict[str, list[list[int]]]: 
+        ''' Returns Total End Times of Tour'''
+
+        return self._endTimes
     
     @property
     def RoutePlan(self) -> dict[str, list[list[int]]]: 
