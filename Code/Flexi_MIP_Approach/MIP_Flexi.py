@@ -86,8 +86,7 @@ def main():
                 #### PARAMETERS ####
                 print("Initialize Parameters \n")
                 P = get_profits(data.optionalTasks[0:define_range])
-                days = data.days
-                T_max = 21600           # Time Units of one "Day" = 6 hours = 21600 seconds
+                T_max = data.maxRouteDuration            # Time Units of one "Day" = 6 hours = 21600 seconds
                 M_m = list(range(data.cohort_no))    # Number of available Teams --> Routes
                 N = get_N(data.optionalTasks[0:define_range])
                 d = get_distance_matrix(data.optionalTasks[0:define_range])
@@ -98,7 +97,7 @@ def main():
                 I = range(len(N))
                 J = range(len(N))
                 M = range(len(M_m))
-                T = range(days)
+                T = range(data.days)
                 
                 #### MODEL ####
                 print("Start Model \n \n")
@@ -163,7 +162,7 @@ def main():
 
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
-                model.Params.TimeLimit = 10800  # 2 hours
+                model.Params.TimeLimit = 10800  # 3 hours
                 model.Params.Threads = 32
                 model.Params.PrePasses = 1000000
 
