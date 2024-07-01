@@ -2,6 +2,7 @@ import gurobipy as gp
 import os
 from InputData import *
 import math
+from typing import List, Dict, Tuple
 
 def calculate_distance(task_1:OptionalTask, task_2:OptionalTask) -> float:
     ''' Calculate the distance between two tasks using the euclidean distance formula
@@ -14,7 +15,7 @@ def calculate_distance(task_1:OptionalTask, task_2:OptionalTask) -> float:
 
     return time
 
-def get_distance_matrix(tasks:list[MainTask],depot:OptionalTask) -> list[list[float]]:
+def get_distance_matrix(tasks:List[MainTask],depot:OptionalTask) -> List[List[float]]:
     ''' Get the distance matrix of the tasks in the data and add zeros for the depots to run the model'''
 
     # Add the depot again to the tasks at the end
@@ -33,7 +34,7 @@ def get_distance_matrix(tasks:list[MainTask],depot:OptionalTask) -> list[list[fl
 
     return distances
 
-def get_distance_service_time_matrix(tasks:list[MainTask],depot:OptionalTask) -> list[list[float]]:
+def get_distance_service_time_matrix(tasks:List[MainTask],depot:OptionalTask) -> List[List[float]]:
     ''' Get the distance matrix of the tasks in the data and add zeros for the depots to run the model'''
 
     # Add the depot again to the tasks at the end
@@ -54,14 +55,14 @@ def get_distance_service_time_matrix(tasks:list[MainTask],depot:OptionalTask) ->
 
     return distances_service_time
 
-def get_N(tasks:list[MainTask]) -> list[int]:
+def get_N(tasks:List[MainTask]) -> List[int]:
 
     # Number of positions plus two times depot 
     number = len(tasks) + 2
 
     return list(range(number))
 
-def get_mandatory_end_and_start_times(data:InputData, tmax:int) -> tuple[list[list[int]], list[list[int]]]:
+def get_mandatory_end_and_start_times(data:InputData, tmax:int) -> Tuple[List[List[int]], List[List[int]]]:
     ''' List of mandatory start times of each task, integrates also factor at which day main tasks can only be executed'''
     
     start_times  = []
@@ -82,7 +83,7 @@ def get_mandatory_end_and_start_times(data:InputData, tmax:int) -> tuple[list[li
 
     return start_times, end_times
 
-def sort_tuples(tuples):
+def sort_tuples(tuples) -> List[Tuple[int,int]]:
     # Sort tuples by the first element
     tuples.sort()
 
@@ -103,7 +104,7 @@ def sort_tuples(tuples):
     return sorted_tuples
 
 
-def write_txt_solution(gp_model, var_y, var_s, var_x, data:InputData, file_path:str):
+def write_txt_solution(gp_model, var_y, var_s, var_x, data:InputData, file_path:str) -> None:
     """
     Writes optimization gap, runtime, number of constraints, and number of variables 
     from a solved Gurobi model into a text file.
@@ -161,112 +162,150 @@ def write_txt_solution(gp_model, var_y, var_s, var_x, data:InputData, file_path:
                             startelem = element
 
                 file.write("\n")
-                
-
 
     print(f"Text file has been created at {file_path}")
 
 
-def find_inital_main_task_allocation(data:InputData):
 
+def get_initial_route_plan(gp_model: gp.Model, var_y: gp.Var, var_s: gp.Var, var_x: gp.Var, data: InputData) -> Dict[str, List[List[int]]]:
+    """
+    Generates an initial route plan based on the given optimization model and variables.
+
+    Parameters:
+    - gp_model: The Gurobi model used for optimization.
+    - var_y: The binary variable indicating if a vertex is visited in a route.
+    - var_s: The continuous variable indicating the start time of the service at a node.
+    - var_x: The binary variable indicating if a visit to node i is followed by a visit to node j in a route.
+    - data: InputData object containing problem-specific data such as tasks, days, and cohorts.
+
+    Returns:
+    - dict_routes: A dictionary where each key is a day, and each value is a list of lists representing the routes for each cohort on that day.
+    """
+    dict_routes = {}
+
+    for day in range(data.days):
+        day_list = []
+
+        for cohort in range(data.cohort_no):
+            cohort_list = []
+
+            pre_selected_nodes = []
+
+            # Identify nodes that are part of the route for the current day and cohort
+            for i in range(len(data.mainTasks) + 2):
+                for j in range(len(data.mainTasks) + 2):
+                    if var_x[day, cohort, i, j].X > 0:
+                        pre_selected_nodes.append((i, j))
+
+            # Sort the nodes to create a coherent route
+            sorted_tuples = sort_tuples(pre_selected_nodes)
+            startelem = sorted_tuples[0][0]
+
+            for tuple in sorted_tuples:
+                for element in tuple:
+                    if element == startelem:
+                        continue
+                    else:
+                        if element != len(data.mainTasks) + 1:
+                            cohort_list.append(element + 1000)
+                        startelem = element
+
+            day_list.append(cohort_list)
+
+        dict_routes[day] = day_list
+
+    return dict_routes
+
+def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int]]]:
+    """
+    Finds the initial main task allocation using Gurobi optimization.
+
+    Parameters:
+    - data: InputData object containing problem-specific data such as tasks, days, and cohorts.
+
+    Returns:
+    - The initial route plan generated by the get_initial_route_plan function.
+    """
     #### PARAMETERS ####
     print("Initialize Parameters \n")
-    T_max = data.maxRouteDuration           # Time Units of one "Day" = 6 hours = 21600 seconds
-    M_no = list(range(data.cohort_no))    # Number of available Teams --> Routes
+    T_max = data.maxRouteDuration  # Time Units of one "Day" = 6 hours = 21600 seconds
+    M_no = list(range(data.cohort_no))  # Number of available Teams --> Routes
     N_no = get_N(data.mainTasks)
     d = get_distance_matrix(data.mainTasks, data.optionalTasks[0])
     dt = get_distance_service_time_matrix(data.mainTasks, data.optionalTasks[0])
-    O,C = get_mandatory_end_and_start_times(data, T_max)
-
-    print(O)
-    print(C)
-
-    print("Distances Matrix")
-    for line in d:
-        print(line)
+    O, C = get_mandatory_end_and_start_times(data, T_max)
 
     # Big Number for binary constraints
     L = 1000000
 
     #### INDICES ####
-
     N = range(len(N_no))
     M = range(len(M_no))
     T = range(data.days)
-
-    for n in N[1:-1]:
-        print(str(n) +":  Start Time: ", data.mainTasks[n-1].start_time, "\t Service Time: ", data.mainTasks[n-1].service_time)
 
     #### MODEL ####
     print("Start Model \n \n")
     model = gp.Model()
 
     #### VARIABLES ####
-
-    x = model.addVars(T,M,N,N, name = "x", vtype=gp.GRB.BINARY) #  1, if in route m, a visit to node i is followed by a visit to node j, and 0 otherwise at t
-    y = model.addVars(T,M,N, name = "y", vtype=gp.GRB.BINARY) # yim = 1, if vertex i is visited in route m, and 0 otherwise
-    s = model.addVars(T,M,N, name = "s", vtype=gp.GRB.CONTINUOUS) # the start of the service at node i in route m
+    x = model.addVars(T, M, N, N, name="x", vtype=gp.GRB.BINARY)  # 1, if in route m, a visit to node i is followed by a visit to node j, and 0 otherwise at t
+    y = model.addVars(T, M, N, name="y", vtype=gp.GRB.BINARY)  # yim = 1, if vertex i is visited in route m, and 0 otherwise
+    s = model.addVars(T, M, N, name="s", vtype=gp.GRB.CONTINUOUS)  # the start of the service at node i in route m
 
     #### OBJECTIVE FUNCTION ####
-
-    model.setObjective(gp.quicksum(gp.quicksum(d[i][j] * x[t,m,i,j] for i in N for j in N) for m in M for t in T), gp.GRB.MINIMIZE)
+    model.setObjective(gp.quicksum(gp.quicksum(d[i][j] * x[t, m, i, j] for i in N for j in N) for m in M for t in T), gp.GRB.MINIMIZE)
 
     #### CONSTRAINTS ####
-
-    #ensure that each route starts from node 1 and ends in node |N|.
+    # Ensure that each route starts from node 1 and ends in node |N|.
     for t in T:
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in N[1:]) == gp.quicksum(x[t,m,i, N[-1]] for m in M for i in N[:-1]), "Constraint_3.2a")
-        model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in N[1:]) == len(M), "Constraint_3.2b")
-        model.addConstr(gp.quicksum(x[t,m,i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
+        model.addConstr(gp.quicksum(x[t, m, 0, j] for m in M for j in N[1:]) == gp.quicksum(x[t, m, i, N[-1]] for m in M for i in N[:-1]), "Constraint_3.2a")
+        model.addConstr(gp.quicksum(x[t, m, 0, j] for m in M for j in N[1:]) == len(M), "Constraint_3.2b")
+        model.addConstr(gp.quicksum(x[t, m, i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
 
-
-    #Every main task needs to be in one tour of one cohort
+    # Every main task needs to be in one tour of one cohort
     for k in N[1:-1]:
-        model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) == 1, "Constraint_3.3")
+        model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
 
-    
     # No self visits:
     for t in T:
-        for m in M: 
-            for i in N:
-                model.addConstr(x[t,m,i,i] == 0, "Constraint 3.5")
-
-    #ensure each node can only be visited at most once.
-    for m in M:
-        for k in N[1:-1]: # only valid for main tasks
-            for t in T:
-                model.addConstr(gp.quicksum(x[t,m,i,k] for i in N[:-1]) == gp.quicksum(x[t,m,k,j] for j in N[1:]), "Constraint 3.4a")
-                model.addConstr(gp.quicksum(x[t,m,i,k] for i in N[:-1]) == y[t,m,k], "Constraint 3.4b")
-                model.addConstr(gp.quicksum(x[t,m,k,j] for j in N[1:]) == y[t,m,k] , "Constraint 3.4c")
-
-    #) ensure the connectivity and timeline of each route.
-    for t in T: 
-        for m in M: 
-            for i in  N:
-                for j in  N:
-                    if i != j:
-                        model.addConstr(s[t,m,i] + dt[i][j]  - s[t,m,j] <= L * (1 - x[t,m,i,j]), "Constraint 3.7")
-
-    # Restrict start and end times: 
-    for t in T: 
         for m in M:
             for i in N:
-                model.addConstr(O[t][i] * y[t,m,i] <= s[t,m,i], "Constraint 3.8a")
-                model.addConstr(s[t,m,i] <= C[t][i] * y[t,m,i], "Constraint 3.8b")
+                model.addConstr(x[t, m, i, i] == 0, "Constraint 3.5")
 
+    # Ensure each node can only be visited at most once.
+    for m in M:
+        for k in N[1:-1]:  # only valid for main tasks
+            for t in T:
+                model.addConstr(gp.quicksum(x[t, m, i, k] for i in N[:-1]) == gp.quicksum(x[t, m, k, j] for j in N[1:]), "Constraint 3.4a")
+                model.addConstr(gp.quicksum(x[t, m, i, k] for i in N[:-1]) == y[t, m, k], "Constraint 3.4b")
+                model.addConstr(gp.quicksum(x[t, m, k, j] for j in N[1:]) == y[t, m, k], "Constraint 3.4c")
 
-    #Dont start several tours from one mode
+    # Ensure the connectivity and timeline of each route.
+    for t in T:
+        for m in M:
+            for i in N:
+                for j in N:
+                    if i != j:
+                        model.addConstr(s[t, m, i] + dt[i][j] - s[t, m, j] <= L * (1 - x[t, m, i, j]), "Constraint 3.7")
+
+    # Restrict start and end times:
+    for t in T:
+        for m in M:
+            for i in N:
+                model.addConstr(O[t][i] * y[t, m, i] <= s[t, m, i], "Constraint 3.8a")
+                model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
+
+    # Don't start several tours from one node
     for k in N:
         for t in T:
             for m in M:
-                model.addConstr(gp.quicksum(x[t,m,k,j] for j in N) <= 1, "Constraint_new")
-
+                model.addConstr(gp.quicksum(x[t, m, k, j] for j in N) <= 1, "Constraint_new")
 
     #### DEFINE OPTIMIZATION PARAMS ###
-    model.Params.MIPGap = 0.01 # Gap is 1%! 
+    model.Params.MIPGap = 0.01  # Gap is 1%!
     model.Params.TimeLimit = 34  # 2 hours
     model.Params.Threads = 8
-    #model.Params.PrePasses = 1000000
+    # model.Params.PrePasses = 1000000
 
     #### OPTIMIZE MODEL ####
     model.optimize()
@@ -278,6 +317,4 @@ def find_inital_main_task_allocation(data:InputData):
     #### WRITE SOLUTION ####
     write_txt_solution(model, y, s, x, data, "Data/Results_Main/Task_Allocation.txt")
 
-
-data = InputData("Data/Instanzen/Instance7_2_1.json")
-find_inital_main_task_allocation(data)
+    return get_initial_route_plan(model, y, s, x, data)

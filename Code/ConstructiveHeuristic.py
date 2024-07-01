@@ -2,6 +2,7 @@ from itertools import permutations
 import time
 import numpy
 from OutputData import *
+from MIP_main import *
 #from EvaluationLogic import EvaluationLogic
 
 class ConstructiveHeuristics:
@@ -23,7 +24,15 @@ class ConstructiveHeuristics:
             routeplan[day] = []
             for t in range(1001,len(inputData.allTasks)):
                 if inputData.allTasks[t].day == (day + 1):
-                    routeplan[day].append([0,t,0])
+                    routeplan[day].append([t])
+
+        #Return the prefilled route plan
+        return routeplan
+    
+    def _create_initial_route_plan_with_MIP(self, inputData:InputData) -> dict[str, list[list[int]]]:
+        ''' Prefilles every day with one repsective main task for each cohort'''
+    
+        routeplan = find_inital_main_task_allocation(inputData)
 
         #Return the prefilled route plan
         return routeplan
