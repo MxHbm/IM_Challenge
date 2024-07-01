@@ -74,7 +74,7 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
 
     #### PARAMETERS ####
     print("Initialize Parameters \n")
-    M_no =  data.cohort_no  # Number of available Teams --> Routes
+    M_no = data.cohort_no  # Number of available Teams --> Routes
     N_no = len(all_tasks)
     d = get_distance_matrix(all_tasks)
     dt = get_distance_service_time_matrix(all_tasks)
@@ -84,8 +84,8 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     L = 1000000
 
     #### INDICES ####
-    N = range(len(N_no))
-    M = range(len(M_no))
+    N = range(N_no)
+    M = range(M_no)
     T = range(data.days)
 
     #### MODEL ####
@@ -160,6 +160,6 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     model.printAttr(gp.GRB.Attr.X)
 
     #### WRITE SOLUTION ####
-    write_txt_solution(model, y, s, x, data, "Data/Results_Main/Task_Allocation.txt")
+    write_txt_solution(model, s, x, data, all_tasks, "Data/Results_Main/Task_Allocation.txt")
 
     return get_initial_route_plan(model, y, s, x, data)
