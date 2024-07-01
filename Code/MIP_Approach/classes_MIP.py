@@ -1,6 +1,6 @@
 import json
 import csv
-
+from typing import List, Dict
 
 class MainTask:
     ''' Class for the attributes of a main task '''
@@ -15,13 +15,17 @@ class MainTask:
         self._location_id = int(json_data.get('LocationID', 0))
         self._latitude = float(json_data.get('Latitude', 0.0))
         self._longitude = float(json_data.get('Longitude', 0.0))
-        self._profit = 1000000
+        self._profit = 0
 
     def __str__(self):
         ''' This method makes it easier to print the object's attributes as a string '''
         return (f"ID: {self.ID}, Day: {self.day}, Service Time: {self.service_time}, "
                f"Start Time: {self.start_time}, End Time: {self.end_time}, "
                f"Location ID: {self.location_id}, Latitude: {self.latitude}, Longitude: {self.longitude}")
+
+    def setProfit(self, profit):
+        ''' Set the profit of the task '''
+        self._profit = profit
 
     @property
     def ID(self) -> str:
@@ -261,148 +265,3 @@ class InputData:
     def maxRouteDuration(self):
         ''' Property to get the maximum route duration '''
         return self._maxRouteDuration
-
-
-def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str, number_tasks:int):
-
-    number_all_tasks = 0
-    days = {}
-    for day in range(data.days):
-        day_list = []
-
-        for cohort in range(data.cohort_no):
-            
-            route_list = []
-            profit_route = 0
-            start_time = 0
-            pre_selected_nodes = []
-            u_nodes = []
-
-            for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                #for j in range(1,len(data.optionalTasks[0:10])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        number_all_tasks += 1
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-                        #start_time += distances[i][j]
-
-            if len(pre_selected_nodes) > 0:
-                # Pair the lists together
-                paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                # Sort the pairs based on the first list
-                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                # Separate the pairs back into two lists
-                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                start_node = 0
-                for i in sorted_nodes:
-                    start_time += distances[start_node][i]            
-                    route_list.append({"StartTime" : start_time,
-                                            "SelectedDay" : day + 1,
-                                            "ID" : data.optionalTasks[i].ID})
-                    
-                    start_node = i
-                    start_time += data.optionalTasks[i].service_time
-                
-            cohort_dict = {"CohortID"   : cohort,
-                           "Profit"     : profit_route,
-                           "Route"    : route_list}
-            
-            
-            day_list.append(cohort_dict)
-
-
-        days[str(day + 1)] = day_list
-        
-                
-    
-    results = {
-        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
-        "Objective": objVal,
-        "NumberOfAllTasks": number_all_tasks,#len(res.vars.y),
-        "UseMainTasks" : False,
-        "Days" : days
-    }
-
-    # Write the dictionary to a JSON file
-    with open(filepath, 'w') as json_file:
-        json.dump(results, json_file, indent=2)
-
-    print(f"JSON file has been created at {filepath}")
-
-def write_txt_solution(gp_model, var_y, var_x, var_u, data:InputData, distances, file_path:str, number_tasks:int):
-    """
-    Writes optimization gap, runtime, number of constraints, and number of variables 
-    from a solved Gurobi model into a text file.
-
-    Parameters:
-    model (gurobipy.Model): The Gurobi model to extract information from.
-    y, x, u, data, d, define_range: Additional parameters (usage can be defined as needed).
-    file_path (str): The path to the output text file.
-    """
-    
-    # Retrieve optimization metrics
-    gap = gp_model.MIPGap
-    runtime = round(gp_model.Runtime,2)
-    num_constraints = gp_model.NumConstrs
-    num_variables = gp_model.NumVars
-    obj = round(gp_model.getAttr("ObjVal"))
-    
-    # Write the metrics to the output file
-    with open(file_path, 'w') as file:
-        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
-        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(number_tasks) + "\n \n")
-
-        for day in range(data.days):
-
-            file.write(str(day)+"\n")
-
-            for cohort in range(data.cohort_no):
-                
-                file.write("\t" +str(cohort) + " ")
-
-                route_list = []
-                profit_route = 0
-                start_time = 0
-                pre_selected_nodes = []
-                u_nodes = []
-
-                for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-
-                file.write("("+str(profit_route) + "): ")
-
-                if len(pre_selected_nodes) > 0:
-                    # Pair the lists together
-                    paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                    # Sort the pairs based on the first list
-                    sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                    # Separate the pairs back into two lists
-                    sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                    sorted_nodes = list(sorted_nodes)
-
-                    start_node = 0
-                    sorted_nodes.append(start_node)
-                    sorted_nodes.insert(start_node, start_node)
-                    for i in sorted_nodes:
-                        
-                        file.write(str(i) +" ")
-
-                file.write("\n")
-                
-
-
-    print(f"Text file has been created at {file_path}")

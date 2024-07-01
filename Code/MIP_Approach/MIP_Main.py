@@ -1,105 +1,9 @@
 import gurobipy as gp
 import os
-from IO_MIP_Main import *
+from classes_MIP import *
+from functions_MIP import *
 import math
 from typing import List, Union, Tuple
-
-def get_profits(tasks: List[Union[MainTask, OptionalTask]]) -> list[int]:
-    ''' Get the profit of the tasks in the data and add zeros for the depots to run the model'''
-
-    # Fill profits vector
-    print("Get Profits")
-    profits = [task.profit for task in tasks]
-
-    # Last value = profit of depot again
-    profits.append(profits[0])
-
-    return profits
-
-def calculate_distance(task_1:Union[MainTask, OptionalTask], task_2:Union[MainTask, OptionalTask]) -> float:
-    ''' Calculate the distance between two tasks using the euclidean distance formula
-        and return the time it takes to travel between them in seconds
-    '''
-
-    distance = math.sqrt((task_1.latitude - task_2.latitude)**2 + (task_1.longitude - task_2.longitude)**2)
-
-    time = int(round(distance * 17100,0)) # time in seconds
-
-    return time
-
-def get_distance_service_time_matrix(tasks:List[Union[MainTask, OptionalTask]]) -> List[List[float]]:
-    ''' Get the distance matrix of the tasks in the data and add zeros for the depots to run the model'''
-
-    # Add the depot again to the tasks at the end
-    internal_tasks = tasks.copy()
-
-    distances_service_time = [[0 for i in range(len(internal_tasks))] for j in range(len(internal_tasks))]
-
-    print("Calculate Distance plus Service Times")
-
-    for task_i_id in range(len(internal_tasks)):
-        for task_j_id in range(task_i_id): 
-            # Calculate the distance between the two tasks
-                distance = calculate_distance(internal_tasks[task_i_id], internal_tasks[task_j_id])
-                distances_service_time[task_i_id][task_j_id] =  distance + internal_tasks[task_i_id].service_time
-                distances_service_time[task_j_id][task_i_id] =  distance + internal_tasks[task_j_id].service_time
-
-    return distances_service_time
-
-def get_service_times(tasks: List[Union[MainTask, OptionalTask]]) -> list[int]:
-    ''' List of service times of each task'''
-
-    service_times = [task.service_time for task in tasks]
-
-    return service_times
-
-def create_all_tasks(data: InputData, define_range: int) -> List[Union[MainTask, OptionalTask]]:
-    """
-    Creates a combined list of tasks from the main tasks and the depot.
-
-    Parameters:
-    - data (InputData): An InputData object containing lists of main and optional tasks.
-    - define_range (int): The number of optional tasks to include from the start of the optional tasks list.
-
-    Returns:
-    - List[Union[MainTask, OptionalTask]]: A combined list of tasks containing the specified range of optional tasks, 
-      all main tasks, and the first optional task.
-    """
-    
-    # Combine the specified range of optional tasks, all main tasks, and the first optional task
-    tasks = data.optionalTasks[0:define_range] + data.mainTasks + [data.optionalTasks[0]]
-    
-    return tasks
-
-def get_mandatory_end_and_start_times(data:InputData, tasks: List[Union[MainTask, OptionalTask]]) -> Tuple[List[List[int]], List[List[int]]]:
-    ''' List of mandatory start times of each task, integrates also factor at which day main tasks can only be executed'''
-    
-    start_times  = []
-    end_times = []
-
-    #Need to specify
-    depot = tasks[0]
-
-    for day in range(data.days):
-        start_times_day = []
-        end_times_day = []
-        for task in tasks:
-            if task.ID[0] == "M": 
-                if (day + 1) == task.day:
-                    start_times_day.append(task.start_time)
-                    end_times_day.append(task.start_time)
-                else: 
-                    start_times_day.append(-1)
-                    end_times_day.append(-1)
-            else: 
-                ### HERE IT NEEDS TO BE CHECKED IF THE END TIMES NEEDS TO BE SUBVSTRACTED WITH SERVICE TIMES! 
-                start_times_day.append(task.start_time + calculate_distance(depot, task))
-                end_times_day.append(task.end_time - calculate_distance(depot, task) - task.service_time)
-        
-        start_times.append(start_times_day)
-        end_times.append(end_times_day)
-
-    return start_times, end_times
 
 
 
@@ -125,7 +29,8 @@ def main():
     #### INITIALIZE DATA ####
     print("Initialize Data \n")
     main_tasks_path = cwd + "/Data/Instanzen/Instance7_"+str(no_days)+"_"+str(instance_no)+".json"
-    print(main_tasks_path)
+    for main_task in data.mainTasks:
+        main_task.setProft(1000000)
     data = InputData(main_tasks_path)
 
     #### CREATE UNION MAIN TASKS AND OPTIONAL TASKS ####
