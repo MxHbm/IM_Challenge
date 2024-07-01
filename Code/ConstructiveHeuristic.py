@@ -2,7 +2,7 @@ from itertools import permutations
 import time
 import numpy
 from OutputData import *
-from MIP_main import *
+from Code.MIP_initial_routeplan import *
 #from EvaluationLogic import EvaluationLogic
 
 class ConstructiveHeuristics:

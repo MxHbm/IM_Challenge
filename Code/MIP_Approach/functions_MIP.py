@@ -1,8 +1,20 @@
 import json
 import csv
 from typing import List, Dict, Union, Tuple
-from classes_MIP import *
 import math
+import sys, os
+import gurobipy as gp
+
+# Get the current file's directory
+current_dir = os.path.dirname(__file__)
+
+# Go up one level to reach the parent directory of MIP_Approach
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
+from InputData import OptionalTask, MainTask, InputData
 
 
 def get_distance_matrix(tasks:list[Union[MainTask, OptionalTask]]) -> list[list[float]]:
@@ -66,24 +78,6 @@ def get_distance_service_time_matrix(tasks:List[Union[MainTask, OptionalTask]]) 
 
     return distances_service_time
 
-
-def create_all_tasks(data: InputData, define_range: int) -> List[Union[MainTask, OptionalTask]]:
-    """
-    Creates a combined list of tasks from the main tasks and the depot.
-
-    Parameters:
-    - data (InputData): An InputData object containing lists of main and optional tasks.
-    - define_range (int): The number of optional tasks to include from the start of the optional tasks list.
-
-    Returns:
-    - List[Union[MainTask, OptionalTask]]: A combined list of tasks containing the specified range of optional tasks, 
-      all main tasks, and the first optional task.
-    """
-    
-    # Combine the specified range of optional tasks, all main tasks, and the first optional task
-    tasks = data.optionalTasks[0:define_range] + data.mainTasks + [data.optionalTasks[0]]
-    
-    return tasks
 
 def get_mandatory_end_and_start_times(data:InputData, tasks: List[Union[MainTask, OptionalTask]]) -> Tuple[List[List[int]], List[List[int]]]:
     ''' List of mandatory start times of each task, integrates also factor at which day main tasks can only be executed'''
@@ -267,150 +261,207 @@ def write_txt_solution_flexi(gp_model, var_y, var_x, var_u, data:InputData, dist
     print(f"Text file has been created at {file_path}")
 
 
-######## OUTPUT FUNCTIONS  SZENARIO Main #########
+######## OUTPUT FUNCTIONS  SZENARIO Main ######### - ###### MAIN APPROACH #####
+
+def sort_tuples(tuples) -> List[Tuple[int,int]]:
+    # Sort tuples by the first element
+    tuples.sort()
+
+    # Initialize the sorted list with the starting tuple (the one with 0 as the first element)
+    sorted_tuples = [t for t in tuples if t[0] == 0]
+
+    # Remove the starting tuple from the original list
+    tuples = [t for t in tuples if t[0] != 0]
+
+    # Iterate and find the correct order
+    while tuples:
+        for i, t in enumerate(tuples):
+            if t[0] == sorted_tuples[-1][1]:
+                sorted_tuples.append(t)
+                tuples.pop(i)
+                break
+
+    return sorted_tuples
 
 
-
-def write_json_solution_mip(objVal:int, var_y, var_x, var_u, data:InputData, distances, filepath:str, number_tasks:int):
-
-    number_all_tasks = 0
-    days = {}
-    for day in range(data.days):
-        day_list = []
-
-        for cohort in range(data.cohort_no):
-            
-            route_list = []
-            profit_route = 0
-            start_time = 0
-            pre_selected_nodes = []
-            u_nodes = []
-
-            for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                #for j in range(1,len(data.optionalTasks[0:10])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        number_all_tasks += 1
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-                        #start_time += distances[i][j]
-
-            if len(pre_selected_nodes) > 0:
-                # Pair the lists together
-                paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                # Sort the pairs based on the first list
-                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                # Separate the pairs back into two lists
-                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                start_node = 0
-                for i in sorted_nodes:
-                    start_time += distances[start_node][i]            
-                    route_list.append({"StartTime" : start_time,
-                                            "SelectedDay" : day + 1,
-                                            "ID" : data.optionalTasks[i].ID})
-                    
-                    start_node = i
-                    start_time += data.optionalTasks[i].service_time
-                
-            cohort_dict = {"CohortID"   : cohort,
-                           "Profit"     : profit_route,
-                           "Route"    : route_list}
-            
-            
-            day_list.append(cohort_dict)
-
-
-        days[str(day + 1)] = day_list
-        
-                
-    
-    results = {
-        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
-        "Objective": objVal,
-        "NumberOfAllTasks": number_all_tasks,#len(res.vars.y),
-        "UseMainTasks" : False,
-        "Days" : days
-    }
-
-    # Write the dictionary to a JSON file
-    with open(filepath, 'w') as json_file:
-        json.dump(results, json_file, indent=2)
-
-    print(f"JSON file has been created at {filepath}")
-
-def write_txt_solution(gp_model, var_y, var_x, var_u, data:InputData, distances, file_path:str, number_tasks:int):
+def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[Union[OptionalTask, MainTask]], file_path: str) -> None:
     """
     Writes optimization gap, runtime, number of constraints, and number of variables 
     from a solved Gurobi model into a text file.
 
     Parameters:
-    model (gurobipy.Model): The Gurobi model to extract information from.
-    y, x, u, data, d, define_range: Additional parameters (usage can be defined as needed).
-    file_path (str): The path to the output text file.
+    gp_model : gurobipy.Model
+        The Gurobi model to extract information from.
+    var_s : dict
+        Dictionary containing the start times of tasks for each day and cohort.
+    var_x : dict
+        Dictionary indicating whether a task is selected by a cohort on a given day.
+    data : InputData
+        The input data for the model.
+    allTasks : List[Union[OptionalTask, MainTask]]
+        A list of all tasks (both optional and main tasks).
+    file_path : str
+        The path to the output text file.
     """
     
     # Retrieve optimization metrics
     gap = gp_model.MIPGap
-    runtime = round(gp_model.Runtime,2)
+    runtime = round(gp_model.Runtime, 2)
     num_constraints = gp_model.NumConstrs
     num_variables = gp_model.NumVars
-    obj = round(gp_model.getAttr("ObjVal"))
+    obj = round(gp_model.getAttr("ObjVal")) - (data.mainTasks[0].profit * len(data.mainTasks))
     
     # Write the metrics to the output file
-    with open(file_path, 'w') as file:
-        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
-        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(number_tasks) + "\n \n")
+    try:
+        with open(file_path, 'w') as file:
+            # Write the objective value, gap, runtime, number of constraints, and number of variables
+            file.write(f"{obj}\t{gap}\t{runtime}\t{num_constraints}\t{num_variables}\n")
+            # Write the number of days and cohorts
+            file.write(f"{data.days} {data.cohort_no}\n\n")
 
-        for day in range(data.days):
+            for day in range(data.days):
+                # Write the current day
+                file.write(f"{day}\n")
 
-            file.write(str(day)+"\n")
+                for cohort in range(data.cohort_no):
+                    # Write the current cohort
+                    file.write(f"\t{cohort} ")
 
-            for cohort in range(data.cohort_no):
+                    profit_route = 0
+                    pre_selected_nodes = []
+                    unique_nodes = set()
+
+                    # Collect tasks selected by the cohort on the given day
+                    for i in range(len(allTasks)):
+                        for j in range(len(allTasks)):
+                            if var_x[day, cohort, i, j].X > 0:
+                                unique_nodes.add(i)
+                                unique_nodes.add(j)
+                                pre_selected_nodes.append((i, j))
+
+                    # Calculate profit per route
+                    for node in unique_nodes:
+                        if allTasks[node].profit > 5:
+                            profit_route += 0
+                        else:
+                            profit_route += allTasks[node].profit
+
+                    # Write the profit of the route
+                    file.write(f" ({profit_route}): ")
+
+                    # Sort and write the selected nodes in order
+                    sorted_tuples = sort_tuples(pre_selected_nodes)
+                    startelem = sorted_tuples[0][0]
+                    file.write(f"{startelem} ")
+
+                    for tuple in sorted_tuples:
+                        for element in tuple:
+                            if element == startelem:
+                                continue
+                            else:
+                                file.write(f"{element} ")
+                                startelem = element
+
+                    file.write("\n")
+        print(f"Text file has been created at {file_path}")
+    except IOError as e:
+        print(f"An error occurred while writing to the file: {e}")
+
+
+
+def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[Union[OptionalTask, MainTask]], file_path: str):
+    """
+    Write the solution of the optimization model to a JSON file.
+
+    Parameters:
+    gp_model : Gurobi model object
+        The optimization model containing the solution.
+    var_s : dict
+        Dictionary containing the start times of tasks for each day and cohort.
+    var_x : dict
+        Dictionary indicating whether a task is selected by a cohort on a given day.
+    data : InputData
+        The input data for the model.
+    allTasks : List[Union[OptionalTask, MainTask]]
+        A list of all tasks (both optional and main tasks).
+    file_path : str
+        The file path where the JSON file will be saved.
+    """
+    
+    number_all_tasks = 0
+    days = {}
+    objVal = round(gp_model.getAttr("ObjVal")) - (data.mainTasks[0].profit * len(data.mainTasks))
+
+    for day in range(data.days):
+        day_list = []
+
+        for cohort in range(data.cohort_no):
+            route_list = []
+            profit_route = 0
+            pre_selected_nodes = []
+            unique_nodes = set()
+
+            # Collect tasks selected by the cohort on the given day
+            for i in range(len(allTasks)):
+                for j in range(len(allTasks)):
+                    if var_x[day, cohort, i, j].X > 0:
+                        unique_nodes.add(i)
+                        unique_nodes.add(j)
+                        pre_selected_nodes.append((i, j))
+
+            # Calculate profit per route
+            for node in unique_nodes:
+                number_all_tasks += 1
+                if allTasks[node].profit > 5:
+                    profit_route += 0
+                else:
+                    profit_route += allTasks[node].profit
+            
+            # Subtract depot and end node (depot)
+            number_all_tasks -= 2
                 
-                file.write("\t" +str(cohort) + " ")
+            if len(pre_selected_nodes) > 0:
+                # Pair and sort the nodes based on start times
+                sorted_tuples = sort_tuples(pre_selected_nodes)
 
-                route_list = []
-                profit_route = 0
-                start_time = 0
-                pre_selected_nodes = []
-                u_nodes = []
-
-                for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                    if var_y[day,cohort,i].X == 1:
-
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
-
-                        profit_route += data.optionalTasks[i].profit
-
-                file.write("("+str(profit_route) + "): ")
-
-                if len(pre_selected_nodes) > 0:
-                    # Pair the lists together
-                    paired_lists = list(zip(u_nodes, pre_selected_nodes))
-
-                    # Sort the pairs based on the first list
-                    sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-
-                    # Separate the pairs back into two lists
-                    sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
-
-                    sorted_nodes = list(sorted_nodes)
-
-                    start_node = 0
-                    sorted_nodes.append(start_node)
-                    sorted_nodes.insert(start_node, start_node)
-                    for i in sorted_nodes:
-                        
-                        file.write(str(i) +" ")
-
-                file.write("\n")
+                # Create the route list for the cohort
+                startelem = sorted_tuples[0][0]
+                for tuple in sorted_tuples:
+                    for element in tuple: 
+                        if element == startelem:
+                            continue
+                        else:
+                            id = allTasks[element].ID
+                            if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
+                                route_list.append({
+                                    "StartTime": round(var_s[day, cohort, element].X),
+                                    "SelectedDay": day + 1,
+                                    "ID": allTasks[element].ID
+                                })
+                            startelem = element
                 
+            cohort_dict = {
+                "CohortID": cohort,
+                "Profit": profit_route,
+                "Route": route_list
+            }
+            
+            day_list.append(cohort_dict)
 
+        days[str(day + 1)] = day_list
+    
+    results = {
+        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
+        "Objective": objVal,
+        "NumberOfAllTasks": number_all_tasks,
+        "UseMainTasks": True,
+        "Days": days
+    }
 
-    print(f"Text file has been created at {file_path}")
+    # Write the dictionary to a JSON file
+    try:
+        with open(file_path, 'w') as json_file:
+            json.dump(results, json_file, indent=2)
+        print(f"JSON file has been created at {file_path}")
+    except IOError as e:
+        print(f"An error occurred while writing to the file: {e}")

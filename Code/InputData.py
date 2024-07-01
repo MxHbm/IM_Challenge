@@ -25,6 +25,10 @@ class MainTask:
                f"Start Time: {self.start_time}, End Time: {self.end_time}, "
                f"Location ID: {self.location_id}, Latitude: {self.latitude}, Longitude: {self.longitude}")
 
+    def setProfit(self, profit):
+        ''' Set the profit of the task '''
+        self._profit = profit
+
     @property
     def ID(self) -> str:
         ''' Return Task ID '''
@@ -88,6 +92,8 @@ class OptionalTask:
         self._category = str(json_data.get('Category'))
         self._service_time = int(json_data.get('ServiceTime',0))
         self._profit = int(json_data.get('Profit',0))
+        self._start_time = 0
+        self._end_time = 0
 
     def _str_(self):
         ''' This method provides a string representation of the object '''
@@ -95,6 +101,17 @@ class OptionalTask:
                 f"Latitude: {self.latitude}, Longitude: {self.longitude}, Location ID: {self.location_id}, "
                 f"Description: {self.description}, Category: {self.category}, Service Time: {self.service_time}, "
                 f"Profit: {self.profit}")
+    
+    @property
+    def start_time(self):
+        ''' Get Start time '''
+        return self._start_time
+
+    @property
+    def end_time(self):
+        ''' Get End Time'''
+        return self._end_time
+    
     @property
     def ID(self):
         ''' Return Task ID '''
@@ -166,8 +183,8 @@ class InputData:
         self._main_tasks_path = main_tasks_path 
 
         # Load and create task objects from file paths
-        self._Load_OptionalTasks()
         self._Load_MainTasks()
+        self._Load_OptionalTasks()
 
         # Create List with all Tasks
         self._allTasks = self._optionalTasks + self._mainTasks
@@ -188,7 +205,9 @@ class InputData:
 
             # Create OptionalTask objects for each row in the CSV file
             for row in reader: 
-                self._optionalTasks.append(OptionalTask(row))
+                task = OptionalTask(row)
+                task._end_time = self._maxRouteDuration
+                self._optionalTasks.append(task)
 
     def _Load_MainTasks(self) -> None:
         ''' Initialize the creation of a list of main tasks based on the JSON file path'''

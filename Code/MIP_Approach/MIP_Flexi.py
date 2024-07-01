@@ -1,6 +1,3 @@
-import gurobipy as gp
-import os
-from classes_MIP import *
 from functions_MIP import *
 
 
@@ -107,7 +104,7 @@ def main():
 
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
-                model.Params.TimeLimit = 10 # 3 hours
+                model.Params.TimeLimit = 10800 # 3 hours
                 model.Params.Threads = 32
                 model.Params.PrePasses = 1000000
 
