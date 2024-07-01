@@ -87,6 +87,14 @@ class OptionalTask:
         self.__service_time = int(json_data.get('ServiceTime',0))
         self.__profit = int(json_data.get('Profit',0))
 
+    def to_dict(self):
+        return {
+            'ID': self.__ID,
+            'Latitude': self.__latitude,
+            'Longitude': self.__longitude,
+            'Profit': self.__profit
+        }
+
     @property
     def ID(self):
         ''' Return Task ID '''
