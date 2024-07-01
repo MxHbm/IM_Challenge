@@ -8,15 +8,16 @@ def main():
             for define_range in [50]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
-                cwd = os.getcwd() 
+                cwd = Path.cwd()
+
                 # Define the output folder path relative to the script location
-                outputFilePath_1 = cwd + "/Data/Results_Main_MIP/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".txt"
-                outputFilePath_2 = cwd + "/Data/Results_Main_MIP/solution7_"+str(no_days)+"_"+str(instance_no)+"_"+str(define_range)+".json"
+                outputFilePath_1 = cwd / "Data" / "Results_Main_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.txt"
+                outputFilePath_2 = cwd / "Data" / "Results_Main_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.json"
 
 
                 #### INITIALIZE DATA ####
                 print("Initialize Data \n")
-                main_tasks_path = cwd + "/Data/Instanzen/Instance7_"+str(no_days)+"_"+str(instance_no)+".json"
+                main_tasks_path = cwd / "Data" / "Instanzen" / f"Instance7_{no_days}_{instance_no}.json"
                 data = InputData(main_tasks_path)
                 for main_task in data.mainTasks:
                     main_task.setProfit(1000000)
