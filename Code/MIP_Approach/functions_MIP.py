@@ -4,6 +4,7 @@ from typing import List, Dict, Union, Tuple
 import math
 import sys, os
 import gurobipy as gp
+from pathlib import Path
 
 # Get the current file's directory
 current_dir = os.path.dirname(__file__)
@@ -176,7 +177,7 @@ def write_json_solution_mip_flexi(objVal: int, var_y, var_x, var_u, data: InputD
         days[str(day + 1)] = day_list
     
     results = {
-        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
+        "Instance": data.main_tasks_path.stem,
         "Objective": objVal,
         "NumberOfAllTasks": number_all_tasks,
         "UseMainTasks": False,
@@ -451,7 +452,7 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
         days[str(day + 1)] = day_list
     
     results = {
-        "Instance": data.main_tasks_path.split("/")[-1].split(".")[0],
+        "Instance": data.main_tasks_path.stem,
         "Objective": objVal,
         "NumberOfAllTasks": number_all_tasks,
         "UseMainTasks": True,
