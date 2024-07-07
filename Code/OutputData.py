@@ -25,12 +25,13 @@ class Solution:
         ''' Define the attributes for solution'''
 
         self._totalProfit = -1
+        self._totalTasks = -1
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
 
     def __str__(self):
         '''Base Function for printing out the results'''
-        return "The permutation " + str(self.Permutation) + " and the "+ str(self.lot_matrix) +" results in a Makespan of " + str(self.Makespan)
+        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit)
     
     
     def _create_StartEndTimes(self, data:InputData):
@@ -50,16 +51,20 @@ class Solution:
                 if len(cohort) >= 0:
                     previous_t = cohort[0]
 
+                end_time_previous = 0 # Needed to be added (Niklas)
+
                 for t in cohort[1:]:
+
 
                     if t >= 1001:
                         start_time = data.allTasks[t].start_time
                     else: 
                         start_time = data.distances[previous_t][t] + end_time_previous
 
-                    
+
                     end_time = start_time + data.allTasks[t].service_time
                     end_time_previous = end_time
+                    
 
                     previous_t = t
                     route_list_start.append(start_time)
@@ -82,11 +87,100 @@ class Solution:
         ''' Sets a new profit to the given solution'''
         self._totalProfit = new_profit
 
+    def setTotalTasks(self, new_tasks) -> None:
+        ''' Sets a new number of tasks to the given solution'''
+        self._totalTasks = new_tasks
+
+    
+    def WriteSolToJson(self, inputData: InputData):
+        ''' Write the solution to a json file'''
+
+        days = dict()
+        
+        for day in range(inputData.days):
+            day_list = []
+
+            for cohort in range(inputData.cohort_no):
+                
+                route_list = []
+                profit_route = 0
+                start_time = 0
+
+
+                for i in self.RoutePlan[day][cohort]:
+
+                    if i == self.RoutePlan[day][cohort][0]:
+                        time = inputData.distances[0][i]
+                        start_time += time
+                    else:
+                        j = self.RoutePlan[day][cohort][self.RoutePlan[day][cohort].index(i) - 1]                            
+                        time = inputData.distances[j][i]
+                        start_time += time
+             
+                    if i <= 1000:
+                        profit_route += inputData.allTasks[i].profit
+                    else:
+                        start_time = inputData.allTasks[i].start_time
+
+
+                    route_list.append({"StartTime" : start_time,
+                        "SelectedDay" : day + 1,
+                        "ID" : inputData.allTasks[i].ID})
+
+                    start_time += inputData.allTasks[i].service_time
+ 
+                    
+                cohort_dict = {"CohortID"   : cohort,
+                            "Profit"     : profit_route,
+                            "Route"    : route_list}
+                
+                
+                day_list.append(cohort_dict)
+
+
+            days[str(day + 1)] = day_list
+
+
+
+        results = {
+            "Instance": inputData.main_tasks_path.split("/")[-1].split(".")[0],
+            "Objective": self.TotalProfit,
+            "NumberOfAllTasks": self.TotalTasks,
+            "UseMainTasks" : True,
+            "Days" : days
+    }
+
+        # Write the dictionary to a JSON file
+
+
+        filename = f"solution_{inputData.main_tasks_path.split('/')[-1].split('.')[0]}.json"
+
+        # Pfad zu der Datei im Ordner data/Results
+        data_dir = '../Data/Results_Greedy'
+        filepath = os.path.join(data_dir, filename)
+
+        # Sicherstellen, dass die Verzeichnisse existieren
+        os.makedirs(data_dir, exist_ok=True)
+
+        # JSON-Datei erstellen und speichern
+        with open(filepath, 'w') as json_file:
+            json.dump(results, json_file, indent=2)
+
+        print(f"JSON file has been created at {filepath}")
+
+
+
     @property
     def TotalProfit(self) -> int: 
         ''' Returns Total Profit of Tour'''
 
         return self._totalProfit
+    
+    @property
+    def TotalTasks(self) -> int: 
+        ''' Returns Total Number of Tasks'''
+
+        return self._totalTasks
     
     @property
     def StartTimes(self) -> dict[str, list[list[int]]]: 
