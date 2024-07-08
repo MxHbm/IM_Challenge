@@ -2,10 +2,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2,5,8,10]: #[2,5,8,10]
+    for no_days in [2]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
-        for instance_no in [1,2]:
-            for define_range in [50,200,500,1000]: #[50,200,500,1000]
+        for instance_no in [1]:
+            for define_range in [50]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
                 cwd = Path.cwd()
@@ -20,7 +20,7 @@ def main():
                 main_tasks_path = cwd / "Data" / "Instanzen" / f"Instance7_{no_days}_{instance_no}.json"
                 data = InputData(main_tasks_path)
                 for main_task in data.mainTasks:
-                    main_task.setProfit(100)
+                    main_task.setProfit(1000)
 
                 #### CREATE UNION MAIN TASKS AND OPTIONAL TASKS ####
                 all_tasks = data.optionalTasks[0:define_range] + data.mainTasks + [data.optionalTasks[0]]
@@ -28,7 +28,7 @@ def main():
 
                 #### PARAMETERS ####
                 print("Initialize Parameters \n")
-                P = get_profits(all_tasks)         
+                P = get_profits(all_tasks)        
                 M_no = data.cohort_no     # Number of available Teams --> Routes
                 N_no = len(all_tasks)
                 s = get_service_times(all_tasks)
@@ -53,7 +53,7 @@ def main():
                 s = model.addVars(T, M, N, name="s", vtype=gp.GRB.CONTINUOUS)  # the start of the service at node i in route m
 
                 #### OBJECTIVE FUNCTION ####
-                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in N[1:-1] for t in T), gp.GRB.MAXIMIZE)
+                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in N[1:-1] for t in T) - 1000 * len(data.mainTasks), gp.GRB.MAXIMIZE)
 
                 #### CONSTRAINTS ####
                 # Ensure that each route starts from node 1 and ends in node |N|.
@@ -62,15 +62,13 @@ def main():
                     model.addConstr(gp.quicksum(x[t, m, 0, j] for m in M for j in N[1:]) == len(M), "Constraint_3.2b")
                     model.addConstr(gp.quicksum(x[t, m, i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
 
-                # Every main task needs to be in one tour of one cohort
+                # Every optional task can be in one tour of one cohort
                 for k in N[1:-1]:
                     model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) <= 1, "Constraint_3.3")
 
-                # No self visits:
-                for t in T:
-                    for m in M:
-                        for i in N:
-                            model.addConstr(x[t, m, i, i] == 0, "Constraint 3.5")
+                # Every main task needs to be in one tour of one cohort
+                #for k in N[define_range + 1:-1]:
+                #    model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
 
                 # Ensure each node can only be visited at most once.
                 for m in M:
@@ -85,7 +83,6 @@ def main():
                     for m in M:
                         for i in N:
                             for j in N:
-                                if i != j:
                                     model.addConstr(s[t, m, i] + dt[i][j] - s[t, m, j] <= L * (1 - x[t, m, i, j]), "Constraint 3.7")
 
                 # Restrict start and end times:
