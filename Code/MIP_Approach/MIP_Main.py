@@ -20,7 +20,7 @@ def main():
                 main_tasks_path = cwd / "Data" / "Instanzen" / f"Instance7_{no_days}_{instance_no}.json"
                 data = InputData(main_tasks_path)
                 for main_task in data.mainTasks:
-                    main_task.setProfit(1000000)
+                    main_task.setProfit(100)
 
                 #### CREATE UNION MAIN TASKS AND OPTIONAL TASKS ####
                 all_tasks = data.optionalTasks[0:define_range] + data.mainTasks + [data.optionalTasks[0]]
