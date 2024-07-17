@@ -93,12 +93,13 @@ def main():
                             model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
 
                 # Don't start several tours from one node
+                '''
                 for k in N:
                     for t in T:
                         for m in M:
                             model.addConstr(gp.quicksum(x[t, m, k, j] for j in N) <= 1, "Constraint_new")
-
-
+                '''
+                
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
                 model.Params.TimeLimit = 10800  # 3 hours
