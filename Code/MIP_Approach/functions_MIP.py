@@ -21,7 +21,7 @@ from InputData import OptionalTask, MainTask, InputData
 def get_distance_matrix(tasks:list[Union[MainTask, OptionalTask]]) -> list[list[float]]:
     ''' Get the distance matrix of the tasks in the data and add zeros for the depots to run the model'''
 
-    distances = [[0 for i in range(len(tasks))] for j in range(len(tasks))]
+    distances = [[100000 if i == j else 0 for i in range(len(tasks))] for j in range(len(tasks))]
 
     print("Calculate Distances")
 
@@ -66,7 +66,7 @@ def get_distance_service_time_matrix(tasks:List[Union[MainTask, OptionalTask]]) 
     # Add the depot again to the tasks at the end
     internal_tasks = tasks.copy()
 
-    distances_service_time = [[0 for i in range(len(internal_tasks))] for j in range(len(internal_tasks))]
+    distances_service_time = [[100000 if i == j else 0 for i in range(len(internal_tasks))] for j in range(len(internal_tasks))]
 
     print("Calculate Distance plus Service Times")
 
@@ -310,7 +310,7 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
     runtime = round(gp_model.Runtime, 2)
     num_constraints = gp_model.NumConstrs
     num_variables = gp_model.NumVars
-    obj = round(gp_model.getAttr("ObjVal")) - (data.mainTasks[0].profit * len(data.mainTasks))
+    obj = round(gp_model.getAttr("ObjVal")) #- (data.mainTasks[0].profit * len(data.mainTasks))
     
     # Write the metrics to the output file
     try:
@@ -391,7 +391,7 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
     
     number_all_tasks = 0
     days = {}
-    objVal = round(gp_model.getAttr("ObjVal")) - (data.mainTasks[0].profit * len(data.mainTasks))
+    objVal = round(gp_model.getAttr("ObjVal")) #- (data.mainTasks[0].profit * len(data.mainTasks))
 
     for day in range(data.days):
         day_list = []
