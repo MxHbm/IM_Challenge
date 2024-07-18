@@ -14,8 +14,8 @@ def main():
                 cwd = Path.cwd()
                 
                 # Define the output folder path relative to the script location
-                outputFilePath_1 = cwd / "Data" / "Results_Main_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.txt"
-                outputFilePath_2 = cwd / "Data" / "Results_Main_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.json"
+                outputFilePath_1 = cwd / "Data" / "Results_Flexi_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.txt"
+                outputFilePath_2 = cwd / "Data" / "Results_Flexi_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.json"
 
 
                 #### INITIALIZE DATA ####
@@ -31,7 +31,7 @@ def main():
                 print("Initialize Parameters \n")
                 P = get_profits(all_tasks)
                 T_max = data.maxRouteDuration            # Time Units of one "Day" = 6 hours = 21600 seconds
-                M_no = data.cohort_no                    # Number of available Teams --> Routes
+                M_no = data.cohort_no * data.days         # Number of available Teams --> Routes
                 N_no = len(all_tasks)
                 d = get_distance_matrix(all_tasks)
                 s = get_service_times(all_tasks)
@@ -40,7 +40,6 @@ def main():
 
                 N = range(N_no)
                 M = range(M_no)
-                T = range(data.days)
                 
                 #### MODEL ####
                 print("Start Model \n \n")
@@ -49,57 +48,46 @@ def main():
 
                 #### VARIABLES ####
 
-                x = model.addVars(T,M,N,N, name = "x", vtype=gp.GRB.BINARY)
-                y = model.addVars(T,M,N, name = "y", vtype=gp.GRB.BINARY)
-                u = model.addVars(T,M,N, name = "u", vtype=gp.GRB.INTEGER)
+                x = model.addVars(M,N,N, name = "x", vtype=gp.GRB.BINARY)
+                y = model.addVars(M,N, name = "y", vtype=gp.GRB.BINARY)
+                u = model.addVars(M,N, name = "u", vtype=gp.GRB.INTEGER)
 
                 #### OBJECTIVE FUNCTION ####
 
-                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in N[1:-1] for t in T), gp.GRB.MAXIMIZE)
+                model.setObjective(gp.quicksum(P[i] * y[m,i] for m in M for i in N[1:-1]), gp.GRB.MAXIMIZE)
 
                 #### CONSTRAINTS ####
 
-                for t in T:
-                    model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in N[1:]) == gp.quicksum(x[t,m,i, N[-1]] for m in M for i in N[:-1]), "Constraint_3.2a")
-                    model.addConstr(gp.quicksum(x[t,m,0,j] for m in M for j in N[1:]) == len(M), "Constraint_3.2b")
-                    model.addConstr(gp.quicksum(x[t,m,i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
+                model.addConstr(gp.quicksum(x[m,0,j] for m in M for j in N[1:]) == gp.quicksum(x[m,i, N[-1]] for m in M for i in N[:-1]), "Constraint_3.2a")
+                model.addConstr(gp.quicksum(x[m,0,j] for m in M for j in N[1:]) == len(M), "Constraint_3.2b")
+                model.addConstr(gp.quicksum(x[m,i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
 
                 
                 for k in N[1:-1]:
-                    model.addConstr(gp.quicksum(y[t,m,k] for m in M for t in T) <= 1, "Constraint_3.3")
-
-
-                for k in N:
-                    for t in T:
-                        for m in M:
-                            model.addConstr(gp.quicksum(x[t,m,k,j] for j in N) <= 1, "Constraint_new")
+                    model.addConstr(gp.quicksum(y[m,k] for m in M) <= 1, "Constraint_3.3")
                 
                 
                 for m in M:
                     for k in N[1:-1]:
-                        for t in T:
-                            model.addConstr(gp.quicksum(x[t,m,i,k] for i in N[:-1]) == gp.quicksum(x[t,m,k,j] for j in N[1:]), "Constraint 3.4a")
-                            model.addConstr(gp.quicksum(x[t,m,i,k] for i in N[:-1]) == y[t,m,k], "Constraint 3.4b")
-                            model.addConstr(gp.quicksum(x[t,m,k,j] for j in N[1:]) == y[t,m,k] , "Constraint 3.4c")
+                        model.addConstr(gp.quicksum(x[m,i,k] for i in N[:-1]) == gp.quicksum(x[m,k,j] for j in N[1:]), "Constraint 3.4a")
+                        model.addConstr(gp.quicksum(x[m,i,k] for i in N[:-1]) == y[m,k], "Constraint 3.4b")
+                        model.addConstr(gp.quicksum(x[m,k,j] for j in N[1:]) == y[m,k] , "Constraint 3.4c")
 
 
                 for m in  M:
-                    for t in T:
-                        model.addConstr(gp.quicksum(d[i][j]*x[t,m,i,j] for i in N[:-1] for j in N[1:]) + gp.quicksum(y[t,m,i] * s[i] for i in N[1:])<= T_max, "Constraint_3.5")
+                    model.addConstr(gp.quicksum(d[i][j]*x[m,i,j] for i in N[:-1] for j in N[1:]) + gp.quicksum(y[m,i] * s[i] for i in N[1:])<= T_max, "Constraint_3.5")
 
 
                 for m in M:
                     for i in N[1:]:
-                        for t in T:
-                            model.addConstr(u[t,m,i] >= 2, "Constraint 3.6a")
-                            model.addConstr(u[t,m,i] <= len(N), "Constraint 3.6b")
+                        model.addConstr(u[m,i] >= 2, "Constraint 3.6a")
+                        model.addConstr(u[m,i] <= len(N), "Constraint 3.6b")
 
 
                 for m in M:
                     for i in N[1:]:
                         for j in N[1:]:
-                            for t in T:
-                                model.addConstr(u[t,m,i] - u[t,m,j] + 1 <= (len(N) - 1)*(1 - x[t,m,i,j]), "Constraint 3.7")
+                            model.addConstr(u[m,i] - u[m,j] + 1 <= (len(N) - 1)*(1 - x[m,i,j]), "Constraint 3.7")
 
 
 

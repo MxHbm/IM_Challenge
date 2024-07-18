@@ -129,50 +129,62 @@ def write_json_solution_mip_flexi(objVal: int, var_y, var_x, var_u, data: InputD
     
     number_all_tasks = 0
     days = {}
+    cohort_lists = []
+    day = 0
+    cohort_no = 0
+    for cohort in range(data.days * data.cohort_no):
 
-    for day in range(data.days):
-        day_list = []
+        if cohort // data.cohort_no >= 1:
+            day += 1
+            cohort_no = 0
 
-        for cohort in range(data.cohort_no):
-            route_list = []
-            profit_route = 0
-            start_time = 0
-            pre_selected_nodes = []
-            u_nodes = []
+        route_list = []
+        profit_route = 0
+        start_time = 0
+        pre_selected_nodes = []
+        u_nodes = []
 
-            # Collect tasks selected by the cohort on the given day
-            for i in range(1, len(data.optionalTasks[0:number_tasks])):
-                if var_y[day, cohort, i].X == 1:
-                    number_all_tasks += 1
-                    pre_selected_nodes.append(i)
-                    u_nodes.append(var_u[day, cohort, i].X)
-                    profit_route += data.optionalTasks[i].profit
+        # Collect tasks selected by the cohort on the given day
+        for i in range(1, len(data.optionalTasks[0:number_tasks])):
+            if var_y[cohort, i].X == 1:
+                number_all_tasks += 1
+                pre_selected_nodes.append(i)
+                u_nodes.append(var_u[cohort, i].X)
+                profit_route += data.optionalTasks[i].profit
 
-            if len(pre_selected_nodes) > 0:
-                # Pair and sort the nodes based on start times
-                paired_lists = list(zip(u_nodes, pre_selected_nodes))
-                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
-                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
+        if len(pre_selected_nodes) > 0:
+            # Pair and sort the nodes based on start times
+            paired_lists = list(zip(u_nodes, pre_selected_nodes))
+            sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
+            sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
 
-                # Create the route list for the cohort
-                start_node = 0
-                for i in sorted_nodes:
-                    start_time += distances[start_node][i]
-                    route_list.append({
-                        "StartTime": start_time,
-                        "SelectedDay": day + 1,
-                        "ID": data.optionalTasks[i].ID
-                    })
-                    start_node = i
-                    start_time += data.optionalTasks[i].service_time
-                
-            cohort_dict = {
-                "CohortID": cohort,
-                "Profit": profit_route,
-                "Route": route_list
-            }
+            # Create the route list for the cohort
+            start_node = 0
+            for i in sorted_nodes:
+                start_time += distances[start_node][i]
+                route_list.append({
+                    "StartTime": start_time,
+                    "SelectedDay": day + 1,
+                    "ID": data.optionalTasks[i].ID
+                })
+                start_node = i
+                start_time += data.optionalTasks[i].service_time
+
             
-            day_list.append(cohort_dict)
+        cohort_dict = {
+        "CohortID": cohort_no,
+        "Profit": profit_route,
+        "Route": route_list
+        }
+            
+        cohort_lists.append(cohort_dict)
+
+        cohort_no += 1
+    
+    for day in range(data.days): 
+        day_list = []
+        for c in range(data.cohort_no * (day +1)):
+            day_list.append(cohort_lists[c])
 
         days[str(day + 1)] = day_list
     
@@ -214,50 +226,55 @@ def write_txt_solution_flexi(gp_model, var_y, var_x, var_u, data:InputData, dist
         file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
         file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(number_tasks) + "\n \n")
 
-        for day in range(data.days):
+        day = 0
+        file.write(str(day)+"\n")
+        cohort_no = 0
+        for cohort in range(data.cohort_no * data.days):
+            
+            if cohort_no // data.cohort_no >= 1:
+                day += 1
+                cohort_no = 0
+                file.write(str(day)+"\n")
+            file.write("\t" +str(cohort_no) + " ")
 
-            file.write(str(day)+"\n")
+            route_list = []
+            profit_route = 0
+            start_time = 0
+            pre_selected_nodes = []
+            u_nodes = []
 
-            for cohort in range(data.cohort_no):
-                
-                file.write("\t" +str(cohort) + " ")
+            for i in range(1,len(data.optionalTasks[0:number_tasks])):
+                if var_y[cohort,i].X == 1:
 
-                route_list = []
-                profit_route = 0
-                start_time = 0
-                pre_selected_nodes = []
-                u_nodes = []
+                    pre_selected_nodes.append(i) 
+                    u_nodes.append(var_u[cohort,i].X)
 
-                for i in range(1,len(data.optionalTasks[0:number_tasks])):
-                    if var_y[day,cohort,i].X == 1:
+                    profit_route += data.optionalTasks[i].profit
 
-                        pre_selected_nodes.append(i)
-                        u_nodes.append(var_u[day,cohort,i].X)
+            file.write("("+str(profit_route) + "): ")
 
-                        profit_route += data.optionalTasks[i].profit
+            if len(pre_selected_nodes) > 0:
+                # Pair the lists together
+                paired_lists = list(zip(u_nodes, pre_selected_nodes))
 
-                file.write("("+str(profit_route) + "): ")
+                # Sort the pairs based on the first list
+                sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
 
-                if len(pre_selected_nodes) > 0:
-                    # Pair the lists together
-                    paired_lists = list(zip(u_nodes, pre_selected_nodes))
+                # Separate the pairs back into two lists
+                sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
 
-                    # Sort the pairs based on the first list
-                    sorted_pairs = sorted(paired_lists, key=lambda x: x[0])
+                sorted_nodes = list(sorted_nodes)
 
-                    # Separate the pairs back into two lists
-                    sorted_u_nodes, sorted_nodes = zip(*sorted_pairs)
+                start_node = 0
+                sorted_nodes.append(start_node)
+                sorted_nodes.insert(start_node, start_node)
+                for i in sorted_nodes:
+                    
+                    file.write(str(i) +" ")
 
-                    sorted_nodes = list(sorted_nodes)
+            file.write("\n")
 
-                    start_node = 0
-                    sorted_nodes.append(start_node)
-                    sorted_nodes.insert(start_node, start_node)
-                    for i in sorted_nodes:
-                        
-                        file.write(str(i) +" ")
-
-                file.write("\n")
+            cohort_no += 1
                 
     print(f"Text file has been created at {file_path}")
 
@@ -376,7 +393,7 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
                     # Collect tasks selected by the cohort on the given day
                     for i in range(len(allTasks)):
                         for j in range(len(allTasks)):
-                            if var_x[day, cohort, i, j].X > 0:
+                            if var_x[cohort, i, j].X > 0:
                                 all_tuples.append((i, j))
                     subtours = create_subtours(all_tuples)
                     if len(subtours) >= 1: 
@@ -455,7 +472,7 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
             # Collect tasks selected by the cohort on the given day
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
-                    if var_x[day, cohort, i, j].X > 0:
+                    if var_x[cohort, i, j].X > 0:
                         all_tuples.append((i, j))
             subtours = create_subtours(all_tuples)
             if len(subtours) >= 1: 
