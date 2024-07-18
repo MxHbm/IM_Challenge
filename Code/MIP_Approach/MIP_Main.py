@@ -19,8 +19,8 @@ def main():
                 print("Initialize Data \n")
                 main_tasks_path = cwd / "Data" / "Instanzen" / f"Instance7_{no_days}_{instance_no}.json"
                 data = InputData(main_tasks_path)
-                for main_task in data.mainTasks:
-                    main_task.setProfit(1000)
+                #for main_task in data.mainTasks:
+                #    main_task.setProfit(1000)
 
                 #### CREATE UNION MAIN TASKS AND OPTIONAL TASKS ####
                 all_tasks = data.optionalTasks[0:define_range] + data.mainTasks + [data.optionalTasks[0]]
@@ -53,7 +53,7 @@ def main():
                 s = model.addVars(T, M, N, name="s", vtype=gp.GRB.CONTINUOUS)  # the start of the service at node i in route m
 
                 #### OBJECTIVE FUNCTION ####
-                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in N[1:-1] for t in T) - 1000 * len(data.mainTasks), gp.GRB.MAXIMIZE)
+                model.setObjective(gp.quicksum(P[i] * y[t,m,i] for m in M for i in N[1:define_range] for t in T), gp.GRB.MAXIMIZE)
 
                 #### CONSTRAINTS ####
                 # Ensure that each route starts from node 1 and ends in node |N|.
@@ -63,12 +63,12 @@ def main():
                     model.addConstr(gp.quicksum(x[t, m, i, N[-1]] for m in M for i in N[:-1]) == len(M), "Constraint_3.2c")
 
                 # Every optional task can be in one tour of one cohort
-                for k in N[1:-1]:
+                for k in N[1:define_range]:
                     model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) <= 1, "Constraint_3.3")
 
                 # Every main task needs to be in one tour of one cohort
-                #for k in N[define_range + 1:-1]:
-                #    model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
+                for k in N[define_range + 1:-1]:
+                    model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
 
                 # Ensure each node can only be visited at most once.
                 for m in M:
@@ -92,13 +92,6 @@ def main():
                             model.addConstr(O[t][i] * y[t, m, i] <= s[t, m, i], "Constraint 3.8a")
                             model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
 
-                # Don't start several tours from one node
-                '''
-                for k in N:
-                    for t in T:
-                        for m in M:
-                            model.addConstr(gp.quicksum(x[t, m, k, j] for j in N) <= 1, "Constraint_new")
-                '''
                 
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
