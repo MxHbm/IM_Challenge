@@ -284,6 +284,48 @@ def sort_tuples(tuples) -> List[Tuple[int,int]]:
 
     return sorted_tuples
 
+def create_subtours(list_of_tuples: List[Tuple[int, int]]) -> List[List[Tuple[int, int]]]:
+    """
+    Creates subtours from a list of tuples representing connections between nodes.
+
+    Parameters:
+    list_of_tuples (List[Tuple[int, int]]): List of tuples where each tuple represents a connection between two nodes.
+
+    Returns:
+    List[List[Tuple[int, int]]]: A list of subtours, where each subtour is a list of tuples.
+    """
+    if not list_of_tuples:
+        return []
+
+    # Create a copy of the list to avoid modifying the original list
+    tour_tuples = list_of_tuples[:]
+    subtours = []
+    super_control = True
+
+    while super_control:
+        super_control = False
+        for element in tour_tuples:
+            if element[0] == 0:  # Start a new subtour if the starting node is 0
+                subtour = [element]
+                last_elem = element[1]
+                tour_tuples.remove(element)
+                control = True
+
+                while control:
+                    control = False
+                    for item in tour_tuples:
+                        if item[0] == last_elem:  # Continue the subtour if the next node matches
+                            subtour.append(item)
+                            last_elem = item[1]
+                            tour_tuples.remove(item)
+                            control = True
+                            break
+
+                subtours.append(subtour)
+                super_control = True
+
+    return subtours
+
 
 def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[Union[OptionalTask, MainTask]], file_path: str) -> None:
     """
@@ -324,34 +366,40 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
                 # Write the current day
                 file.write(f"{day}\n")
 
+                routes = []
+                unique_nodes_sets = []
+
                 for cohort in range(data.cohort_no):
                     # Write the current cohort
-                    file.write(f"\t{cohort} ")
-
-                    profit_route = 0
-                    pre_selected_nodes = []
-                    unique_nodes = set()
+                    all_tuples = []
 
                     # Collect tasks selected by the cohort on the given day
                     for i in range(len(allTasks)):
                         for j in range(len(allTasks)):
                             if var_x[day, cohort, i, j].X > 0:
-                                unique_nodes.add(i)
-                                unique_nodes.add(j)
-                                pre_selected_nodes.append((i, j))
+                                all_tuples.append((i, j))
+                    subtours = create_subtours(all_tuples)
+                    if len(subtours) >= 1: 
+                        for i in range(len(subtours)):
+                            routes.append(subtours[i])
+                            unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
+
+                number_cohort = 0
+                for r in range(len(routes)):
+
+                    profit_route = 0
+                    # Write the current cohort
+                    file.write(f"\t{number_cohort} ")
 
                     # Calculate profit per route
-                    for node in unique_nodes:
-                        if allTasks[node].profit > 5:
-                            profit_route += 0
-                        else:
-                            profit_route += allTasks[node].profit
+                    for node in unique_nodes_sets[r]:
+                        profit_route += allTasks[node].profit
 
                     # Write the profit of the route
                     file.write(f" ({profit_route}): ")
 
                     # Sort and write the selected nodes in order
-                    sorted_tuples = sort_tuples(pre_selected_nodes)
+                    sorted_tuples = routes[r]
                     startelem = sorted_tuples[0][0]
                     file.write(f"{startelem} ")
 
@@ -362,6 +410,8 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
                             else:
                                 file.write(f"{element} ")
                                 startelem = element
+                    
+                    number_cohort += 1
 
                     file.write("\n")
         print(f"Text file has been created at {file_path}")
@@ -395,57 +445,65 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
 
     for day in range(data.days):
         day_list = []
+        routes = []
+        unique_nodes_sets = []
 
+        original_cohort_numbers = []
         for cohort in range(data.cohort_no):
-            route_list = []
-            profit_route = 0
-            pre_selected_nodes = []
-            unique_nodes = set()
+            all_tuples = []
 
             # Collect tasks selected by the cohort on the given day
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
                     if var_x[day, cohort, i, j].X > 0:
-                        unique_nodes.add(i)
-                        unique_nodes.add(j)
-                        pre_selected_nodes.append((i, j))
+                        all_tuples.append((i, j))
+            subtours = create_subtours(all_tuples)
+            if len(subtours) >= 1: 
+                for i in range(len(subtours)):
+                    routes.append(subtours[i])
+                    unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
+                original_cohort_numbers += [cohort for i in range(len(subtours))]
 
+        print(original_cohort_numbers)
+        number_cohort = 0
+        for r in range(len(routes)):
+            route_list = []
+            profit_route = 0
             # Calculate profit per route
-            for node in unique_nodes:
+            for node in unique_nodes_sets[r]:
                 number_all_tasks += 1
-                if allTasks[node].profit > 5:
-                    profit_route += 0
-                else:
-                    profit_route += allTasks[node].profit
+                profit_route += allTasks[node].profit
             
             # Subtract depot and end node (depot)
             number_all_tasks -= 2
                 
-            if len(pre_selected_nodes) > 0:
-                # Pair and sort the nodes based on start times
-                sorted_tuples = sort_tuples(pre_selected_nodes)
+            # Pair and sort the nodes based on start times
+            sorted_tuples = routes[r]
+            startelem = sorted_tuples[0][0]
 
-                # Create the route list for the cohort
-                startelem = sorted_tuples[0][0]
-                for tuple in sorted_tuples:
-                    for element in tuple: 
-                        if element == startelem:
-                            continue
-                        else:
-                            id = allTasks[element].ID
-                            if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
-                                route_list.append({
-                                    "StartTime": round(var_s[day, cohort, element].X),
-                                    "SelectedDay": day + 1,
-                                    "ID": allTasks[element].ID
-                                })
+
+            # Create the route list for the cohort
+            startelem = sorted_tuples[0][0]
+            for tuple in sorted_tuples:
+                for element in tuple: 
+                    if element == startelem:
+                        continue
+                    else:
+                        id = allTasks[element].ID
+                        if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
+                            route_list.append({
+                                "StartTime": round(var_s[day, original_cohort_numbers[r], element].X),
+                                "SelectedDay": day + 1,
+                                "ID": allTasks[element].ID
+                            })
                             startelem = element
                 
             cohort_dict = {
-                "CohortID": cohort,
+                "CohortID": number_cohort,
                 "Profit": profit_route,
                 "Route": route_list
             }
+            number_cohort += 1
             
             day_list.append(cohort_dict)
 
