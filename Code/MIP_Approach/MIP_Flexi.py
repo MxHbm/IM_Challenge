@@ -6,7 +6,7 @@ def main():
     for no_days in [2]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            for define_range in [50]: #[50,200,500,1000]
+            for define_range in [200]: #[50,200,500,1000]
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
@@ -33,8 +33,8 @@ def main():
                 T_max = data.maxRouteDuration            # Time Units of one "Day" = 6 hours = 21600 seconds
                 M_no = data.cohort_no * data.days         # Number of available Teams --> Routes
                 N_no = len(all_tasks)
+                dt = get_distance_service_time_matrix(all_tasks)
                 d = get_distance_matrix(all_tasks)
-                s = get_service_times(all_tasks)
 
                 #### INDICES ####
 
@@ -75,7 +75,7 @@ def main():
 
 
                 for m in  M:
-                    model.addConstr(gp.quicksum(d[i][j]*x[m,i,j] for i in N[:-1] for j in N[1:]) + gp.quicksum(y[m,i] * s[i] for i in N[1:])<= T_max, "Constraint_3.5")
+                    model.addConstr(gp.quicksum(dt[i][j]*x[m,i,j] for i in N[:-1] for j in N[1:]) <= T_max, "Constraint_3.5")
 
 
                 for m in M:
@@ -104,7 +104,7 @@ def main():
                 model.printAttr(gp.GRB.Attr.ObjVal)
                 model.printAttr(gp.GRB.Attr.X)
 
-                write_txt_solution_flexi(model, y, x, u, data,d, outputFilePath_1, define_range)
-                write_json_solution_mip_flexi(round(model.getAttr("ObjVal")), y,x,u, data,d, outputFilePath_2, define_range)
+                write_txt_solution_flexi(model, x, data, all_tasks,outputFilePath_1)
+                write_json_solution_mip_flexi(model,x, data,all_tasks, d, outputFilePath_2)
 
 main()
