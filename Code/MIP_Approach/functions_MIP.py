@@ -378,9 +378,7 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
                         for j in range(len(allTasks)):
                             if var_x[day, cohort, i, j].X > 0:
                                 all_tuples.append((i, j))
-                    print(all_tuples)
                     subtours = create_subtours(all_tuples)
-                    print(subtours)
                     if len(subtours) >= 1: 
                         for i in range(len(subtours)):
                             routes.append(subtours[i])
@@ -422,14 +420,13 @@ def write_txt_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[U
 
 
 
-def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[Union[OptionalTask, MainTask]], file_path: str) -> None:
+def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[Union[OptionalTask, MainTask]], file_path: str):
     """
-    Writes the optimization gap, runtime, number of constraints, and number of variables 
-    from a solved Gurobi model into a JSON file along with detailed solution routes.
+    Write the solution of the optimization model to a JSON file.
 
     Parameters:
-    gp_model : gurobipy.Model
-        The Gurobi model to extract information from.
+    gp_model : Gurobi model object
+        The optimization model containing the solution.
     var_s : dict
         Dictionary containing the start times of tasks for each day and cohort.
     var_x : dict
@@ -439,63 +436,90 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
     allTasks : List[Union[OptionalTask, MainTask]]
         A list of all tasks (both optional and main tasks).
     file_path : str
-        The path to the output JSON file.
+        The file path where the JSON file will be saved.
     """
     
-    # Retrieve optimization metrics
-    gap = gp_model.MIPGap
-    runtime = round(gp_model.Runtime, 2)
-    num_constraints = gp_model.NumConstrs
-    num_variables = gp_model.NumVars
-    obj = round(gp_model.getAttr("ObjVal")) #- (data.mainTasks[0].profit * len(data.mainTasks))
-    
-    results = {
-        "Objective": obj,
-        "Gap": gap,
-        "Runtime": runtime,
-        "NumConstraints": num_constraints,
-        "NumVariables": num_variables,
-        "Days": {}
-    }
+    number_all_tasks = 0
+    days = {}
+    objVal = round(gp_model.getAttr("ObjVal")) #- (data.mainTasks[0].profit * len(data.mainTasks))
 
     for day in range(data.days):
         day_list = []
+        routes = []
+        unique_nodes_sets = []
 
+        original_cohort_numbers = []
         for cohort in range(data.cohort_no):
-            route_list = []
-            unique_nodes = set()
+            all_tuples = []
 
             # Collect tasks selected by the cohort on the given day
-            all_tuples = []
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
                     if var_x[day, cohort, i, j].X > 0:
                         all_tuples.append((i, j))
-            
             subtours = create_subtours(all_tuples)
-            if subtours:
-                for subtour in subtours:
-                    unique_nodes.update([node for tup in subtour for node in tup])
-                    for i, (start, end) in enumerate(subtour):
-                        if allTasks[start].ID != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
-                            route_list.append({
-                                "StartTime": round(var_s[day, cohort, end].X),
-                                "SelectedDay": day + 1,
-                                "ID": allTasks[end].ID
-                            })
+            if len(subtours) >= 1: 
+                for i in range(len(subtours)):
+                    routes.append(subtours[i])
+                    unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
+                original_cohort_numbers += [cohort for i in range(len(subtours))]
 
-            profit_route = sum(allTasks[node].profit for node in unique_nodes)
+        print(original_cohort_numbers)
+        number_cohort = 0
+        for r in range(len(routes)):
+            route_list = []
+            profit_route = 0
+            # Calculate profit per route
+            for node in unique_nodes_sets[r]:
+                number_all_tasks += 1
+                profit_route += allTasks[node].profit
             
+            # Subtract depot and end node (depot)
+            number_all_tasks -= 2
+                
+            if len(routes[r]) > 0:
+                # Pair and sort the nodes based on start times
+                sorted_tuples = routes[r]
+                startelem = sorted_tuples[0][0]
+
+
+                # Create the route list for the cohort
+                startelem = sorted_tuples[0][0]
+                for tuple in sorted_tuples:
+                    for element in tuple: 
+                        if element == startelem:
+                            continue
+                        else:
+                            id = allTasks[element].ID
+                            if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
+                                route_list.append({
+                                    "StartTime": round(var_s[day, original_cohort_numbers[r], element].X),
+                                    "SelectedDay": day + 1,
+                                    "ID": allTasks[element].ID
+                                })
+                            startelem = element
+
+            number_cohort += 1
+                
             cohort_dict = {
-                "CohortID": cohort,
+                "CohortID": number_cohort,
                 "Profit": profit_route,
                 "Route": route_list
             }
+            
             day_list.append(cohort_dict)
 
-        results["Days"][str(day + 1)] = day_list
+        days[str(day + 1)] = day_list
+    
+    results = {
+        "Instance": data.main_tasks_path.stem,
+        "Objective": objVal,
+        "NumberOfAllTasks": number_all_tasks,
+        "UseMainTasks": True,
+        "Days": days
+    }
 
-    # Write the results dictionary to a JSON file
+    # Write the dictionary to a JSON file
     try:
         with open(file_path, 'w') as json_file:
             json.dump(results, json_file, indent=2)
