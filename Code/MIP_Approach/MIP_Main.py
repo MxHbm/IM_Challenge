@@ -5,7 +5,7 @@ def main():
     for no_days in [2]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            for define_range in [50]: #[50,200,500,1000]
+            for define_range in [80]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
                 cwd = Path.cwd()

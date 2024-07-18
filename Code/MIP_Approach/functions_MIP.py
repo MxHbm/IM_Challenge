@@ -477,35 +477,33 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
             # Subtract depot and end node (depot)
             number_all_tasks -= 2
                 
-            if len(routes[r]) > 0:
-                # Pair and sort the nodes based on start times
-                sorted_tuples = routes[r]
-                startelem = sorted_tuples[0][0]
+            # Pair and sort the nodes based on start times
+            sorted_tuples = routes[r]
+            startelem = sorted_tuples[0][0]
 
 
-                # Create the route list for the cohort
-                startelem = sorted_tuples[0][0]
-                for tuple in sorted_tuples:
-                    for element in tuple: 
-                        if element == startelem:
-                            continue
-                        else:
-                            id = allTasks[element].ID
-                            if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
-                                route_list.append({
-                                    "StartTime": round(var_s[day, original_cohort_numbers[r], element].X),
-                                    "SelectedDay": day + 1,
-                                    "ID": allTasks[element].ID
-                                })
+            # Create the route list for the cohort
+            startelem = sorted_tuples[0][0]
+            for tuple in sorted_tuples:
+                for element in tuple: 
+                    if element == startelem:
+                        continue
+                    else:
+                        id = allTasks[element].ID
+                        if id != "PE-FWI-5-5985":  # Exclude specific ID -> Depot
+                            route_list.append({
+                                "StartTime": round(var_s[day, original_cohort_numbers[r], element].X),
+                                "SelectedDay": day + 1,
+                                "ID": allTasks[element].ID
+                            })
                             startelem = element
-
-            number_cohort += 1
                 
             cohort_dict = {
                 "CohortID": number_cohort,
                 "Profit": profit_route,
                 "Route": route_list
             }
+            number_cohort += 1
             
             day_list.append(cohort_dict)
 
