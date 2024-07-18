@@ -464,7 +464,6 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
                     unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
                 original_cohort_numbers += [cohort for i in range(len(subtours))]
 
-        print(original_cohort_numbers)
         number_cohort = 0
         for r in range(len(routes)):
             route_list = []

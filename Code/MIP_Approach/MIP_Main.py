@@ -67,7 +67,7 @@ def main():
                     model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) <= 1, "Constraint_3.3")
 
                 # Every main task needs to be in one tour of one cohort
-                for k in N[define_range + 1:-1]:
+                for k in N[define_range:-1]:
                     model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
 
                 # Ensure each node can only be visited at most once.
