@@ -192,6 +192,9 @@ class InputData:
         # Create list with distances
         self._distances = self._CreateDistances()
 
+        # Create list with score for attractiveness
+        #self._scoreboard = self._CreateScoreboard()
+
 
     def _Load_OptionalTasks(self) -> None:
         ''' Initialize the creation of a list of optional tasks based on the CSV file path'''
@@ -252,6 +255,37 @@ class InputData:
                     distances[task_i_id][task_j_id] = distances[task_j_id][task_i_id] = self._CalculateDistance(self._allTasks[task_i_id], self._allTasks[task_j_id])
 
         return distances
+    
+    def _CalculateScore(self, currentTask) -> int:
+        ''' Calculate Score for every task'''
+
+        listOfCloseHighProfit = list()
+        for task in self.optionalTasks:
+            if task.profit == 3 and task != currentTask:
+                taskIndex = self.optionalTasks.index(task)
+                currentTaskIndex = self.optionalTasks.index(currentTask)
+                distanceToTask = self.distances[taskIndex][currentTaskIndex]
+                if distanceToTask < 180: # Distance needs to be lower than 60 seconds to be included as a point
+                    taskIndex = self.optionalTasks.index(task)
+                    listOfCloseHighProfit.append(taskIndex)
+        
+        return listOfCloseHighProfit
+    
+
+    def _CreateScoreboard(self) -> list[int]:
+        ''' Create Score System for Nodes that have a good Position in the Network --> Close to 3 Profit Tasks'''
+        
+        scoreboard = dict()
+
+        for task in self.optionalTasks:
+            taskIndex = self.optionalTasks.index(task)
+            scoreboard[taskIndex] = self._CalculateScore(task)
+
+        self._scoreboard = scoreboard
+
+        return scoreboard
+            
+
 
     @property
     def allTasks(self) -> list:
@@ -272,6 +306,11 @@ class InputData:
     def distances(self) -> list[list[int]]:
         ''' Get Two dimensional list with distances between all tasks'''
         return self._distances
+    
+    @property
+    def scoreboard(self) -> list[int]:
+        ''' Get list with score for attractiveness of tasks'''
+        return self._scoreboard
     
     @property
     def optional_tasks_path(self) -> str:

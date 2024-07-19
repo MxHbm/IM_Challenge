@@ -69,11 +69,10 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     """
 
     #### CREATE UNION MAIN TASKS AND DEPOT ####
-
     all_tasks = [data.optionalTasks[0]] + data.mainTasks + [data.optionalTasks[0]]
 
     #### PARAMETERS ####
-    print("Initialize Parameters \n")
+    #print("Initialize Parameters \n")
     M_no = data.cohort_no  # Number of available Teams --> Routes
     N_no = len(all_tasks)
     d = get_distance_matrix(all_tasks)
@@ -89,8 +88,9 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     T = range(data.days)
 
     #### MODEL ####
-    print("Start Model \n \n")
+    #print("Start Model \n \n")
     model = gp.Model()
+    model.setParam('OutputFlag', 0) # Does not print anything
 
     #### VARIABLES ####
     x = model.addVars(T, M, N, N, name="x", vtype=gp.GRB.BINARY)  # 1, if in route m, a visit to node i is followed by a visit to node j, and 0 otherwise at t
@@ -151,15 +151,16 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     model.Params.TimeLimit = 20  # 20 seconds
     model.Params.Threads = 8
     model.Params.PrePasses = 1000000
+    
 
     #### OPTIMIZE MODEL ####
     model.optimize()
 
     #### EVALUATION ####
-    model.printAttr(gp.GRB.Attr.ObjVal)
-    model.printAttr(gp.GRB.Attr.X)
+    #model.printAttr(gp.GRB.Attr.ObjVal)
+    #model.printAttr(gp.GRB.Attr.X)
 
     #### WRITE SOLUTION ####
-    write_txt_solution(model, s, x, data, all_tasks, "Data/Results_Main/Task_Allocation.txt")
+    write_txt_solution(model, s, x, data, all_tasks, "../Data/Results_Main/Task_Allocation.txt")
 
     return get_initial_route_plan(model, y, s, x, data)

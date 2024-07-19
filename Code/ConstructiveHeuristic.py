@@ -37,32 +37,250 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    def Run(self, inputData:InputData, solutionMethod:str) -> None:
+    def Run(self, inputData:InputData, solutionMethod = 'Greedy', mainTaskPlanner = 'OnePerDay', attractivenessFunction = 'WithDistanceToMainTask') -> None:
         ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
 
         print('Generating an initial solution according to ' + solutionMethod + '.')
 
         #Rewrite any present solution
-        solution = None 
-        
+        solution = None
+
         # Decision tree for choosing constructive heuristic 
         if solutionMethod == 'Greedy':
-            solution = self._Greedy(inputData)
+            solution = self._Greedy(inputData, mainTaskPlanner, attractivenessFunction)
         else:
-            print('Unkown constructive solution method: ' + solutionMethod + '.')
+            raise Exception('Unkown constructive solution method: ' + solutionMethod + '.')
 
         #Add the first solution to the solution pool to proceed further with the algorithm
         self._SolutionPool.AddSolution(solution)
 
-    def _Greedy(self, inputData:InputData) -> Solution:
+
+
+
+
+    def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction) -> Solution:
+        ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
+        
+
+        if attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+            inputData._CreateScoreboard()
+
+
+        ''' Assign main tasks to days and cohorts'''
+        print('Assigning main tasks to days and cohorts according to ' + mainTaskPlanner + '.')
+        if mainTaskPlanner == 'MIP':
+            prefilled_route_plan = self._create_initial_route_plan_with_MIP(inputData)
+        elif mainTaskPlanner == 'OnePerDay':
+            prefilled_route_plan = self._create_initial_route_plan(inputData)
+        else:
+            raise Exception('Unknown main task planner: ' + mainTaskPlanner + '.')
+
+        depot = inputData.allTasks[0]
+        planned_tasks = [] # Save the tasks that are already planned --> List of planned task IDs
+
+        breakFlag = False # Flag to break the loop if all tasks are planned
+
+        for day in range(inputData.days):
+
+            if breakFlag:
+                break
+                
+            for cohort in range(inputData.cohort_no):
+
+                if breakFlag:
+                    break
+                
+                route_planned = False
+                previousT = depot # Depot is the starting point for each day and cohort
+                
+                ''' Check if there are main tasks for the respective cohort on the respective day and create a list of main tasks'''
+                if len(prefilled_route_plan[day][cohort]) > 0: # If there are main tasks for the respective cohort on the respective day
+                    mainT_list = deepcopy(prefilled_route_plan[day][cohort]) # Main task(s) list for the respective cohort on the respective day
+                    nextMainT = mainT_list[0] # Save the next main task to visit
+                    mainT_list.pop(0) # Already remove the next main task from the main taks list
+                    main_task_visited = False
+                else:
+                    nextMainT = 0 # Just set to zero if there are no main tasks for the respective cohort on the respective day
+                    main_task_visited = True # If there are no main tasks this boolean is set to True
+
+                totalTime = 0 # Start of the day
+
+
+                while route_planned == False: # While the route of one cohort for one day is not fully planned yet
+
+                    if breakFlag:
+                        break
+                    
+                    ''' Calculate attractiveness of potential next tasks based on previous taks'''
+                    attractiveness = dict() # Save the attractiveness in a dictionary and reset attractiveness after each task is planned
+                    for t in range(0,len(inputData.optionalTasks)):
+                        if inputData.allTasks[t] != previousT and inputData.allTasks[t] != depot and inputData.allTasks[t].ID not in planned_tasks:
+                                    attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[nextMainT] ,main_task_visited)
+                    attractiveness = dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True)) # Sort the tasks by attractiveness
+
+                    next_task_planned = False
+                    index = 0 # First index for the attractiveness dictionary
+                    
+                    while next_task_planned == False: # While the next task in the sequence is not planned
+
+                        if len(planned_tasks) == len(inputData.optionalTasks) - 1: # If all tasks are planned
+                            print('All optional tasks are planned.')
+                            breakFlag = True
+                            break
+
+                        nextT = list(attractiveness.keys())[index] # Try to insert the task with the highest attractiveness
+
+                        ''' Check if the task can be added to the route plan, depending on the time slot for the Main Task or the end of the day'''
+                        if main_task_visited == False:
+                            
+                            ''' Calculate the potential time to insert the task before the main task'''
+                            previosTIndex = inputData.allTasks.index(previousT)
+                            potentialTime = inputData.distances[previosTIndex][nextT] + inputData.allTasks[nextT].service_time + inputData.distances[nextT][nextMainT]
+                            
+                            
+                            ''' 3 Cases: 
+                                1. Next Task can be inserted before the main task accroding to the start time of the main task and the potential time
+                                2. Check for the next attractive task(s) to be inserted before the main task
+                                3. No tasks can be inserted before the main task: Main Task is visited'''
+                            
+                            if totalTime + potentialTime <= inputData.allTasks[nextMainT].start_time:
+                                realTime = potentialTime - inputData.distances[nextT][nextMainT]
+                                totalTime += realTime
+
+                                self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
+
+                                previousT = inputData.allTasks[nextT]
+                                self._InsertTaskBeforeMainTask(prefilled_route_plan[day][cohort], nextT, nextMainT)
+                                next_task_planned = True
+                                planned_tasks.append(inputData.allTasks[nextT].ID)
+
+                            elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
+                                index += 1
+
+                            else:
+                                next_task_planned = True
+                                previousT = inputData.allTasks[nextMainT]
+                                totalTime = inputData.allTasks[nextMainT].start_time + inputData.allTasks[nextMainT].service_time # Total time is now the end of the main task
+
+                                if mainT_list != []:
+                                    nextMainT = mainT_list[0]
+                                    mainT_list.pop(0)
+                                else:
+                                    main_task_visited = True
+                                    
+         
+                        elif main_task_visited == True:
+                            
+                            ''' Calculate the potential time to insert the task to the route plan before the end of the day'''
+                            previosTIndex = inputData.allTasks.index(previousT)
+                            depotIndex = inputData.allTasks.index(depot)
+                            potentialTime = inputData.distances[previosTIndex][nextT] + inputData.allTasks[nextT].service_time + inputData.distances[nextT][depotIndex]
+
+                            ''' 3 Cases: 
+                                1. Next Task can be inserted to the route plan according to the end of the day and the potential time
+                                2. Check for the next attractive task(s) to be inserted to the route plan
+                                3. No tasks can be inserted to the route plan: Route is planned'''
+
+                            if totalTime + potentialTime <= inputData.maxRouteDuration:
+                                realTime = potentialTime - inputData.distances[nextT][depotIndex]
+                                totalTime += realTime
+
+                                self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
+
+                                previousT = inputData.allTasks[nextT]
+                                prefilled_route_plan[day][cohort].append(nextT)
+                                next_task_planned = True
+                                planned_tasks.append(inputData.allTasks[nextT].ID)
+
+                            elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
+                                index += 1
+
+                            else:
+                                next_task_planned = True
+                                route_planned = True
+
+  
+        tmpSolution = Solution(prefilled_route_plan, inputData)
+
+        self.EvaluationLogic.setProfit(tmpSolution)
+
+        print('Initial Solution found.')
+
+        return tmpSolution
+
+
+    def _UpdateScoreboard(self, task ,inputData:InputData, attractivenessFunction):
+        
+        if attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+            for key, values in inputData.scoreboard.items():
+                if task in values:
+                    values.remove(task)
+        else:
+            pass
+
+
+
+
+    def _InsertTaskBeforeMainTask(self, current_route_plan , task_to_insert, main_task):
+        ''' Insert a task before the main task in the current route plan'''
+        if main_task in current_route_plan:
+            index = current_route_plan.index(main_task)
+            current_route_plan.insert(index, task_to_insert)
+        else:
+            print('Main task not in route plan')
+        
+
+
+
+
+    def _CalculateAttractiveness(self,inputData:InputData, attractivenessFunction ,previousTask, nextTask, mainTask, mainTaskVisited, numberOfCloseHighProfit = None):
+        ''' Calculate the attractiveness of a nextTask based on profit, service time and distance to the previous task'''
+    
+        distance = inputData._CalculateDistance(previousTask, nextTask)
+
+        if attractivenessFunction == 'OnlyDistanceToNextTask':
+            attractiveness = nextTask.profit/((nextTask.service_time + distance)/3600)
+
+
+        elif attractivenessFunction == 'WithDistanceToMainTask':
+
+            if mainTaskVisited == False:
+                distanceToMainTask = inputData._CalculateDistance(nextTask, mainTask)
+                attractiveness = ((nextTask.profit)/((nextTask.service_time + distance + distanceToMainTask)/3600))
+            else:
+                attractiveness = ((nextTask.profit)/((nextTask.service_time + distance)/3600))
+
+        elif attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+            
+
+            nextTaskIndex = inputData.optionalTasks.index(nextTask)
+            numberOfCloseHighProfit = len(inputData.scoreboard[nextTaskIndex])
+
+
+            if mainTaskVisited == False:
+                distanceToMainTask = inputData._CalculateDistance(nextTask, mainTask)
+                attractiveness = ((nextTask.profit + numberOfCloseHighProfit/10)/((nextTask.service_time + distance + distanceToMainTask)/3600))
+            else:
+                attractiveness = ((nextTask.profit + numberOfCloseHighProfit/10)/((nextTask.service_time + distance)/3600))
+            
+        else:
+            raise Exception('Unknown attractiveness function: ' + attractivenessFunction + '.')
+        
+
+
+        return attractiveness
+
+
+
+
+    """ 
+    def _GreedyOldVersion(self, inputData:InputData, attractivenessFunction) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
 
         prefilled_route_plan = self._create_initial_route_plan(inputData)
 
-
         depot = inputData.allTasks[0]
-        planned_tasks = [] # Save the tasks that are already planned --> like a Tabu List
-
+        planned_tasks = [] # Save the tasks that are already planned
 
 
         for day in range(inputData.days):
@@ -86,7 +304,7 @@ class ConstructiveHeuristics:
                         if inputData.allTasks[t] != previousT:
                             if inputData.allTasks[t] != depot:
                                 if inputData.allTasks[t].ID not in planned_tasks:
-                                    attractiveness[t] = self._CalculateAttractiveness(inputData,previousT,inputData.allTasks[t])
+                                    attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[mainT] ,main_task_visited)
                     attractiveness = dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True)) # Sort the tasks by attractiveness
 
 
@@ -104,7 +322,7 @@ class ConstructiveHeuristics:
 
                         if main_task_visited == False:
                             potentialTime = inputData._CalculateDistance(previousT, inputData.allTasks[nextT]) + inputData.allTasks[nextT].service_time + inputData._CalculateDistance(inputData.allTasks[nextT], inputData.allTasks[mainT])
-                            if totalTime + potentialTime <= inputData.allTasks[mainT].start_time:
+                            if totalTime + potentialTime <= inputData.allTasks[mainT].start_time: # Calculate distance+service time in matrix in InputData
                                 totalTime += potentialTime
                                 previousT = inputData.allTasks[nextT]
                                 ''' Add Taks to route plan before Main Task'''
@@ -141,7 +359,7 @@ class ConstructiveHeuristics:
                                 next_task_planned = True
                                 route_planned = True
 
-
+                    #print(prefilled_route_plan)
         #print(prefilled_route_plan)
                     
                         
@@ -154,32 +372,6 @@ class ConstructiveHeuristics:
 
         return tmpSolution
 
-
-    def _InsertTaskBeforeMainTask(self, current_route_plan , task_to_insert, main_task):
-        ''' Insert a task before the main task in the current route plan'''
-        if main_task in current_route_plan:
-            index = current_route_plan.index(main_task)
-            current_route_plan.insert(index, task_to_insert)
-        else:
-            print('Main task not in route plan')
-        
-
-
-
-
-    def _CalculateAttractiveness(self,inputData:InputData, previousTask, nextTask):
-        ''' Calculate the attractiveness of a nextTask based on profit, service time and distance to the previous task'''
-    
-        distance = inputData._CalculateDistance(previousTask, nextTask)
-
-        attractiveness = (nextTask.profit/((nextTask.service_time + distance)/3600))
-
-        return attractiveness
-
-
-
-
-    """ 
     def ROS(self, jobList:list[OutputJob],stagelist:list[DataStage], x:int, seed:int) -> Solution:
         '''Create a random permutation x times for finding the best permutation''''''
 
