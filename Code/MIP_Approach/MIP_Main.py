@@ -2,10 +2,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2,5,8,10]: #[2,5,8,10]
+    for no_days in [2]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
-        for instance_no in [1,2]:
-            for define_range in [50,100,200,500,1000]: #[50,200,500,1000]
+        for instance_no in [1]:
+            for define_range in [50]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
                 cwd = Path.cwd()
@@ -106,7 +106,7 @@ def main():
                 model.printAttr(gp.GRB.Attr.ObjVal)
                 model.printAttr(gp.GRB.Attr.X)
                 
-                write_txt_solution(model, s, x, data, all_tasks, outputFilePath_1)
+                write_txt_solution(model, x, data, all_tasks, outputFilePath_1)
                 write_json_solution(model,s,x,data,all_tasks,outputFilePath_2)
 
 main()
