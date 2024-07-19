@@ -2,7 +2,7 @@ import json
 import csv
 import math
 import os
-
+from pathlib import Path
 
 class MainTask:
     ''' Class for the attributes of a main task '''
@@ -171,7 +171,7 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = "../Data/OptionalTasks.csv") -> None: # Changed default path to relative path
+    def __init__(self, main_tasks_path: str, optional_tasks_path: str = Path.cwd() / "Data" / "OptionalTasks.csv") -> None: # Changed default path to relative path
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
