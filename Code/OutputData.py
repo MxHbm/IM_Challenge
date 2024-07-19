@@ -212,9 +212,9 @@ class SolutionPool:
         ''' Add a new solution to the solution pool'''
         self.Solutions.append(newSolution)
 
-    def GetLowestMakespanSolution(self) -> Solution:
+    def GetHighestProfitSolution(self) -> Solution:
         ''' Sort all the solutions in regard to their makespan and return the solution with the lowest makespan'''
-        self.Solutions.sort(key = lambda solution: solution.TotalProfit) # sort solutions according to makespan
+        self.Solutions.sort(key = lambda solution: solution.TotalProfit) # sort solutions according to Profit
 
         return self.Solutions[0]
 
