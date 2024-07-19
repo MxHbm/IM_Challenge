@@ -1,7 +1,7 @@
 import json
 import csv
 from InputData import *
-
+import numpy as np
 
 '''class OutputNode(DataJob):
     ''Inherits DataJob Attributes and adds the necessary start and end times to calculate the makespan''
@@ -28,6 +28,7 @@ class Solution:
         self._totalTasks = -1
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
+        self._waitingTime = -1
 
     def __str__(self):
         '''Base Function for printing out the results'''
@@ -90,6 +91,10 @@ class Solution:
     def setTotalTasks(self, new_tasks) -> None:
         ''' Sets a new number of tasks to the given solution'''
         self._totalTasks = new_tasks
+
+    def setWaitingTime(self, new_waiting_time) -> None:
+        ''' Sets a new waiting time to the given solution'''
+        self._waitingTime = new_waiting_time
 
     
     def WriteSolToJson(self, inputData: InputData):
@@ -187,6 +192,12 @@ class Solution:
         ''' Returns Total Start Times of Tour'''
 
         return self._startTimes
+    
+    @property
+    def WaitingTime(self) -> int: 
+        """Retutns the waiting time of the solution"""
+
+        return self._waitingTime
     
     @property
     def EndTimes(self) -> dict[str, list[list[int]]]: 
