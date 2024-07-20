@@ -97,7 +97,7 @@ class Solution:
         self._waitingTime = new_waiting_time
 
     
-    def WriteSolToJson(self, inputData: InputData):
+    def WriteSolToJson(self, file_path:str, inputData: InputData):
         ''' Write the solution to a json file'''
 
         days = dict()
@@ -156,16 +156,10 @@ class Solution:
     }
 
         # Write the dictionary to a JSON file
-
-
         filename = f"solution_{inputData.main_tasks_path.split('/')[-1].split('.')[0]}.json"
 
         # Pfad zu der Datei im Ordner data/Results
-        data_dir = '../Data/Results_Greedy'
-        filepath = os.path.join(data_dir, filename)
-
-        # Sicherstellen, dass die Verzeichnisse existieren
-        os.makedirs(data_dir, exist_ok=True)
+        filepath = os.path.join(file_path, filename)
 
         # JSON-Datei erstellen und speichern
         with open(filepath, 'w') as json_file:

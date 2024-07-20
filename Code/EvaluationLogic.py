@@ -51,8 +51,8 @@ class EvaluationLogic:
 
         # Retrieve the route for the given day and cohort
         route = move.Route[move.Day][move.Cohort]
-        successors = []
         precessors = []
+        successors = []
 
         # List of indices to process
         indexes = [move.indexA, move.indexB]
@@ -70,21 +70,23 @@ class EvaluationLogic:
                 successors.append(route[index + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.calclateDistanceSubtraction(move.TaskA, move.TaskB, successors, precessors)
+        delta = self.calclateDistanceSubtraction(move, successors, precessors)
         #print("Delta: ",delta)
 
         return delta
     
-    def calclateDistanceSubtraction(self, first_task, second_task, successor_list, precessor_list):
+    def calclateDistanceSubtraction(self, move, successor_list, precessor_list):
         '''Calculates the distance subtraction of the given lists'''
 
         # Calculate the original distances
-        distance_old = self._data.distances[precessor_list[0]][first_task] + self._data.distances[first_task][successor_list[0]] \
-                        + self._data.distances[precessor_list[1]][second_task] + self._data.distances[second_task][successor_list[1]]
+        distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskA][successor_list[0]] \
+                        + self._data.distances[precessor_list[1]][move.TaskB] + self._data.distances[move.TaskB][successor_list[1]]
             
         # Calculate the new distances after swap
-        distance_new = self._data.distances[precessor_list[1]][first_task] + self._data.distances[first_task][successor_list[1]] \
-                        + self._data.distances[precessor_list[0]][second_task] + self._data.distances[second_task][successor_list[0]]
+        distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
+                        + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
+        
+        difference = distance_new - distance_old + (self._data.allTasks[move.TaskB].service_time - self._data.allTasks[move.TaskA].service_time)
 
         # Return the difference between the new and original distances
-        return distance_new - distance_old
+        return difference

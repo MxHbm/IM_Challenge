@@ -24,20 +24,20 @@ class ImprovementAlgorithm:
         self.SolutionPool = solutionPool
         self.RNG = rng
 
-    def CreateNeighborhood(self, neighborhoodType:str, bestCurrentSolution:Solution): #-> BaseNeighborhood:
+    def CreateNeighborhood(self, neighborhoodType:str): #-> BaseNeighborhood:
         """ Creates a new neighborhood based on the current best Solution and the chosen neighborhood type.
             Similar to the so-called factory concept in software design. """
         
         ### NEEDS TO BE ADJUSTED FOR ORIENTEERING PROBLEMLocalSearch
 
         if neighborhoodType == 'Swap':
-            return SwapNeighborhood(self.InputData, bestCurrentSolution.RoutePlan , self.EvaluationLogic, self.SolutionPool)
+            return SwapNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'Insertion':
-            return InsertionNeighborhood(self.InputData, bestCurrentSolution.RoutePlan , self.EvaluationLogic, self.SolutionPool)
+            return InsertionNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'BlockK3':
-            return BlockNeighborhoodK3(self.InputData, bestCurrentSolution.RoutePlan , self.EvaluationLogic, self.SolutionPool)
+            return BlockNeighborhoodK3(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'TwoEdgeExchange':
-            return TwoEdgeExchangeNeighborhood(self.InputData, bestCurrentSolution.RoutePlan , self.EvaluationLogic, self.SolutionPool)
+            return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool)
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 
@@ -45,7 +45,7 @@ class ImprovementAlgorithm:
         ''' Create several neighborhoods for every neighborhood in the list neighborhoodTypes'''
 
         for neighborhoodType in self.NeighborhoodTypes:
-            neighborhood = self.CreateNeighborhood(neighborhoodType, solution)
+            neighborhood = self.CreateNeighborhood(neighborhoodType)
             self.Neighborhoods[neighborhoodType] = neighborhood
 
 
@@ -67,7 +67,7 @@ class IterativeImprovement(ImprovementAlgorithm):
         for neighborhoodType in self.NeighborhoodTypes:
             neighborhood = self.Neighborhoods[neighborhoodType]
 
-            neighborhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
+            solution = neighborhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
         
         return solution
 

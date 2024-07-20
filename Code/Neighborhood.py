@@ -18,9 +18,9 @@ class BaseMove:
 class ProfitNeighborhood:
     ''' Framework for generally needed neighborhood functionalities'''
 
-    def __init__(self, inputData:InputData, initialRoutePlan, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
         self.InputData = inputData
-        self.RoutePlan = initialRoutePlan
+        self.RoutePlan = None
         self.EvaluationLogic = evaluationLogic
         self.SolutionPool = solutionPool
 
@@ -95,25 +95,26 @@ class ProfitNeighborhood:
         ''' Tries to find a better solution from the start solution by searching the neighborhod'''
         #bestCurrentSolution = self.SolutionPool.GetLowestMakespanSolution() ## TO.DO: Lösung übergeben?
 
+        temp_sol = deepcopy(solution)
         hasSolutionImproved = True
 
         while hasSolutionImproved:
             
             # Sets Algorithm back!
-            self.Update(solution.RoutePlan) 
+            self.Update(temp_sol.RoutePlan) 
             self.DiscoverMoves()
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
 
             bestNeighborhoodSolution = self.MakeBestMove()
 
-            if bestNeighborhoodSolution.Makespan < solution.Makespan:
+            if bestNeighborhoodSolution.TotalProfit < temp_sol.TotalProfit:
                 print("New best solution has been found!")
                 print(bestNeighborhoodSolution)
                 # -> Possible to better solution! 
 
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
 
-                solution.setRoutePlan(bestNeighborhoodSolution.RoutePlan, self.InputData)
+                temp_sol.setRoutePlan(bestNeighborhoodSolution.RoutePlan, self.InputData)
 
             else:
                 print(f"Reached local optimum of {self.Type} neighborhood. Stop local search.")
@@ -122,9 +123,9 @@ class ProfitNeighborhood:
 class DeltaNeighborhood:
     ''' Framework for generally needed neighborhood functionalities'''
 
-    def __init__(self, inputData:InputData, initialRoutePlan, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
         self.InputData = inputData
-        self.RoutePlan = initialRoutePlan
+        self.RoutePlan = None
         self.EvaluationLogic = evaluationLogic
         self.SolutionPool = solutionPool
 
@@ -191,11 +192,12 @@ class DeltaNeighborhood:
 
         hasSolutionImproved = True
         iterator = 0
+        temp_sol = deepcopy(solution)
 
         while hasSolutionImproved and iterator < 10:
              
             # Sets Algorithm back!
-            self.Update(solution.RoutePlan) 
+            self.Update(temp_sol.RoutePlan) 
             self.DiscoverMoves()
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
 
@@ -203,6 +205,8 @@ class DeltaNeighborhood:
 
             if bestNeighborhoodMove.Delta < 0:
                 print("New best solution has been found!")
+                print("Move: ", bestNeighborhoodMove.TaskA, bestNeighborhoodMove.TaskB)
+                print("Route: ", bestNeighborhoodMove.Route)
                 bestNeighborhoodSolution = Solution(bestNeighborhoodMove.Route, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
                 print(bestNeighborhoodSolution.WaitingTime)
@@ -210,14 +214,16 @@ class DeltaNeighborhood:
 
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
 
-                solution.setRoutePlan(bestNeighborhoodSolution.RoutePlan, self.InputData)
+                temp_sol = bestNeighborhoodSolution
 
             else:
                 print(f"Reached local optimum of {self.Type} neighborhood. Stop local search.")
                 hasSolutionImproved = False   
 
 
-            iterator += 1   
+            iterator += 1 
+
+        return temp_sol  
 
     def Update(self, new_routePlan) -> None:
         ''' Updates the actual permutation and deletes all saved Moves and Move Solutions'''
@@ -233,7 +239,7 @@ class SwapMove(BaseMove):
         self.Route = initialRoutePlan # create a copy of the permutation
         self.TaskA = taskA
         self.TaskB = taskB
-        self.Delta = np.inf
+        self.Delta = None
         self.Day = day
         self.Cohort = cohort
 
@@ -248,8 +254,8 @@ class SwapMove(BaseMove):
 class SwapNeighborhood(DeltaNeighborhood):         
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
 
-    def __init__(self, inputData:InputData, initialRoutePlan, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        super().__init__(inputData, initialRoutePlan, evaluationLogic, solutionPool)
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
+        super().__init__(inputData,  evaluationLogic, solutionPool)
 
         self.Type = 'Swap'
 
@@ -260,7 +266,9 @@ class SwapNeighborhood(DeltaNeighborhood):
             for cohort in range(len(self.RoutePlan[day])):
                 for task_i in self.RoutePlan[day][cohort]:
                     for task_j in self.RoutePlan[day][cohort]:
-                        if task_i != task_j: # Hier könenn vielel foppelte Swqap movesd vermieden weden
+                        index_i = self.RoutePlan[day][cohort].index(task_i)
+                        index_j = self.RoutePlan[day][cohort].index(task_j)
+                        if index_i < index_j: # Hier könenn viele doppelte Swqap movesd vermieden weden
                             if task_i <= 1000 and task_j <= 1000:
                                 #Create Swap Move Objects with different permutations
                                 swapMove = SwapMove(self.RoutePlan,day,cohort, task_i, task_j)

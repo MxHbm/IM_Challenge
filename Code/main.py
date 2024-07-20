@@ -24,8 +24,11 @@ for mainTaskPlanner in mainTaskPlanner:
     iterativeImpro = IterativeImprovement(data)
     iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
     solution = iterativeImpro.Run(solution)
-    solution.WriteSolToJson("Data/IterativeImprovement.json")
+    solution.WriteSolToJson("Data/Results_Iterative", data)
+
+    evaluationLogic.evaluateSolution(solution)
+    print(solution.WaitingTime)
     
-    print(solution)
+    #print(solution)
     print('______________________________________________________________________')
 
