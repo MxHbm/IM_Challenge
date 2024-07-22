@@ -15,10 +15,10 @@ class BaseMove:
         ''' Set the Delta of the Move'''
         self.Delta = delta
 
-class ProfitNeighborhood:
+class BaseNeighborhood:
     ''' Framework for generally needed neighborhood functionalities'''
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
         self.InputData = inputData
         self.RoutePlan = None
         self.EvaluationLogic = evaluationLogic
@@ -31,10 +31,9 @@ class ProfitNeighborhood:
 
     def DiscoverMoves(self) -> None:
         ''' Find all possible moves for particular neighborhood and permutation'''
+        raise Exception('DiscoverMoves() is not implemented for the abstract BaseNeighborhood class.')
 
-        raise Exception('DiscoverMoves() is not implemented for the abstract ProfitNeighborhood class.')
-
-    def EvaluateMoves(self, evaluationStrategy:str) -> None:
+    def EvaluateMoves(self, evaluationStrategy: str) -> None:
         ''' Define a strategy for the local search of the neighborhood and "activate" it'''
 
         if evaluationStrategy == 'BestImprovement':
@@ -44,52 +43,57 @@ class ProfitNeighborhood:
         else:
             raise Exception(f'Evaluation strategy {evaluationStrategy} not implemented.')
 
-    def EvaluateMove(self, move:BaseMove) -> Solution:
-        ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
-
-        moveSolution = Solution(move, self.InputData)
-
-        self.EvaluationLogic.DefineStartEnd(moveSolution)
-
-        return moveSolution
+    def EvaluateMove(self, move: BaseMove) -> Solution:
+        ''' Calculates the MakeSpan of the certain move - adds to recent Solution'''
+        raise Exception('EvaluateMove() is not implemented for the abstract BaseNeighborhood class.')
 
     def EvaluateMovesBestImprovement(self) -> None:
         """ Evaluate all moves for best improvement and adds the calculated solutions to list MoveSolutions"""
         for move in self.Moves:
             moveSolution = self.EvaluateMove(move)
-
             self.MoveSolutions.append(moveSolution)
 
     def EvaluateMovesFirstImprovement(self) -> None:
         """ Evaluate all moves until the first one is found that improves the best solution found so far. """
-
-        # Retrieve best solution from Solution Pool
-        bestObjective = self.SolutionPool.GetHighestProfitSolution().TotalProfit
-
-        for move in self.Moves:
-            moveSolution = self.EvaluateMove(move)
-
-            self.MoveSolutions.append(moveSolution)
-
-            if moveSolution.Makespan < bestObjective:
-                # abort neighborhood evaluation because an improvement has been found
-                return None
+        raise Exception('EvaluateMovesFirstImprovement() is not implemented for the abstract BaseNeighborhood class.')
 
     def MakeBestMove(self) -> Solution:
         ''' Returns the best move found from the list Move Solutions'''
-
-        self.MoveSolutions.sort(key = lambda solution: solution.TotalProfit) # sort solutions according to profit
-
-        bestNeighborhoodSolution = self.MoveSolutions[0]
-
-        return bestNeighborhoodSolution
+        raise Exception('MakeBestMove() is not implemented for the abstract BaseNeighborhood class.')
 
     def Update(self, new_routeplan) -> None:
         ''' Updates the actual permutation and deletes all saved Moves and Move Solutions'''
-
         self.Moves.clear()
         self.MoveSolutions.clear()
         self.RoutePlan = new_routeplan
+
+    def LocalSearch(self, neighborhoodEvaluationStrategy: str, solution: Solution) -> None:
+        ''' Tries to find a better solution from the start solution by searching the neighborhod'''
+        raise Exception('LocalSearch() is not implemented for the abstract BaseNeighborhood class.')
+    
+
+class ProfitNeighborhood(BaseNeighborhood):
+
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+        super().__init__(inputData, evaluationLogic, solutionPool)
+
+    def EvaluateMove(self, move: BaseMove) -> Solution:
+        moveSolution = Solution(move, self.InputData)
+        self.EvaluationLogic.evaluateSolution(moveSolution)
+        return moveSolution
+
+    def MakeBestMove(self) -> Solution:
+        self.MoveSolutions.sort(key=lambda solution: solution.TotalProfit)  # sort solutions according to profit
+        bestNeighborhoodSolution = self.MoveSolutions[0]
+        return bestNeighborhoodSolution
+
+    def EvaluateMovesFirstImprovement(self) -> None:
+        bestObjective = self.SolutionPool.GetHighestProfitSolution().TotalProfit
+        for move in self.Moves:
+            moveSolution = self.EvaluateMove(move)
+            self.MoveSolutions.append(moveSolution)
+            if moveSolution.Makespan < bestObjective:
+                return None
 
     def LocalSearch(self, neighborhoodEvaluationStrategy:str, solution:Solution) -> None:
         ''' Tries to find a better solution from the start solution by searching the neighborhod'''
@@ -120,89 +124,37 @@ class ProfitNeighborhood:
                 print(f"Reached local optimum of {self.Type} neighborhood. Stop local search.")
                 hasSolutionImproved = False       
 
-class DeltaNeighborhood:
-    ''' Framework for generally needed neighborhood functionalities'''
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        self.InputData = inputData
-        self.RoutePlan = None
-        self.EvaluationLogic = evaluationLogic
-        self.SolutionPool = solutionPool
+class DeltaNeighborhood(BaseNeighborhood):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+        super().__init__(inputData, evaluationLogic, solutionPool)
 
-        # Create empty lists for discovering different moves
-        self.Moves = []
-        self.MoveSolutions = []
-        self.Type = 'None'
-
-    def DiscoverMoves(self) -> None:
-        ''' Find all possible moves for particular neighborhood and permutation'''
-
-        raise Exception('DiscoverMoves() is not implemented for the abstract DeltaNeighborhood class.')
-
-    def EvaluateMoves(self, evaluationStrategy:str) -> None:
-        ''' Define a strategy for the local search of the neighborhood and "activate" it'''
-
-        if evaluationStrategy == 'BestImprovement':
-            self.EvaluateMovesBestImprovement()
-        elif evaluationStrategy == 'FirstImprovement':
-            self.EvaluateMovesFirstImprovement()
-        else:
-            raise Exception(f'Evaluation strategy {evaluationStrategy} not implemented.')
-        
-    def EvaluateMove(self, move:BaseMove) -> Solution:
-        ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
-
-        raise Exception('DiscoverMoves() is not implemented for the abstract DeltaNeighborhood class.')
-
-    def EvaluateMovesBestImprovement(self) -> None:
-        """ Evaluate all moves for best improvement and adds the calculated solutions to list MoveSolutions"""
-        for move in self.Moves:
-            moveSolution = self.EvaluateMove(move)
-
-            self.MoveSolutions.append(moveSolution)
-
-    def EvaluateMovesFirstImprovement(self) -> None:
-        """ Evaluate all moves until the first one is found that improves the best solution found so far. """
-
-        # No Profit changes will be happening here -> Eihter better or wors -> Has to be checked if this is neuighborhood specific
-        neutral_value = 0
-
-        for move in self.Moves:
-            moveSolution = self.EvaluateMove(move)
-
-            self.MoveSolutions.append(moveSolution)
-
-            if moveSolution.Delta < neutral_value:
-                # abort neighborhood evaluation because an improvement has been found -> sort move solutions and start over
-                return None
+    def EvaluateMove(self, move: BaseMove) -> Solution:
+        raise Exception('EvaluateMove() is not implemented for the abstract DeltaNeighborhood class.')
 
     def MakeBestMove(self) -> Solution:
-        ''' Returns the best move found from the list Move Solutions'''
-
-        self.MoveSolutions.sort(key = lambda move: move.Delta) # sort solutions according to profit
-
+        self.MoveSolutions.sort(key=lambda move: move.Delta)  # sort solutions according to profit
         bestNeighborhoodSolution = self.MoveSolutions[0]
-        print("Best Delta: ",bestNeighborhoodSolution.Delta)
-
+        print("Best Delta: ", bestNeighborhoodSolution.Delta)
         return bestNeighborhoodSolution
-        
-    def LocalSearch(self, neighborhoodEvaluationStrategy:str, solution:Solution) -> None:
-        ''' Tries to find a better solution from the start solution by searching the neighborhod'''
-        #bestCurrentSolution = self.SolutionPool.GetLowestMakespanSolution() ## TO.DO: Lösung übergeben?
 
+    def EvaluateMovesFirstImprovement(self) -> None:
+        neutral_value = 0
+        for move in self.Moves:
+            moveSolution = self.EvaluateMove(move)
+            self.MoveSolutions.append(moveSolution)
+            if moveSolution.Delta < neutral_value:
+                return None
+
+    def LocalSearch(self, neighborhoodEvaluationStrategy: str, solution: Solution) -> Solution:
         hasSolutionImproved = True
         iterator = 0
         temp_sol = deepcopy(solution)
-
         while hasSolutionImproved and iterator < 10:
-             
-            # Sets Algorithm back!
-            self.Update(temp_sol.RoutePlan) 
+            self.Update(temp_sol.RoutePlan)
             self.DiscoverMoves()
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
-
             bestNeighborhoodMove = self.MakeBestMove()
-
             if bestNeighborhoodMove.Delta < 0:
                 print("New best solution has been found!")
                 print("Move: ", bestNeighborhoodMove.TaskA, bestNeighborhoodMove.TaskB)
@@ -210,27 +162,13 @@ class DeltaNeighborhood:
                 bestNeighborhoodSolution = Solution(bestNeighborhoodMove.Route, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
                 print(bestNeighborhoodSolution.WaitingTime)
-                # -> Possible to better solution! 
-
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
-
                 temp_sol = bestNeighborhoodSolution
-
             else:
                 print(f"Reached local optimum of {self.Type} neighborhood. Stop local search.")
-                hasSolutionImproved = False   
-
-
-            iterator += 1 
-
-        return temp_sol  
-
-    def Update(self, new_routePlan) -> None:
-        ''' Updates the actual permutation and deletes all saved Moves and Move Solutions'''
-
-        self.Moves.clear()
-        self.MoveSolutions.clear()
-        self.RoutePlan = new_routePlan  
+                hasSolutionImproved = False
+            iterator += 1
+        return temp_sol
 
 class SwapMove(BaseMove):
     """ Represents the swap of the element at IndexA with the element at IndexB for a given permutation (= solution). """
@@ -280,6 +218,8 @@ class SwapNeighborhood(DeltaNeighborhood):
         move.setDelta(self.EvaluationLogic.CalculateSwap1Delta(move))
 
         return move
+
+#### ALL NEIGHBORHOODS BELOW NEED TO BE ADJUSTED! ####
 
 class InsertionMove(BaseMove):
     """ Represents the insertion of the element at IndexA at the new position IndexB for a given permutation (= solution). """
