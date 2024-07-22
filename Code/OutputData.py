@@ -1,7 +1,7 @@
 import json
 import csv
 from InputData import *
-
+import numpy as np
 
 '''class OutputNode(DataJob):
     ''Inherits DataJob Attributes and adds the necessary start and end times to calculate the makespan''
@@ -28,6 +28,7 @@ class Solution:
         self._totalTasks = -1
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
+        self._waitingTime = -1
 
     def __str__(self):
         '''Base Function for printing out the results'''
@@ -91,8 +92,12 @@ class Solution:
         ''' Sets a new number of tasks to the given solution'''
         self._totalTasks = new_tasks
 
+    def setWaitingTime(self, new_waiting_time) -> None:
+        ''' Sets a new waiting time to the given solution'''
+        self._waitingTime = new_waiting_time
+
     
-    def WriteSolToJson(self, inputData: InputData):
+    def WriteSolToJson(self, file_path:str, inputData: InputData):
         ''' Write the solution to a json file'''
 
         days = dict()
@@ -151,16 +156,10 @@ class Solution:
     }
 
         # Write the dictionary to a JSON file
-
-
         filename = f"solution_{inputData.main_tasks_path.split('/')[-1].split('.')[0]}.json"
 
         # Pfad zu der Datei im Ordner data/Results
-        data_dir = '../Data/Results_Greedy'
-        filepath = os.path.join(data_dir, filename)
-
-        # Sicherstellen, dass die Verzeichnisse existieren
-        os.makedirs(data_dir, exist_ok=True)
+        filepath = os.path.join(file_path, filename)
 
         # JSON-Datei erstellen und speichern
         with open(filepath, 'w') as json_file:
@@ -187,6 +186,12 @@ class Solution:
         ''' Returns Total Start Times of Tour'''
 
         return self._startTimes
+    
+    @property
+    def WaitingTime(self) -> int: 
+        """Retutns the waiting time of the solution"""
+
+        return self._waitingTime
     
     @property
     def EndTimes(self) -> dict[str, list[list[int]]]: 
