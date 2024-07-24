@@ -171,16 +171,16 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = Path.cwd() / "Data" / "OptionalTasks.csv") -> None: # Changed default path to relative path
+    def __init__(self, main_tasks_path: str, optional_tasks_path: str = str((Path.cwd().parent / "Data" / "OptionalTasks.csv").resolve())) -> None: # Changed default path to relative path
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
         :param optional_tasks_path: Path to the CSV file containing optional tasks
         :param main_tasks_path: Path to the JSON file containing main tasks
         '''
-
+        self._main_tasks_path = main_tasks_path
         self._optional_tasks_path = optional_tasks_path
-        self._main_tasks_path = main_tasks_path 
+        
 
         # Load and create task objects from file paths
         self._Load_MainTasks()
@@ -194,6 +194,8 @@ class InputData:
 
         # Create list with score for attractiveness
         #self._scoreboard = self._CreateScoreboard()
+
+        
 
 
     def _Load_OptionalTasks(self) -> None:
@@ -265,7 +267,7 @@ class InputData:
                 taskIndex = self.optionalTasks.index(task)
                 currentTaskIndex = self.optionalTasks.index(currentTask)
                 distanceToTask = self.distances[taskIndex][currentTaskIndex]
-                if distanceToTask < 180: # Distance needs to be lower than 60 seconds to be included as a point
+                if distanceToTask < 180: # Distance needs to be lower than 180 seconds to be included as a point
                     taskIndex = self.optionalTasks.index(task)
                     listOfCloseHighProfit.append(taskIndex)
         
