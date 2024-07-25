@@ -161,6 +161,7 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     #model.printAttr(gp.GRB.Attr.X)
 
     #### WRITE SOLUTION ####
-    #write_txt_solution(model, s, x, data, all_tasks, "../Data/Results_Main/Task_Allocation.txt")
+
+    #write_txt_solution(model, x, data, all_tasks, "Data/Results_Main/Task_Allocation.txt")
 
     return get_initial_route_plan(model, y, s, x, data)

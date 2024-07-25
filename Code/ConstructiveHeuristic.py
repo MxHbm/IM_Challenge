@@ -214,7 +214,7 @@ class ConstructiveHeuristics:
   
         tmpSolution = Solution(prefilled_route_plan, inputData)
 
-        self.EvaluationLogic.setProfit(tmpSolution)
+        self.EvaluationLogic.evaluateSolution(tmpSolution)
 
         print('Initial Solution found.')
 
@@ -378,7 +378,7 @@ class ConstructiveHeuristics:
         
         tmpSolution = Solution(prefilled_route_plan, inputData)
 
-        self.EvaluationLogic.setProfit(tmpSolution)
+        self.EvaluationLogic.evaluateSolution(tmpSolution)
 
         print('Initial Solution found.')
 

@@ -1,24 +1,34 @@
 from ConstructiveHeuristic import * 
 from EvaluationLogic import *
+from ImprovementAlgorithm import * 
 
 
-data = InputData("Data/Instanzen/Instance7_2_1.json")
+#mainTaskPlanner = ['OnePerDay', 'MIP']
+mainTaskPlanner = ['OnePerDay']#, 'MIP']zzz
 
-pool = SolutionPool()
+print('______________________________________________________________________')
+for mainTaskPlanner in mainTaskPlanner:
+    data = InputData("Data/Instanzen/Instance7_2_1.json")
 
-ConstructiveHeuristic = ConstructiveHeuristics(pool)
-Evaluations = EvaluationLogic(data)
+    pool = SolutionPool()
+    evaluationLogic = EvaluationLogic(data)
 
-ConstructiveHeuristic.Run(data, "Greedy")
+    ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
-sol = pool.GetLowestMakespanSolution()
 
-print(sol.RoutePlan)
+    ConstructiveHeuristic.Run(data, 'Greedy', mainTaskPlanner = mainTaskPlanner, attractivenessFunction='WithDistanceToMainTask')
+    solution = pool.GetHighestProfitSolution()
 
-print(sol.StartTimes)
+    print("Waiting Time" , solution.WaitingTime)
 
-print(sol.EndTimes)
+    iterativeImpro = IterativeImprovement(data)
+    iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
+    solution = iterativeImpro.Run(solution)
+    solution.WriteSolToJson("Data/Results_Iterative", data)
 
-Evaluations.setProfit(sol)
+    evaluationLogic.evaluateSolution(solution)
+    print(solution.WaitingTime)
+    
+    #print(solution)
+    print('______________________________________________________________________')
 
-print(sol.TotalProfit)
