@@ -37,7 +37,7 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    def Run(self, inputData:InputData, solutionMethod = 'Greedy', mainTaskPlanner = 'OnePerDay', attractivenessFunction = 'WithDistanceToMainTask') -> None:
+    def Run(self, inputData:InputData, solutionMethod = 'Greedy', numerOfParameterComb = 3) -> None:
         ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
 
         print('Generating an initial solution according to ' + solutionMethod + '.')
@@ -47,9 +47,21 @@ class ConstructiveHeuristics:
 
         # Decision tree for choosing constructive heuristic 
         if solutionMethod == 'Greedy':
-            solution = self._Greedy(inputData, mainTaskPlanner, attractivenessFunction)
+            if numerOfParameterComb == 3:
+                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
+                solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
+                solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
+            elif numerOfParameterComb == 2:
+                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
+                solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
+            elif numerOfParameterComb == 1:
+                solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
         else:
             raise Exception('Unkown constructive solution method: ' + solutionMethod + '.')
+
+        
 
         #Add the first solution to the solution pool to proceed further with the algorithm
         self._SolutionPool.AddSolution(solution)
@@ -58,11 +70,11 @@ class ConstructiveHeuristics:
 
 
 
-    def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction) -> Solution:
+    def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
         
 
-        if attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+        if attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
             inputData._CreateScoreboard()
 
 
@@ -115,7 +127,7 @@ class ConstructiveHeuristics:
                     attractiveness = dict() # Save the attractiveness in a dictionary and reset attractiveness after each task is planned
                     for t in range(0,len(inputData.optionalTasks)):
                         if inputData.allTasks[t] != previousT and inputData.allTasks[t] != depot and inputData.allTasks[t].ID not in planned_tasks:
-                                    attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[nextMainT] ,main_task_visited)
+                                    attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[nextMainT] ,main_task_visited, a, b)
                     attractiveness = dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True)) # Sort the tasks by attractiveness
 
                     next_task_planned = False
@@ -211,7 +223,7 @@ class ConstructiveHeuristics:
 
     def _UpdateScoreboard(self, task ,inputData:InputData, attractivenessFunction):
         
-        if attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+        if attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
             for key, values in inputData.scoreboard.items():
                 if task in values:
                     values.remove(task)
@@ -233,35 +245,35 @@ class ConstructiveHeuristics:
 
 
 
-    def _CalculateAttractiveness(self,inputData:InputData, attractivenessFunction ,previousTask, nextTask, mainTask, mainTaskVisited, numberOfCloseHighProfit = None):
+    def _CalculateAttractiveness(self,inputData:InputData, attractivenessFunction ,previousTask, nextTask, mainTask, mainTaskVisited,  a , b ):
         ''' Calculate the attractiveness of a nextTask based on profit, service time and distance to the previous task'''
-    
+
         distance = inputData._CalculateDistance(previousTask, nextTask)
 
         if attractivenessFunction == 'OnlyDistanceToNextTask':
-            attractiveness = nextTask.profit/((nextTask.service_time + distance)/3600)
+            attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance)
 
 
         elif attractivenessFunction == 'WithDistanceToMainTask':
 
             if mainTaskVisited == False:
                 distanceToMainTask = inputData._CalculateDistance(nextTask, mainTask)
-                attractiveness = ((nextTask.profit)/((nextTask.service_time + distance + distanceToMainTask)/3600))
+                attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance + distanceToMainTask)
             else:
-                attractiveness = ((nextTask.profit)/((nextTask.service_time + distance)/3600))
+                attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance)
 
-        elif attractivenessFunction == 'WithDistanceToMainTaskAndCloseTasks':
+        elif attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
             
 
             nextTaskIndex = inputData.optionalTasks.index(nextTask)
-            numberOfCloseHighProfit = len(inputData.scoreboard[nextTaskIndex])
+            closeProfitScore = len(inputData.scoreboard[nextTaskIndex])/b
 
 
             if mainTaskVisited == False:
                 distanceToMainTask = inputData._CalculateDistance(nextTask, mainTask)
-                attractiveness = ((nextTask.profit + numberOfCloseHighProfit/10)/((nextTask.service_time + distance + distanceToMainTask)/3600))
+                attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance + distanceToMainTask)
             else:
-                attractiveness = ((nextTask.profit + numberOfCloseHighProfit/10)/((nextTask.service_time + distance)/3600))
+                attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance)
             
         else:
             raise Exception('Unknown attractiveness function: ' + attractivenessFunction + '.')
