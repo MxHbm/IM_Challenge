@@ -171,14 +171,14 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = str((Path.cwd().parent / "Data" / "OptionalTasks.csv").resolve())) -> None: # Changed default path to relative path
+    def __init__(self, instance_filename: str, optional_tasks_path: str = str((Path.cwd().parent / "Data" / "OptionalTasks.csv").resolve())) -> None: # Changed default path to relative path
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
         :param optional_tasks_path: Path to the CSV file containing optional tasks
         :param main_tasks_path: Path to the JSON file containing main tasks
         '''
-        self._main_tasks_path = main_tasks_path
+        self._main_tasks_path = str((Path.cwd().parent / "Data" / "Instanzen" / instance_filename).resolve())
         self._optional_tasks_path = optional_tasks_path
         
 
@@ -219,6 +219,7 @@ class InputData:
 
         # Initialize the list to store main tasks
         self._mainTasks = list()
+
 
         # Opening JSON file
         json_file = open(self._main_tasks_path)

@@ -30,8 +30,10 @@ class ImprovementAlgorithm:
         
         ### NEEDS TO BE ADJUSTED FOR ORIENTEERING PROBLEMLocalSearch
 
-        if neighborhoodType == 'Swap':
-            return SwapNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        if neighborhoodType == 'SwapDelta':
+            return SwapDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'SwapWaiting':
+            return SwapWaitingNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'Insertion':
             return InsertionNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'BlockK3':
@@ -54,7 +56,7 @@ class IterativeImprovement(ImprovementAlgorithm):
         Local Search with itereative steps through many different neighborhoods.
     """
 
-    def __init__(self,  inputData:InputData, neighborhoodEvaluationStrategy:str = 'BestImprovement', neighborhoodTypes:list[str] = ['Swap']):
+    def __init__(self,  inputData:InputData, neighborhoodEvaluationStrategy:str = 'BestImprovement', neighborhoodTypes:list[str] = ['SwapWaiting']):
         super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
 
     def Run(self, solution:Solution) -> Solution:
