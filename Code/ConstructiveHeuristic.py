@@ -37,7 +37,7 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    def Run(self, inputData:InputData, solutionMethod = 'Greedy', numerOfParameterComb = 3) -> None:
+    def Run(self, inputData:InputData, solutionMethod = 'Greedy', numberOfParameterComb = 3) -> None:
         ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
 
         print('Generating an initial solution according to ' + solutionMethod + '.')
@@ -47,17 +47,19 @@ class ConstructiveHeuristics:
 
         # Decision tree for choosing constructive heuristic 
         if solutionMethod == 'Greedy':
-            if numerOfParameterComb == 3:
+            if numberOfParameterComb == 3:
                 solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
                 solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
                 solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
                 solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
-            elif numerOfParameterComb == 2:
+            elif numberOfParameterComb == 2:
                 solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
                 solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
                 solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
-            elif numerOfParameterComb == 1:
+            elif numberOfParameterComb == 1:
                 solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+            elif numberOfParameterComb == 'Test':
+                solution = self._Greedy(inputData, 'OnePerDay', 'OnlyDistanceToNextTask', 1.0, 0)
         else:
             raise Exception('Unkown constructive solution method: ' + solutionMethod + '.')
 

@@ -34,8 +34,8 @@ class ImprovementAlgorithm:
             return SwapDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'SwapWaiting':
             return SwapWaitingNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'Insertion':
-            return InsertionNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'Insert':
+            return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'BlockK3':
             return BlockNeighborhoodK3(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'TwoEdgeExchange':
