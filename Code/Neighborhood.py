@@ -544,7 +544,7 @@ class InsertNeighborhood(ProfitNeighborhood):
 
         tmpSolution = Solution(move.Route, self.InputData)
         self.EvaluationLogic.evaluateSolution(tmpSolution)
-        self.EvaluationLogic.calculateWaitingTime(tmpSolution)
+        self.EvaluationLogic.calculateWaitingTime(tmpSolution) # can be deleted
 
         return tmpSolution
 

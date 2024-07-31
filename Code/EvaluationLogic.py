@@ -86,7 +86,7 @@ class EvaluationLogic:
         distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
                         + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
         
-        difference = distance_new - distance_old + (self._data.allTasks[move.TaskB].service_time - self._data.allTasks[move.TaskA].service_time)
+        difference = distance_new - distance_old #+ (self._data.allTasks[move.TaskB].service_time - self._data.allTasks[move.TaskA].service_time)
 
         # Return the difference between the new and original distances
         return difference
