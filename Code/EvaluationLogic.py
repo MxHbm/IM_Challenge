@@ -86,23 +86,8 @@ class EvaluationLogic:
         distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
                         + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
         
-        difference = distance_new - distance_old #+ (self._data.allTasks[move.TaskB].service_time - self._data.allTasks[move.TaskA].service_time)
+        difference = distance_new - distance_old
 
         # Return the difference between the new and original distances
         return difference
     
-
-    def listUnusedTasks(self, routePlan):
-
-        unused_tasks = []
-        used_tasks = []
-        for routes in routePlan.values():
-            for route in routes:
-                for task in route:
-                    used_tasks.append(task)
-
-        for task in range(len(self._data.optionalTasks)):
-            if task not in used_tasks and task != 0:
-                unused_tasks.append(task)
-
-        return unused_tasks
