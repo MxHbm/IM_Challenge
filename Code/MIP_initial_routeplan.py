@@ -1,12 +1,10 @@
 import gurobipy as gp
-import os
 from InputData import *
-import math
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from MIP_Approach.functions_MIP import *
 
 
-def get_initial_route_plan(gp_model: gp.Model, var_y: gp.Var, var_s: gp.Var, var_x: gp.Var, data: InputData) -> Dict[str, List[List[int]]]:
+def get_initial_route_plan(gp_model: gp.Model, var_x: gp.Var, allTasks, data: InputData) -> Dict[str, List[List[int]]]:
     """
     Generates an initial route plan based on the given optimization model and variables.
 
@@ -25,32 +23,48 @@ def get_initial_route_plan(gp_model: gp.Model, var_y: gp.Var, var_s: gp.Var, var
 
     for day in range(data.days):
         day_list = []
+        routes = []
+        unique_nodes_sets = []
 
+        original_cohort_numbers = []
         for cohort in range(data.cohort_no):
-            cohort_list = []
+            all_tuples = []
 
-            pre_selected_nodes = []
+            # Collect tasks selected by the cohort on the given day
+            for i in range(len(allTasks)):
+                for j in range(len(allTasks)):
+                    if var_x[day,cohort, i, j].X > 0:
+                        all_tuples.append((i, j))
 
-            # Identify nodes that are part of the route for the current day and cohort
-            for i in range(len(data.mainTasks) + 2):
-                for j in range(len(data.mainTasks) + 2):
-                    if var_x[day, cohort, i, j].X > 0:
-                        pre_selected_nodes.append((i, j))
+            subtours = create_subtours(all_tuples)
+            print(subtours)
 
-            # Sort the nodes to create a coherent route
-            sorted_tuples = sort_tuples(pre_selected_nodes)
-            startelem = sorted_tuples[0][0]
+            if len(subtours) >= 1: 
+                for i in range(len(subtours)):
+                    routes.append(subtours[i])
+                    unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
+                original_cohort_numbers += [cohort for i in range(len(subtours))]
 
-            for tuple in sorted_tuples:
-                for element in tuple:
-                    if element == startelem:
-                        continue
-                    else:
-                        if element != len(data.mainTasks) + 1:
-                            cohort_list.append(element + 1000)
-                        startelem = element
 
-            day_list.append(cohort_list)
+            for r in range(len(routes)):
+                route_list = []
+
+                # Pair and sort the nodes based on start times
+                sorted_tuples = routes[r]
+
+                # Create the route list for the cohort
+                startelem = sorted_tuples[0][0]
+
+                for tuple in sorted_tuples:
+                    for element in tuple:
+                        if element == startelem:
+                            continue
+                        else:
+                            if element != len(data.mainTasks) + 1:
+                                route_list.append(element + 1000)
+                            startelem = element
+
+            day_list.append(route_list)
 
         dict_routes[day] = day_list
 
@@ -90,7 +104,7 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     #### MODEL ####
     #print("Start Model \n \n")
     model = gp.Model()
-    model.setParam('OutputFlag', 0) # Does not print anything
+    #model.setParam('OutputFlag', 0) # Does not print anything
 
     #### VARIABLES ####
     x = model.addVars(T, M, N, N, name="x", vtype=gp.GRB.BINARY)  # 1, if in route m, a visit to node i is followed by a visit to node j, and 0 otherwise at t
@@ -110,12 +124,6 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     # Every main task needs to be in one tour of one cohort
     for k in N[1:-1]:
         model.addConstr(gp.quicksum(y[t, m, k] for m in M for t in T) == 1, "Constraint_3.3")
-
-    # No self visits:
-    for t in T:
-        for m in M:
-            for i in N:
-                model.addConstr(x[t, m, i, i] == 0, "Constraint 3.5")
 
     # Ensure each node can only be visited at most once.
     for m in M:
@@ -140,15 +148,9 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
                 model.addConstr(O[t][i] * y[t, m, i] <= s[t, m, i], "Constraint 3.8a")
                 model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
 
-    # Don't start several tours from one node
-    for k in N:
-        for t in T:
-            for m in M:
-                model.addConstr(gp.quicksum(x[t, m, k, j] for j in N) <= 1, "Constraint_new")
 
     #### DEFINE OPTIMIZATION PARAMS ###
     model.Params.MIPGap = 0.01  # Gap is 1%!
-    model.Params.TimeLimit = 20  # 20 seconds
     model.Params.Threads = 8
     model.Params.PrePasses = 1000000
     
@@ -158,10 +160,10 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
 
     #### EVALUATION ####
     #model.printAttr(gp.GRB.Attr.ObjVal)
-    #model.printAttr(gp.GRB.Attr.X)
+    model.printAttr(gp.GRB.Attr.X)
 
     #### WRITE SOLUTION ####
 
     #write_txt_solution(model, x, data, all_tasks, "Data/Results_Main/Task_Allocation.txt")
 
-    return get_initial_route_plan(model, y, s, x, data)
+    return get_initial_route_plan(model, x, all_tasks, data)

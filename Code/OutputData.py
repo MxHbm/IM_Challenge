@@ -1,24 +1,9 @@
 import json
-import csv
 from InputData import *
-import numpy as np
-
-'''class OutputNode(DataJob):
-    ''Inherits DataJob Attributes and adds the necessary start and end times to calculate the makespan''
-    def __init__(self, dataJob:DataJob):
-        #Same Attributes as for DataJob
-        super().__init__(dataJob.JobId, [dataJob.ProcessingTime(i) for i in range(len(dataJob.Operations))], dataJob.setup_time_between_lots)
-        
-        # Define a list with all the necessary Start and End times for the jobs tio calculate the makespan with a given permutation
-        self.selectedMachines = ["M0"]*len(self.Operations)
-        self.lotNumber = dataJob.lotNumber
-        
-        self.lots = [DataLot(x,self.JobId, len(self.selectedMachines)) for x in range(self.lotNumber)]
-'''
+import os
 
 class Solution:
     ''' 
-
     '''
 
     def __init__(self, route_plan:dict, data:InputData):
@@ -29,6 +14,7 @@ class Solution:
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
         self._waitingTime = -1
+        self._unusedTasks = self._create_unused_tasks(data)
 
     def __str__(self):
         '''Base Function for printing out the results'''
@@ -77,7 +63,27 @@ class Solution:
             self._startTimes[day_index] = cohort_list_start
             self._endTimes[day_index] = cohort_list_end
             day_index += 1
+    
 
+    def _create_unused_tasks(self, data:InputData) -> None: 
+        ''' Create an initial set of all unused tasks'''
+
+        self._unusedTasks = {task.no for task in data.allTasks}
+
+        for day, cohorts in self._route_plan.items():
+            for cohort in cohorts:
+                for task in cohort:
+                    self._unusedTasks.discard(task)
+
+    def add_unused_Task(self, task_id:int) -> None:
+        '''Adds one task id to the set of unused tasks'''
+
+        self._unusedTasks.add(task_id)    
+
+    def remove_unused_Task(self, task_id:int) -> None:
+        '''Remove one task id to the set of unused tasks'''
+
+        self._unusedTasks.discard(task_id)      
 
     def setRoutePlan(self, route_plan, data:InputData) -> None:
         ''' Sets a new route plan to the given solution'''
@@ -168,6 +174,11 @@ class Solution:
         print(f"JSON file has been created at {filepath}")
 
 
+    @property
+    def UnusedTasks(self) -> set[int]: 
+        ''' Returns the set of unused tasks'''
+
+        return self._unusedTasks
 
     @property
     def TotalProfit(self) -> int: 
