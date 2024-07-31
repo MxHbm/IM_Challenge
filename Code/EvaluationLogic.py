@@ -90,3 +90,19 @@ class EvaluationLogic:
 
         # Return the difference between the new and original distances
         return difference
+    
+
+    def listUnusedTasks(self, routePlan):
+
+        unused_tasks = []
+        used_tasks = []
+        for routes in routePlan.values():
+            for route in routes:
+                for task in route:
+                    used_tasks.append(task)
+
+        for task in range(len(self._data.optionalTasks)):
+            if task not in used_tasks and task != 0:
+                unused_tasks.append(task)
+
+        return unused_tasks
