@@ -4,7 +4,7 @@ from typing import List, Dict
 from MIP_Approach.functions_MIP import *
 
 
-def get_initial_route_plan(gp_model: gp.Model, var_x: gp.Var, allTasks, data: InputData) -> Dict[str, List[List[int]]]:
+def get_initial_route_plan(var_x: gp.Var, allTasks, data: InputData) -> Dict[str, List[List[int]]]:
     """
     Generates an initial route plan based on the given optimization model and variables.
 
@@ -24,9 +24,7 @@ def get_initial_route_plan(gp_model: gp.Model, var_x: gp.Var, allTasks, data: In
     for day in range(data.days):
         day_list = []
         routes = []
-        unique_nodes_sets = []
 
-        original_cohort_numbers = []
         for cohort in range(data.cohort_no):
             all_tuples = []
 
@@ -37,34 +35,29 @@ def get_initial_route_plan(gp_model: gp.Model, var_x: gp.Var, allTasks, data: In
                         all_tuples.append((i, j))
 
             subtours = create_subtours(all_tuples)
-            print(subtours)
 
             if len(subtours) >= 1: 
                 for i in range(len(subtours)):
                     routes.append(subtours[i])
-                    unique_nodes_sets.append(set([node for tup in subtours[i] for node in tup]))
-                original_cohort_numbers += [cohort for i in range(len(subtours))]
 
+        for r in range(len(routes)):
+            sub_tour_list = []
+            # Pair and sort the nodes based on start times
+            sorted_tuples = routes[r]
 
-            for r in range(len(routes)):
-                route_list = []
+            # Create the route list for the cohort
+            startelem = sorted_tuples[0][0]
 
-                # Pair and sort the nodes based on start times
-                sorted_tuples = routes[r]
+            for tuple in sorted_tuples:
+                for element in tuple:
+                    if element == startelem:
+                        continue
+                    else:
+                        if element != len(data.mainTasks) + 1:
+                            sub_tour_list.append(element + 1000)
+                        startelem = element
 
-                # Create the route list for the cohort
-                startelem = sorted_tuples[0][0]
-
-                for tuple in sorted_tuples:
-                    for element in tuple:
-                        if element == startelem:
-                            continue
-                        else:
-                            if element != len(data.mainTasks) + 1:
-                                route_list.append(element + 1000)
-                            startelem = element
-
-            day_list.append(route_list)
+            day_list.append(sub_tour_list)
 
         dict_routes[day] = day_list
 
@@ -104,7 +97,7 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
     #### MODEL ####
     #print("Start Model \n \n")
     model = gp.Model()
-    #model.setParam('OutputFlag', 0) # Does not print anything
+    model.setParam('OutputFlag', 0) # Does not print anything
 
     #### VARIABLES ####
     x = model.addVars(T, M, N, N, name="x", vtype=gp.GRB.BINARY)  # 1, if in route m, a visit to node i is followed by a visit to node j, and 0 otherwise at t
@@ -160,10 +153,10 @@ def find_inital_main_task_allocation(data: InputData) -> Dict[str, List[List[int
 
     #### EVALUATION ####
     #model.printAttr(gp.GRB.Attr.ObjVal)
-    model.printAttr(gp.GRB.Attr.X)
+    #model.printAttr(gp.GRB.Attr.X)
 
     #### WRITE SOLUTION ####
 
     #write_txt_solution(model, x, data, all_tasks, "Data/Results_Main/Task_Allocation.txt")
 
-    return get_initial_route_plan(model, x, all_tasks, data)
+    return get_initial_route_plan(x, all_tasks, data)
