@@ -160,6 +160,97 @@ class BaseNeighborhood:
     def LocalSearch(self, neighborhoodEvaluationStrategy: str, solution: Solution) -> None:
         ''' Tries to find a better solution from the start solution by searching the neighborhod'''
         raise Exception('LocalSearch() is not implemented for the abstract BaseNeighborhood class.')
+    
+    def SingleRouteFeasibilityCheck(self, route, inputData):
+
+        feasible = True
+
+
+        serviceDuration = 0
+        previousTask = 0 # Start at depot
+
+        if any(task > 1000 for task in route): # Check if a main task is included in the route
+            
+            mainIndex = next((i for i, task in enumerate(route) if task > 1000), len(route)) # Find the index of the first main task in the route
+            tasksBeforeMain = route[:mainIndex] # Get all tasks before the main task
+            tasksAfterMain = route[mainIndex+1:] # Get all tasks after the main task
+            mainTask = route[mainIndex]
+
+
+            for task in tasksBeforeMain:
+                travelTime = inputData.distances[previousTask][task]
+                serviceDuration += travelTime
+                serviceDuration += inputData.optionalTasks[task].service_time
+                previousTask = task
+
+            serviceDuration += inputData.distances[previousTask][mainTask] # Add travel time to main task
+
+            if serviceDuration > inputData.allTasks[mainTask].start_time:
+                feasible = False
+                return feasible
+                
+
+            previousTask = mainTask
+            serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
+
+            for task in tasksAfterMain:
+                travelTime = inputData.distances[previousTask][task]
+                serviceDuration += travelTime
+                serviceDuration += inputData.optionalTasks[task].service_time
+                previousTask = task
+
+            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
+
+            if serviceDuration > inputData.maxRouteDuration:
+                feasible = False
+                return feasible
+
+
+
+        else: # Route consists of optional tasks only, therefore only check if cohort reaches depot in time
+
+            for task in route:
+                travelTime = inputData.distances[previousTask][task]
+                serviceDuration += travelTime
+                serviceDuration += inputData.optionalTasks[task].service_time
+                previousTask = task
+
+            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
+            
+            if serviceDuration > inputData.maxRouteDuration:
+                feasible = False
+                return feasible
+
+            
+        
+        return feasible
+        
+        
+
+        
+    def CompleteRoutePlanFeasibilityCheck(self, routeplan, inputData): # Only accept moves that are feasible --> try to check as least as you can to minimize computing time
+        
+        feasible = True
+        break_flag = False
+        
+        for day in routeplan.keys():
+            if break_flag:
+                break
+
+            for route in routeplan[day]:
+                if break_flag:
+                    break
+
+                feasible = self.SingleRouteFeasibilityCheck(route, inputData)
+
+                if feasible == False:
+                    break_flag = True
+                    break
+
+
+
+        return feasible
+
 
  #_______________________________________________________________________________________________________________________   
 
@@ -229,8 +320,21 @@ class DeltaNeighborhood(BaseNeighborhood):
         raise Exception('EvaluateMove() is not implemented for the abstract DeltaNeighborhood class.')
 
     def MakeBestMove(self) -> Solution:
-        self.MoveSolutions.sort(key=lambda move: move.Delta)  # sort solutions according to profit
-        bestNeighborhoodSolution = self.MoveSolutions[0]
+        self.MoveSolutions.sort(key=lambda move: move.Delta)
+
+        feasibleFound = False
+        number_to_check = 0
+
+
+        while feasibleFound == False:
+            day = self.MoveSolutions[number_to_check].Day
+            cohort = self.MoveSolutions[number_to_check].Cohort
+            if self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[day][cohort], self.InputData):
+                feasibleFound = True
+                bestNeighborhoodSolution = self.MoveSolutions[number_to_check]
+            else:
+                number_to_check += 1
+
         print("Best Delta: ", bestNeighborhoodSolution.Delta)
         return bestNeighborhoodSolution
 
@@ -249,19 +353,20 @@ class DeltaNeighborhood(BaseNeighborhood):
         iterator = 1
         temp_sol = deepcopy(solution)
 
-
         while hasSolutionImproved:# and iterator < 50:
-            print(f"Iteration: {iterator}")
+            
             self.Update(temp_sol.RoutePlan)
             self.DiscoverMoves()
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
             bestNeighborhoodMove = self.MakeBestMove()
 
             if bestNeighborhoodMove.Delta < 0:
+                print(f"\n Iteration: {iterator}")
                 print("New best solution has been found!")
+                print(f"Task A and B are: {bestNeighborhoodMove.TaskA} and {bestNeighborhoodMove.TaskB}")
                 bestNeighborhoodSolution = Solution(bestNeighborhoodMove.Route, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
-                print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime, "\n")
+                print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
                 temp_sol = bestNeighborhoodSolution
             else:
@@ -281,6 +386,7 @@ class WaitingNeighborhood(BaseNeighborhood):
     def MakeBestMove(self) -> Solution:
         self.MoveSolutions.sort(key=lambda solution: solution.WaitingTime, reverse=True)  # sort solutions according to profit
         bestNeighborhoodSolution = self.MoveSolutions[0]
+
         return bestNeighborhoodSolution
 
     def EvaluateMovesFirstImprovement(self) -> None:
@@ -307,7 +413,6 @@ class WaitingNeighborhood(BaseNeighborhood):
 
             if bestNeighborhoodSolution.WaitingTime > temp_sol.WaitingTime:
                 print("New best solution has been found!")
-                self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
                 print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime, "\n")
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
                 temp_sol = bestNeighborhoodSolution
@@ -350,8 +455,6 @@ class SwapDeltaNeighborhood(DeltaNeighborhood):
     def DiscoverMoves(self):
         """ Generate all $n choose 2$ moves. """
 
-        feasibilityCounter = 0
-        infeasibilityCounter = 0
 
         for day in range(len(self.RoutePlan)):
             for cohort in range(len(self.RoutePlan[day])):
@@ -364,16 +467,10 @@ class SwapDeltaNeighborhood(DeltaNeighborhood):
                                 #Create Swap Move Objects with different permutations
                                 swapMove = SwapMove(self.RoutePlan,day,cohort, task_i, task_j)
 
-                                #feasible = swapMove.CompleteRoutePlanFeasibilityCheck(swapMove.Route, self.InputData) # Check if the whole route plan is feasible
-                                feasible = swapMove.SingleRouteFeasibilityCheck(swapMove.Route[day][cohort], self.InputData)                    
+               
                                 
-                                if feasible:
-                                    self.Moves.append(swapMove)
-                                    feasibilityCounter += 1
-                                else:
-                                    infeasibilityCounter += 1
+                                self.Moves.append(swapMove)
 
-        print(f"Feasible Solutions: {feasibilityCounter}, Infeasible Solutions: {infeasibilityCounter}")
 
     def EvaluateMove(self, move:SwapMove) -> SwapMove:
         ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
@@ -408,7 +505,8 @@ class SwapWaitingNeighborhood(WaitingNeighborhood):
                                 #Create Swap Move Objects with different permutations
                                 swapMove = SwapMove(self.RoutePlan,day,cohort, task_i, task_j)
 
-                                #feasible = swapMove.CompleteRoutePlanFeasibilityCheck(swapMove.Route, self.InputData) # Check if the whole route plan is feasible
+
+                              
                                 feasible = swapMove.SingleRouteFeasibilityCheck(swapMove.Route[day][cohort], self.InputData)                    
                                 
                                 if feasible:
@@ -434,6 +532,8 @@ class TwoEdgeExchangeMove(BaseMove):
 
     def __init__(self, initialRoutePlan, day:int, cohort:int, taskA:int, taskB:int):
         self.Route = deepcopy(initialRoutePlan) # create a copy of the permutation
+        self.Day = day
+        self.Cohort = cohort
         self.TaskA = taskA
         self.TaskB = taskB
 
@@ -444,13 +544,13 @@ class TwoEdgeExchangeMove(BaseMove):
         #Reverse the order
         self.Route[day][cohort] = []
         self.Route[day][cohort].extend(initialRoutePlan[day][cohort][:self.indexA])
-        self.Route[day][cohort].extend(reversed(initialRoutePlan[day][cohort][self.indexA:self.indexB]))
-        self.Route[day][cohort].extend(initialRoutePlan[day][cohort][self.indexB:])
+        self.Route[day][cohort].extend(reversed(initialRoutePlan[day][cohort][self.indexA:self.indexB+1]))
+        self.Route[day][cohort].extend(initialRoutePlan[day][cohort][self.indexB+1:])
 
 
 
 
-class TwoEdgeExchangeNeighborhood(WaitingNeighborhood):         
+class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):         
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
 
     def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
@@ -461,8 +561,6 @@ class TwoEdgeExchangeNeighborhood(WaitingNeighborhood):
     def DiscoverMoves(self):
         """ Generate all $n choose 2$ moves. """
 
-        feasibilityCounter = 0
-        infeasibilityCounter = 0
 
         for day in range(len(self.RoutePlan)):
             for cohort in range(len(self.RoutePlan[day])):
@@ -470,29 +568,21 @@ class TwoEdgeExchangeNeighborhood(WaitingNeighborhood):
                     for task_j in self.RoutePlan[day][cohort]:
                         index_i = self.RoutePlan[day][cohort].index(task_i)
                         index_j = self.RoutePlan[day][cohort].index(task_j)
-                        if index_i < index_j: # Hier könenn viele doppelte Swqap movesd vermieden weden
+                        if index_i < index_j: 
                             if task_i <= 1000 and task_j <= 1000:
                                 #Create Swap Move Objects with different permutations
                                 twoEdgeExchangeMove = TwoEdgeExchangeMove(self.RoutePlan,day,cohort, task_i, task_j)
 
-                                #feasible = swapMove.CompleteRoutePlanFeasibilityCheck(swapMove.Route, self.InputData) # Check if the whole route plan is feasible
-                                feasible = twoEdgeExchangeMove.SingleRouteFeasibilityCheck(twoEdgeExchangeMove.Route[day][cohort], self.InputData)                    
-                                
-                                if feasible:
-                                    self.Moves.append(twoEdgeExchangeMove)
-                                    feasibilityCounter += 1
-                                else:
-                                    infeasibilityCounter += 1
+                 
+                                self.Moves.append(twoEdgeExchangeMove)
 
-        print(f"Feasible Solutions: {feasibilityCounter}, Infeasible Solutions: {infeasibilityCounter}")
 
     def EvaluateMove(self, move):
         ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
 
-        tmpSolution = Solution(move.Route, self.InputData)
-        self.EvaluationLogic.calculateWaitingTime(tmpSolution)
+        move.setDelta(self.EvaluationLogic.CalculateTwoEdgeExchangeDelta(move))
 
-        return tmpSolution
+        return move
 
 
 
@@ -544,7 +634,6 @@ class InsertNeighborhood(ProfitNeighborhood):
 
         tmpSolution = Solution(move.Route, self.InputData)
         self.EvaluationLogic.evaluateSolution(tmpSolution)
-        self.EvaluationLogic.calculateWaitingTime(tmpSolution) # can be deleted
 
         return tmpSolution
 
