@@ -289,7 +289,7 @@ class ProfitNeighborhood(BaseNeighborhood):
 
             # Sets Algorithm back!
             self.Update(temp_sol.RoutePlan) 
-            self.DiscoverMoves()
+            self.DiscoverMoves(temp_sol)
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
 
             bestNeighborhoodSolution = self.MakeBestMove()
@@ -549,8 +549,8 @@ class TwoEdgeExchangeMove(BaseMove):
 
 
 
-
 class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):         
+
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
 
     def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
@@ -591,10 +591,26 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
 #_______________________________________________________________________________________________________________________
 
 
-
 class InsertMove(BaseMove):
+    """
+    Represents a move that inserts a task into various positions within a route.
 
-    def __init__(self, initialRoutePlan, task:int, inputData):
+    Attributes:
+        Route (dict): A deep copy of the initial route plan after attempting to insert the task.
+    """
+
+    def __init__(self, initialRoutePlan, task: int, inputData):
+        """
+        Initializes the InsertMove instance by attempting to insert the given task into the route.
+
+        Args:
+            initialRoutePlan (dict): The initial route plan.
+            task (int): The task to be inserted.
+            inputData: Additional input data required for feasibility checks.
+
+        Returns:
+            None
+        """
         self.Route = deepcopy(initialRoutePlan)
 
         currentRoutePlan = deepcopy(self.Route)
@@ -603,84 +619,78 @@ class InsertMove(BaseMove):
 
         for routes in currentRoutePlan.values():
             for route in routes:
-                for index in range(len(route)+1):
+                for index in range(len(route) + 1):
                     new_route = route[:index] + [task] + route[index:]
                     if self.SingleRouteFeasibilityCheck(new_route, inputData):
                         route[:] = new_route
                         self.Route = currentRoutePlan
                         oneFeasibleMove = True
                         break
-                   
+
         return None
 
 
 class InsertNeighborhood(ProfitNeighborhood):
+    """
+    Represents a neighborhood of insert moves in the context of profit optimization.
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        super().__init__(inputData,  evaluationLogic, solutionPool)
+    Attributes:
+        Type (str): The type of the neighborhood, which is 'Insert'.
+    """
+
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+        """
+        Initializes the InsertNeighborhood instance.
+
+        Args:
+            inputData (InputData): The input data required for the neighborhood.
+            evaluationLogic (EvaluationLogic): The logic used to evaluate solutions.
+            solutionPool (SolutionPool): The pool of solutions.
+
+        Returns:
+            None
+        """
+        super().__init__(inputData, evaluationLogic, solutionPool)
 
         self.Type = 'Insert'
 
-    def DiscoverMoves(self):
-        unusedTasks = self.EvaluationLogic.listUnusedTasks(self.RoutePlan)
+    def DiscoverMoves(self, actual_Solution: Solution):
+        """
+        Discovers all possible insert moves for unused tasks in the current solution.
+
+        Args:
+            actual_Solution (Solution): The current solution from which unused tasks are identified.
+
+        Returns:
+            None
+        """
+        unusedTasks = actual_Solution.UnusedTasks
 
         for task in unusedTasks:
             insertMove = InsertMove(self.RoutePlan, task, self.InputData)
-
             self.Moves.append(insertMove)
 
-
     def EvaluateMove(self, move):
+        """
+        Evaluates a given move by creating a temporary solution and using the evaluation logic.
 
+        Args:
+            move (InsertMove): The move to be evaluated.
+
+        Returns:
+            Solution: The evaluated solution based on the move.
+        """
         tmpSolution = Solution(move.Route, self.InputData)
         self.EvaluationLogic.evaluateSolution(tmpSolution)
 
         return tmpSolution
-
+    
 
 
 #_______________________________________________________________________________________________________________________
 
 
 #### ALL NEIGHBORHOODS BELOW NEED TO BE ADJUSTED! ####
-
-class InsertionMove(BaseMove):
-    """ Represents the insertion of the element at IndexA at the new position IndexB for a given permutation (= solution). """
-
-    def __init__(self, initialPermutation:list[int],initialLotMatrix:list[list[int]], indexA:int, indexB:int):
-        self.Permutation = [] # create a copy of the permutation
-        self.IndexA = indexA
-        self.IndexB = indexB
-        self.LotMatrix = initialLotMatrix
-
-        for k in range(len(initialPermutation)):
-            if k == indexA:
-                continue
-
-            self.Permutation.append(initialPermutation[k])
-
-        self.Permutation.insert(indexB, initialPermutation[indexA])
-
-
-class InsertionNeighborhood(ProfitNeighborhood):
-    """ Contains all $(n - 1)^2$ insertion moves for a given permutation (= solution). """
-
-    def __init__(self, inputData:InputData, initialPermutation:list[int],initialLotMatrix:list[list[int]], evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, no_lots_boolean:bool = False):
-        super().__init__(inputData, initialPermutation,initialLotMatrix, evaluationLogic, solutionPool, no_lots_boolean)
-
-        self.Type = 'Insertion'
-
-    def DiscoverMoves(self):
-        ''' Discover all possible moves for given nieghbood and permutation'''
-
-        for i in range(len(self.Permutation)):
-            for j in range(len(self.Permutation)):
-                if i == j or i == j + 1:
-                    continue
-
-                insertionMove = InsertionMove(self.Permutation,self.LotMatrix, i, j)
-                self.Moves.append(insertionMove)
-                
 
 class BlockMoveK3(BaseMove):
     """ Represents the extraction of the sequence of elements starting at IndexA and ending at IndexA + $k$, and the reinsertion at the new position IndexB for a given permutation (= solution) for $k = 3$. """
