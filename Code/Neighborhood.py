@@ -15,96 +15,6 @@ class BaseMove:
         self.Delta = delta
 
 
-    def SingleRouteFeasibilityCheck(self, route, inputData):
-
-        feasible = True
-
-
-        serviceDuration = 0
-        previousTask = 0 # Start at depot
-
-        if any(task > 1000 for task in route): # Check if a main task is included in the route
-            
-            mainIndex = next((i for i, task in enumerate(route) if task > 1000), len(route)) # Find the index of the first main task in the route
-            tasksBeforeMain = route[:mainIndex] # Get all tasks before the main task
-            tasksAfterMain = route[mainIndex+1:] # Get all tasks after the main task
-            mainTask = route[mainIndex]
-
-
-            for task in tasksBeforeMain:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
-                previousTask = task
-
-            serviceDuration += inputData.distances[previousTask][mainTask] # Add travel time to main task
-
-            if serviceDuration > inputData.allTasks[mainTask].start_time:
-                feasible = False
-                
-
-            previousTask = mainTask
-            serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
-
-            for task in tasksAfterMain:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
-                previousTask = task
-
-            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
-
-            if serviceDuration > inputData.maxRouteDuration:
-                feasible = False
-
-
-
-        else: # Route consists of optional tasks only, therefore only check if cohort reaches depot in time
-
-            for task in route:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
-                previousTask = task
-
-            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
-            
-            if serviceDuration > inputData.maxRouteDuration:
-                feasible = False
-
-            
-        
-        return feasible
-        
-        
-
-        
-    def CompleteRoutePlanFeasibilityCheck(self, routeplan, inputData): # Only accept moves that are feasible --> try to check as least as you can to minimize computing time
-        
-        feasible = True
-        break_flag = False
-        
-        for day in routeplan.keys():
-            if break_flag:
-                break
-
-            for route in routeplan[day]:
-                if break_flag:
-                    break
-
-                feasible = self.SingleRouteFeasibilityCheck(route, inputData)
-
-                if feasible == False:
-                    break_flag = True
-                    break
-
-
-
-        return feasible
-
-
-
-
 class BaseNeighborhood:
     ''' Framework for generally needed neighborhood functionalities'''
 
@@ -161,96 +71,82 @@ class BaseNeighborhood:
         ''' Tries to find a better solution from the start solution by searching the neighborhod'''
         raise Exception('LocalSearch() is not implemented for the abstract BaseNeighborhood class.')
     
-    def SingleRouteFeasibilityCheck(self, route, inputData):
+    def SingleRouteFeasibilityCheck(self, route: list[int], inputData: InputData) -> bool:
+        """
+        Checks the feasibility of a single route considering service times, travel distances, and main task constraints.
 
+        Parameters:
+        -----------
+        route : list[int]
+            A list of task IDs representing the sequence of tasks in the route. Task IDs greater than 1000 are considered main tasks.
+        
+        inputData : InputData
+            An object containing necessary input data such as distances, task details, and constraints.
+
+        Returns:
+        --------
+        bool
+            Returns True if the route is feasible, otherwise returns False.
+        """
+        
         feasible = True
-
-
         serviceDuration = 0
-        previousTask = 0 # Start at depot
+        previousTask = 0  # Start at depot
 
-        if any(task > 1000 for task in route): # Check if a main task is included in the route
-            
-            mainIndex = next((i for i, task in enumerate(route) if task > 1000), len(route)) # Find the index of the first main task in the route
-            tasksBeforeMain = route[:mainIndex] # Get all tasks before the main task
-            tasksAfterMain = route[mainIndex+1:] # Get all tasks after the main task
-            mainTask = route[mainIndex]
+        mainTasks = [task for task in route if task > 1000]  # Identify all main tasks in the route
 
+        if mainTasks:
+            mainIndices = [i for i, task in enumerate(route) if task in mainTasks]  # Find the indices of all main tasks
+            previousTask = 0  # Reset to depot at the start
+            current_index = 0
+            for mainIndex in mainIndices:
+                tasksBeforeMain = route[:(mainIndex - current_index)]  # Get all tasks before the current main task
+                mainTask = route[(mainIndex - current_index)]
+                tasksAfterMain = route[(mainIndex - current_index)+1:]  # Get all tasks after the current main task
 
-            for task in tasksBeforeMain:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
-                previousTask = task
+                # Process tasks before the main task
+                for task in tasksBeforeMain:
+                    print(task)
+                    serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
+                    previousTask = task
 
-            serviceDuration += inputData.distances[previousTask][mainTask] # Add travel time to main task
+                serviceDuration += inputData.distances[previousTask][mainTask]  # Add travel time to main task
 
-            if serviceDuration > inputData.allTasks[mainTask].start_time:
-                feasible = False
-                return feasible
-                
+                # Check if the main task can be started at the earliest start time
+                if serviceDuration > inputData.allTasks[mainTask].start_time:
+                    feasible = False
+                    break
 
-            previousTask = mainTask
-            serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
+                # Reset the service duration to the main task's start time and process the main task
+                serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
+                previousTask = mainTask
 
-            for task in tasksAfterMain:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
-                previousTask = task
+                # Process tasks after the main task
+                route = tasksAfterMain
+                current_index += mainIndex
 
-            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
-
-            if serviceDuration > inputData.maxRouteDuration:
-                feasible = False
-                return feasible
-
-
-
-        else: # Route consists of optional tasks only, therefore only check if cohort reaches depot in time
-
+            # Process remaining tasks after the last main task
             for task in route:
-                travelTime = inputData.distances[previousTask][task]
-                serviceDuration += travelTime
-                serviceDuration += inputData.optionalTasks[task].service_time
+                print(task) 
+                serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
                 previousTask = task
 
-            serviceDuration += inputData.distances[previousTask][0] # Add travel time to depot
+            serviceDuration += inputData.distances[previousTask][0]  # Add travel time to depot
+
+            if serviceDuration > inputData.maxRouteDuration:
+                feasible = False
+
+        else:  # Route consists of optional tasks only
+            for task in route:
+                serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
+                previousTask = task
+
+            serviceDuration += inputData.distances[previousTask][0]  # Add travel time to depot
             
             if serviceDuration > inputData.maxRouteDuration:
                 feasible = False
-                return feasible
-
-            
-        
-        return feasible
-        
-        
-
-        
-    def CompleteRoutePlanFeasibilityCheck(self, routeplan, inputData): # Only accept moves that are feasible --> try to check as least as you can to minimize computing time
-        
-        feasible = True
-        break_flag = False
-        
-        for day in routeplan.keys():
-            if break_flag:
-                break
-
-            for route in routeplan[day]:
-                if break_flag:
-                    break
-
-                feasible = self.SingleRouteFeasibilityCheck(route, inputData)
-
-                if feasible == False:
-                    break_flag = True
-                    break
-
-
 
         return feasible
-
 
  #_______________________________________________________________________________________________________________________   
 
