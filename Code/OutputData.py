@@ -18,7 +18,7 @@ class Solution:
 
     def __str__(self):
         '''Base Function for printing out the results'''
-        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit)
+        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit) + "\n Waiting Time: " + str(self.WaitingTime)
     
     
     def _create_StartEndTimes(self, data:InputData):
