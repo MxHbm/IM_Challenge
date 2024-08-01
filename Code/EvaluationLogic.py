@@ -46,11 +46,12 @@ class EvaluationLogic:
         currentSolution.setWaitingTime(waiting_time)
 
 
-    def CalculateSwap1Delta(self, move): 
+    def CalculateSwapIntraRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
         # Retrieve the route for the given day and cohort
         route = move.Route[move.Day][move.Cohort]
+        
         precessors = []
         successors = []
 
@@ -70,12 +71,52 @@ class EvaluationLogic:
                 successors.append(route[index + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.calclateDistanceSubtraction(move, successors, precessors, two_edges=False)
+        delta = self.CalclateDistanceSubtraction(move, successors, precessors, two_edges=False)
         #print("Delta: ",delta)
 
         return delta
     
-    def calclateDistanceSubtraction(self, move, successor_list, precessor_list, two_edges:bool):
+    def CalculateSwapInterRouteDelta(self, move): 
+        '''Calculates the delta of the given swap move'''
+
+        # Retrieve the route for the given day and cohort
+        routeA = move.Route[move.DayA][move.CohortA]
+        routeB = move.Route[move.DayB][move.CohortB]
+        
+        precessors = []
+        successors = []
+
+        indexA = move.indexA
+        indexB = move.indexB
+
+        
+        if indexA == 0:
+            precessors.append(0)
+            successors.append(routeA[indexA + 1])
+        elif indexA == len(routeA) - 1:
+            precessors.append(routeA[indexA - 1])
+            successors.append(0)
+        else: 
+            precessors.append(routeA[indexA - 1])
+            successors.append(routeA[indexA + 1])
+
+        if indexB == 0:
+            precessors.append(0)
+            successors.append(routeB[indexB + 1])
+        elif indexB == len(routeB) - 1:
+            precessors.append(routeB[indexB - 1])
+            successors.append(0)
+        else:
+            precessors.append(routeB[indexB - 1])
+            successors.append(routeB[indexB + 1])
+
+        # Calculate the delta using the distance subtraction method
+        delta = self.CalclateDistanceSubtraction(move, successors, precessors, two_edges=False)
+        #print("Delta: ",delta)
+
+        return delta
+    
+    def CalclateDistanceSubtraction(self, move, successor_list, precessor_list, two_edges:bool):
         '''Calculates the distance subtraction of the given lists'''
 
         # Calculate the original distances
@@ -128,4 +169,35 @@ class EvaluationLogic:
 
         return delta
 
+
+    def CalculateInsertExtraTime(self, move):
+        '''Calculates the delta of the given insert move'''
+
+        # Retrieve the route for the given day and cohort
+        route = move.Route[move.Day][move.Cohort]
+        precessor = 0
+        successor = 0
+
+        index = move.Index
+
+        if index == 0:
+            precessor = 0
+            successor = route[index+1]
+        elif index == len(route) - 1:
+            precessor = route[index-1]
+            successor = 0
+        else:
+            precessor = route[index-1]
+            successor = route[index+1]
+
+
+        # Calculate the original distances 
+        distance_old = self._data.distances[precessor][successor]
+
+        # Calculate the new distances after insert
+        distance_new = self._data.distances[precessor][move.Task] + self._data.distances[move.Task][successor]
+        
+        extra_time = distance_new - distance_old
+
+        return extra_time
 

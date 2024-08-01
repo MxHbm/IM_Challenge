@@ -30,16 +30,16 @@ class ImprovementAlgorithm:
         
         ### NEEDS TO BE ADJUSTED FOR ORIENTEERING PROBLEMLocalSearch
 
-        if neighborhoodType == 'SwapDelta':
-            return SwapDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'SwapWaiting':
-            return SwapWaitingNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'Insert':
-            return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'BlockK3':
-            return BlockNeighborhoodK3(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        if neighborhoodType == 'SwapIntraRoute':
+            return SwapIntraRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'SwapInterRoute':
+            return SwapInterRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'TwoEdgeExchange':
             return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'Insert':
+            return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'SwapExtTask':
+            return SwapExtTaskNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 
