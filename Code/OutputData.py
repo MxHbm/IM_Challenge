@@ -14,11 +14,11 @@ class Solution:
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
         self._waitingTime = -1
-        self._unusedTasks = self._create_unused_tasks(data)
+        self._create_unused_tasks(data)
 
     def __str__(self):
         '''Base Function for printing out the results'''
-        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit)
+        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit) + "\n Waiting Time: " + str(self.WaitingTime)
     
     
     def _create_StartEndTimes(self, data:InputData):
