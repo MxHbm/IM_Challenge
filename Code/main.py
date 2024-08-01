@@ -18,7 +18,9 @@ for i in instances:
 
     ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
+
     ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1)
+
     solution = pool.GetHighestProfitSolution()
 
     
@@ -30,6 +32,7 @@ for i in instances:
     neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','SwapExtTaskDelta']
     neighborhoodTypesProfit = ['Insert','SwapExtTaskProfit']
     iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','SwapExtTaskDelta','Insert','SwapInterRoute','TwoEdgeExchange','SwapExtTaskProfit'])
+
     iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
 
 

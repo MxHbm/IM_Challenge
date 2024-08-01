@@ -59,7 +59,7 @@ class ConstructiveHeuristics:
             elif numberOfParameterComb == 1:
                 solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
             elif numberOfParameterComb == 'Test':
-                solution = self._Greedy(inputData, 'OnePerDay', 'OnlyDistanceToNextTask', 1.0, 0)
+                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0)
         else:
             raise Exception('Unkown constructive solution method: ' + solutionMethod + '.')
 
@@ -243,8 +243,6 @@ class ConstructiveHeuristics:
         else:
             print('Main task not in route plan')
         
-
-
 
 
     def _CalculateAttractiveness(self,inputData:InputData, attractivenessFunction ,previousTask, nextTask, mainTask, mainTaskVisited,  a , b ):
