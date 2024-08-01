@@ -93,6 +93,7 @@ class BaseNeighborhood:
         serviceDuration = 0
         previousTask = 0  # Start at depot
 
+
         mainTasks = [task for task in route if task > 1000]  # Identify all main tasks in the route
 
         if mainTasks:
@@ -106,7 +107,6 @@ class BaseNeighborhood:
 
                 # Process tasks before the main task
                 for task in tasksBeforeMain:
-                    print(task)
                     serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
                     previousTask = task
 
@@ -115,7 +115,7 @@ class BaseNeighborhood:
                 # Check if the main task can be started at the earliest start time
                 if serviceDuration > inputData.allTasks[mainTask].start_time:
                     feasible = False
-                    break
+                    return feasible
 
                 # Reset the service duration to the main task's start time and process the main task
                 serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
@@ -123,11 +123,10 @@ class BaseNeighborhood:
 
                 # Process tasks after the main task
                 route = tasksAfterMain
-                current_index += mainIndex
+                current_index += (mainIndex + 1) 
 
             # Process remaining tasks after the last main task
             for task in route:
-                print(task) 
                 serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
                 previousTask = task
 
@@ -135,6 +134,7 @@ class BaseNeighborhood:
 
             if serviceDuration > inputData.maxRouteDuration:
                 feasible = False
+                return feasible
 
         else:  # Route consists of optional tasks only
             for task in route:
@@ -145,6 +145,7 @@ class BaseNeighborhood:
             
             if serviceDuration > inputData.maxRouteDuration:
                 feasible = False
+                return  feasible
 
         return feasible
 
