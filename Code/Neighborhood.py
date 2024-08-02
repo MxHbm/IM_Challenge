@@ -166,7 +166,7 @@ class ProfitNeighborhood(BaseNeighborhood):
         
         if self.Type == 'Insert':
             self.MoveSolutions.sort(key=lambda move: (-move.Profit, move.ExtraTime))  # sort solutions according to profit and extra time
-        elif self.Type == 'SwapExtTaskProfit':
+        elif self.Type == 'ReplaceProfit':
             self.MoveSolutions.sort(key=lambda move: (-move.ProfitDelta, move.Delta))  
         else:
             raise Exception('MakeBestMove() is not implemented for this neighborhood type.')
@@ -190,12 +190,16 @@ class ProfitNeighborhood(BaseNeighborhood):
 
 
     def EvaluateMovesFirstImprovement(self) -> None:
-        bestObjective = self.SolutionPool.GetHighestProfitSolution().TotalProfit
         for move in self.Moves:
             moveSolution = self.EvaluateMove(move)
             self.MoveSolutions.append(moveSolution)
-            if moveSolution.Makespan < bestObjective:
-                return None
+            if self.Type == 'Insert':
+                if moveSolution.Profit > 0:
+                    return None
+            elif self.Type == 'ReplaceProfit':
+                if moveSolution.ProfitDelta > 0:
+                    return None
+
 
     def LocalSearch(self, neighborhoodEvaluationStrategy:str, solution:Solution) -> None:
         ''' Tries to find a better solution from the start solution by searching the neighborhod'''
@@ -226,7 +230,7 @@ class ProfitNeighborhood(BaseNeighborhood):
 
                 if self.Type == 'Insert':
                     print("Extra Time:" , bestNeighborhoodMove.ExtraTime)
-                elif self.Type == 'SwapExtTaskProfit':
+                elif self.Type == 'ReplaceProfit':
                     print("Profit Delta:", bestNeighborhoodMove.ProfitDelta)
                     print("Time Delta:" , bestNeighborhoodMove.Delta)
 
@@ -254,26 +258,29 @@ class DeltaNeighborhood(BaseNeighborhood):
         number_to_check = 0
 
         while feasibleFound == False:
-            if self.Type == 'SwapIntraRoute' or self.Type == 'TwoEdgeExchange' or self.Type == 'SwapExtTaskDelta':
-                day = self.MoveSolutions[number_to_check].Day
-                cohort = self.MoveSolutions[number_to_check].Cohort
-                if self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[day][cohort], self.InputData):
-                    feasibleFound = True
-                    bestNeighborhoodSolution = self.MoveSolutions[number_to_check]
+            if number_to_check <= len(self.MoveSolutions)-1:
+                if self.Type == 'SwapIntraRoute' or self.Type == 'TwoEdgeExchange' or self.Type == 'ReplaceDelta':
+                    day = self.MoveSolutions[number_to_check].Day
+                    cohort = self.MoveSolutions[number_to_check].Cohort
+                    if self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[day][cohort], self.InputData):
+                        feasibleFound = True
+                        bestNeighborhoodSolution = self.MoveSolutions[number_to_check]
+                    else:
+                        number_to_check += 1
+                elif self.Type == 'SwapInterRoute':
+                    dayA = self.MoveSolutions[number_to_check].DayA
+                    cohortA = self.MoveSolutions[number_to_check].CohortA
+                    dayB = self.MoveSolutions[number_to_check].DayB
+                    cohortB = self.MoveSolutions[number_to_check].CohortB
+                    if self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[dayA][cohortA], self.InputData) and self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[dayB][cohortB], self.InputData):
+                        feasibleFound = True
+                        bestNeighborhoodSolution = self.MoveSolutions[number_to_check]
+                    else:
+                        number_to_check += 1
                 else:
-                    number_to_check += 1
-            elif self.Type == 'SwapInterRoute':
-                dayA = self.MoveSolutions[number_to_check].DayA
-                cohortA = self.MoveSolutions[number_to_check].CohortA
-                dayB = self.MoveSolutions[number_to_check].DayB
-                cohortB = self.MoveSolutions[number_to_check].CohortB
-                if self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[dayA][cohortA], self.InputData) and self.SingleRouteFeasibilityCheck(self.MoveSolutions[number_to_check].Route[dayB][cohortB], self.InputData):
-                    feasibleFound = True
-                    bestNeighborhoodSolution = self.MoveSolutions[number_to_check]
-                else:
-                    number_to_check += 1
+                    raise Exception('MakeBestMove() is not implemented for this neighborhood type.')
             else:
-                raise Exception('MakeBestMove() is not implemented for this neighborhood type.')
+                return None
 
         return bestNeighborhoodSolution
 
@@ -295,14 +302,14 @@ class DeltaNeighborhood(BaseNeighborhood):
         while hasSolutionImproved:# and iterator < 50:
             
             self.Update(temp_sol.RoutePlan)
-            if self.Type == 'SwapExtTaskDelta':
+            if self.Type == 'ReplaceDelta':
                 self.DiscoverMoves(temp_sol)
             else:
                 self.DiscoverMoves()
             self.EvaluateMoves(neighborhoodEvaluationStrategy)
-            bestNeighborhoodMove = self.MakeBestMove()
+            bestNeighborhoodMove = self.MakeBestMove()            
 
-            if bestNeighborhoodMove.Delta < 0:
+            if bestNeighborhoodMove is not None and bestNeighborhoodMove.Delta < 0:
                 print(f"\nIteration: {iterator} in neighborhood {self.Type}")
                 print("New best solution has been found!")
                 print("Time Delta:" , bestNeighborhoodMove.Delta)
@@ -486,17 +493,17 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
 
         return move
 
-class SwapExtTaskDeltaNeighborhood(DeltaNeighborhood):
+class ReplaceDeltaNeighborhood(DeltaNeighborhood):
     """
     Represents a neighborhood of Swap moves in the context of profit optimization.
 
     Attributes:
-        Type (str): The type of the neighborhood, which is 'SwapExtTaskDelta'.
+        Type (str): The type of the neighborhood, which is 'ReplaceDelta'.
     """
 
     def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
         """
-        Initializes the SwapExtTaskDeltaNeighborhood instance.
+        Initializes the ReplaceDeltaNeighborhood instance.
 
         Args:
             inputData (InputData): The input data required for the neighborhood.
@@ -508,7 +515,7 @@ class SwapExtTaskDeltaNeighborhood(DeltaNeighborhood):
         """
         super().__init__(inputData, evaluationLogic, solutionPool)
 
-        self.Type = 'SwapExtTaskDelta'
+        self.Type = 'ReplaceDelta'
 
     def DiscoverMoves(self, actual_Solution: Solution):
         """
@@ -556,7 +563,7 @@ class SwapExtTaskDeltaNeighborhood(DeltaNeighborhood):
         Returns:
             Solution: The evaluated solution based on the move.
         """
-        move.setDelta(self.EvaluationLogic.CalculateSwapExtTaskDelta(move))
+        move.setDelta(self.EvaluationLogic.CalculateReplaceDelta(move))
 
         return move
 
@@ -688,17 +695,17 @@ class SwapExtMove(BaseMove):
         # Perform the swap: replace the task in the route with the unused task
         self.Route[day][cohort][self.indexInRoute] = self.UnusedTask
 
-class SwapExtTaskProfitNeighborhood(ProfitNeighborhood):
+class ReplaceProfitNeighborhood(ProfitNeighborhood):
     """
     Represents a neighborhood of Swap moves in the context of profit optimization.
 
     Attributes:
-        Type (str): The type of the neighborhood, which is 'SwapExtTaskProfit'.
+        Type (str): The type of the neighborhood, which is 'ReplaceProfit'.
     """
 
     def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
         """
-        Initializes the SwapExtTaskProfitNeighborhood instance.
+        Initializes the ReplaceProfitNeighborhood instance.
 
         Args:
             inputData (InputData): The input data required for the neighborhood.
@@ -710,7 +717,7 @@ class SwapExtTaskProfitNeighborhood(ProfitNeighborhood):
         """
         super().__init__(inputData, evaluationLogic, solutionPool)
 
-        self.Type = 'SwapExtTaskProfit'
+        self.Type = 'ReplaceProfit'
 
     def DiscoverMoves(self, actual_Solution: Solution):
         """
@@ -749,7 +756,7 @@ class SwapExtTaskProfitNeighborhood(ProfitNeighborhood):
         Returns:
             Solution: The evaluated solution based on the move.
         """
-        move.setDelta(self.EvaluationLogic.CalculateSwapExtTaskDelta(move))
+        move.setDelta(self.EvaluationLogic.CalculateReplaceDelta(move))
 
         return move
 

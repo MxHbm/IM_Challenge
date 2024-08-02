@@ -51,6 +51,16 @@ class ConstructiveHeuristics:
                 solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
                 solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
                 solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
+
+                if max ([solution1.TotalProfit, solution2.TotalProfit, solution3.TotalProfit]) == solution1.TotalProfit or max ([solution1.TotalProfit, solution2.TotalProfit, solution3.TotalProfit]) == solution3.TotalProfit:
+                    print('OnePerDay had the highest profit')
+                else:
+                    print('MIP had the highest profit')
+
+                print('Solution 1: ', solution1.TotalProfit)
+                print('Solution 2: ', solution2.TotalProfit)
+                print('Solution 3: ', solution3.TotalProfit)
+                
                 solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
             elif numberOfParameterComb == 2:
                 solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
@@ -218,7 +228,7 @@ class ConstructiveHeuristics:
 
         self.EvaluationLogic.evaluateSolution(tmpSolution)
 
-        print('Initial Solution found.')
+        print(f'Initial Solution with {mainTaskPlanner} found.')
 
         return tmpSolution
 

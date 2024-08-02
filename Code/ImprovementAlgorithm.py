@@ -28,7 +28,6 @@ class ImprovementAlgorithm:
         """ Creates a new neighborhood based on the current best Solution and the chosen neighborhood type.
             Similar to the so-called factory concept in software design. """
         
-        ### NEEDS TO BE ADJUSTED FOR ORIENTEERING PROBLEMLocalSearch
 
         if neighborhoodType == 'SwapIntraRoute':
             return SwapIntraRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
@@ -38,10 +37,10 @@ class ImprovementAlgorithm:
             return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'Insert':
             return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'SwapExtTaskProfit':
-            return SwapExtTaskProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'SwapExtTaskDelta':
-            return SwapExtTaskDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'ReplaceProfit':
+            return ReplaceProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'ReplaceDelta':
+            return ReplaceDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 

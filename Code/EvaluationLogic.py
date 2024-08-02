@@ -72,7 +72,6 @@ class EvaluationLogic:
     
 
 
-
     def CalculateSwapIntraRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
@@ -103,6 +102,7 @@ class EvaluationLogic:
 
         return delta
     
+
     def CalculateSwapInterRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
@@ -142,7 +142,6 @@ class EvaluationLogic:
         #print("Delta: ",delta)
 
         return delta
-    
 
 
     def CalculateTwoEdgeExchangeDelta(self, move):
@@ -173,7 +172,8 @@ class EvaluationLogic:
 
         return delta
     
-    def CalculateSwapExtTaskDelta(self, move):
+
+    def CalculateReplaceDelta(self, move):
 
         # Retrieve the route for the given day and cohort
         route = move.Route[move.Day][move.Cohort]
@@ -202,7 +202,6 @@ class EvaluationLogic:
         delta = distance_new + service_time_new - distance_old - service_time_old
 
         return delta
-
 
 
     def CalculateInsertExtraTime(self, move):
