@@ -426,7 +426,7 @@ def write_txt_solution(gp_model, var_x, data: InputData, allTasks: List[Union[Op
                     # Collect tasks selected by the cohort on the given day
                     for i in range(len(allTasks)):
                         for j in range(len(allTasks)):
-                            if var_x[day,day,cohort, i, j].X > 0:
+                            if var_x[day,cohort, i, j].X > 0:
                                 all_tuples.append((i, j))
                     subtours = create_subtours(all_tuples)
                     if len(subtours) >= 1: 

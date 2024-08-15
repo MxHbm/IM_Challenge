@@ -20,6 +20,15 @@
 *.tar
 *.zip
 
+# Sub Folders #
+############
+# Ignore .txt and .json files in the subdirectories of data 
+Data/**/*.txt
+Data/**/*.json
+
+# But don't ignore .json files in the Instanzen folder
+!Data/Instanzen/*.json
+
 # Logs and databases #
 ######################
 *.log
