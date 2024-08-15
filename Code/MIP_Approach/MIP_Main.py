@@ -106,7 +106,7 @@ def main():
                 model.printAttr(gp.GRB.Attr.ObjVal)
                 model.printAttr(gp.GRB.Attr.X)
                 
-                write_txt_solution(model, s, x, data, all_tasks, outputFilePath_1)
+                write_txt_solution(model, x, data, all_tasks, outputFilePath_1)
                 write_json_solution(model,s,x,data,all_tasks,outputFilePath_2)
 
 main()
