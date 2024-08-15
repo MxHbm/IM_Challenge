@@ -97,7 +97,7 @@ def main():
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
                 model.Params.TimeLimit = 10800  # 3 hours
                 #model.Params.Threads = 32
-                model.Params.PrePasses = 100000
+                model.Params.PrePasses = 10000
 
                 #### OPTIMIZE MODEL ####
                 model.optimize()
