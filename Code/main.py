@@ -1,24 +1,50 @@
 from ConstructiveHeuristic import * 
 from EvaluationLogic import *
+from ImprovementAlgorithm import *
+import time
 
 
-data = InputData("Data/Instanzen/Instance7_2_1.json")
+instances = ['7_2_2', '7_5_1', '7_5_2']#, '7_8_1', '7_8_2', '7_10_1', '7_10_2']
 
-pool = SolutionPool()
+print('______________________________________________________________________')
 
-ConstructiveHeuristic = ConstructiveHeuristics(pool)
-Evaluations = EvaluationLogic(data)
+for i in instances:
+    #print(Path.cwd().parent) 
+    print("Instance: ", i)
+    data = InputData("Instance"+i+".json")
 
-ConstructiveHeuristic.Run(data, "Greedy")
+    pool = SolutionPool()
+    evaluationLogic = EvaluationLogic(data)
 
-sol = pool.GetLowestMakespanSolution()
+    ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
-print(sol.RoutePlan)
 
-print(sol.StartTimes)
+    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1)
 
-print(sol.EndTimes)
+    solution = pool.GetHighestProfitSolution()
 
-Evaluations.setProfit(sol)
+    
+    solution.WriteSolToJson(Path.cwd().parent / "Data" / "Results_Greedy",data)
 
-print(sol.TotalProfit)
+    print(solution)
+
+
+    neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','SwapExtTaskDelta']
+    neighborhoodTypesProfit = ['Insert','SwapExtTaskProfit']
+    iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','SwapExtTaskDelta','Insert','SwapInterRoute','TwoEdgeExchange','SwapExtTaskProfit'])
+
+    iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
+
+
+    start_time = time.time()
+    solution = iterativeImpro.Run(solution)
+    end_time = time.time()
+    
+    runtime = end_time - start_time
+    
+    solution.WriteSolToJson(Path.cwd().parent / "Data" / "Results_Iterative",data)
+
+    print(f"Runtime: {round(runtime, 2)} seconds")
+    print('THE END')
+    print('______________________________________________________________________')
+

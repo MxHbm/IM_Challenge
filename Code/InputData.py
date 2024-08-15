@@ -1,7 +1,6 @@
 import json
 import csv
 import math
-import os
 from pathlib import Path
 
 class MainTask:
@@ -18,6 +17,7 @@ class MainTask:
         self._latitude = float(json_data.get('Latitude', 0.0))
         self._longitude = float(json_data.get('Longitude', 0.0))
         self._profit = 0 # Dummy value to compute total profit
+        self._no = 0 # For accessing elements in the list
 
     def __str__(self):
         ''' This method makes it easier to print the object's attributes as a string '''
@@ -28,6 +28,10 @@ class MainTask:
     def setProfit(self, profit):
         ''' Set the profit of the task '''
         self._profit = profit
+
+    def setNumber(self, num:int) -> None:
+        ''' Set the number of the task in the list '''
+        self._no = num
 
     @property
     def ID(self) -> str:
@@ -63,6 +67,11 @@ class MainTask:
     def location_id(self) -> int:
         ''' Return Location ID '''
         return self._location_id
+    
+    @property
+    def no(self): 
+        '''Returns the number of the respective all Tasks list to acces other elements'''
+        return self._no
 
     @property
     def latitude(self) -> float:
@@ -92,6 +101,7 @@ class OptionalTask:
         self._category = str(json_data.get('Category'))
         self._service_time = int(json_data.get('ServiceTime',0))
         self._profit = int(json_data.get('Profit',0))
+        self._no = None # For accessing elements in the list
         self._start_time = 0
         self._end_time = 0
 
@@ -102,10 +112,19 @@ class OptionalTask:
                 f"Description: {self.description}, Category: {self.category}, Service Time: {self.service_time}, "
                 f"Profit: {self.profit}")
     
+    def setNumber(self, num:int) -> None:
+        ''' Set the number of the task in the list '''
+        self._no = num
+    
     @property
     def start_time(self):
         ''' Get Start time '''
         return self._start_time
+    
+    @property
+    def no(self): 
+        '''Returns the number of the respective all Tasks list to acces other elements'''
+        return self._no
 
     @property
     def end_time(self):
@@ -171,20 +190,22 @@ class OptionalTask:
 class InputData:
     '''Class for creating Data objects based on formatted Json Files containing the information of the regarding jobs and machines'''
 
-    def __init__(self, main_tasks_path: str, optional_tasks_path: str = Path.cwd() / "Data" / "OptionalTasks.csv") -> None: # Changed default path to relative path
+    def __init__(self, instance_filename: str, optional_tasks_path: str = str((Path.cwd().parent /  "Data" / "OptionalTasks.csv").resolve())) -> None: # Changed default path to relative path
         '''
         Initialize the InputData object with paths to the optional tasks and main tasks files.
 
         :param optional_tasks_path: Path to the CSV file containing optional tasks
         :param main_tasks_path: Path to the JSON file containing main tasks
         '''
-
+        self._main_tasks_path = str((Path.cwd().parent / "Data" / "Instanzen" / instance_filename).resolve())
         self._optional_tasks_path = optional_tasks_path
-        self._main_tasks_path = main_tasks_path 
+        
 
         # Load and create task objects from file paths
         self._Load_MainTasks()
         self._Load_OptionalTasks()
+
+        self._AddNumbersToList(self._mainTasks, len(self._optionalTasks))
 
         # Create List with all Tasks
         self._allTasks = self._optionalTasks + self._mainTasks
@@ -192,7 +213,10 @@ class InputData:
         # Create list with distances
         self._distances = self._CreateDistances()
 
+        # Create list with score for attractiveness
+        #self._scoreboard = self._CreateScoreboard()
 
+        
     def _Load_OptionalTasks(self) -> None:
         ''' Initialize the creation of a list of optional tasks based on the CSV file path'''
 
@@ -204,10 +228,13 @@ class InputData:
             reader = csv.DictReader(csvfile)
 
             # Create OptionalTask objects for each row in the CSV file
+            number = 0
             for row in reader: 
                 task = OptionalTask(row)
                 task._end_time = self._maxRouteDuration
+                task.setNumber(number)
                 self._optionalTasks.append(task)
+                number += 1
 
     def _Load_MainTasks(self) -> None:
         ''' Initialize the creation of a list of main tasks based on the JSON file path'''
@@ -252,6 +279,43 @@ class InputData:
                     distances[task_i_id][task_j_id] = distances[task_j_id][task_i_id] = self._CalculateDistance(self._allTasks[task_i_id], self._allTasks[task_j_id])
 
         return distances
+    
+    def _CalculateScore(self, currentTask) -> int:
+        ''' Calculate Score for every task'''
+
+        listOfCloseHighProfit = list()
+        for task in self.optionalTasks:
+            if task.profit == 3 and task != currentTask:
+                taskIndex = self.optionalTasks.index(task)
+                currentTaskIndex = self.optionalTasks.index(currentTask)
+                distanceToTask = self.distances[taskIndex][currentTaskIndex]
+                if distanceToTask < 180: # Distance needs to be lower than 180 seconds to be included as a point
+                    taskIndex = self.optionalTasks.index(task)
+                    listOfCloseHighProfit.append(taskIndex)
+        
+        return listOfCloseHighProfit
+    
+
+    def _CreateScoreboard(self) -> list[int]:
+        ''' Create Score System for Nodes that have a good Position in the Network --> Close to 3 Profit Tasks'''
+        
+        scoreboard = dict()
+
+        for task in self.optionalTasks:
+            taskIndex = self.optionalTasks.index(task)
+            scoreboard[taskIndex] = self._CalculateScore(task)
+
+        self._scoreboard = scoreboard
+
+        return scoreboard
+    
+    def _AddNumbersToList(self, task_list, start_number) -> None:
+        ''' Add the number of the task in the list to the task object'''
+
+        number = start_number
+        for task in task_list:
+            task.setNumber(number)
+            number += 1
 
     @property
     def allTasks(self) -> list:
@@ -272,6 +336,11 @@ class InputData:
     def distances(self) -> list[list[int]]:
         ''' Get Two dimensional list with distances between all tasks'''
         return self._distances
+    
+    @property
+    def scoreboard(self) -> list[int]:
+        ''' Get list with score for attractiveness of tasks'''
+        return self._scoreboard
     
     @property
     def optional_tasks_path(self) -> str:
