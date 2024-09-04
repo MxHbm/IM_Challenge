@@ -37,7 +37,7 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    def Run(self, inputData:InputData, solutionMethod = 'Greedy', numberOfParameterComb = 3) -> None:
+    def Run(self, inputData:InputData, solutionMethod = 'Greedy', numberOfParameterComb = 3, main_tasks = True) -> None:
         ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
 
         print('Generating an initial solution according to ' + solutionMethod + '.')
@@ -47,19 +47,25 @@ class ConstructiveHeuristics:
 
         # Decision tree for choosing constructive heuristic 
         if solutionMethod == 'Greedy':
-            if numberOfParameterComb == 3:
-                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
-                solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
-                solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
-                solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
-            elif numberOfParameterComb == 2:
-                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
-                solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
-                solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
-            elif numberOfParameterComb == 1:
-                solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
-            elif numberOfParameterComb == 'Test':
-                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0)
+            
+            if main_tasks == True:
+                if numberOfParameterComb == 3:
+                    solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                    solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
+                    solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
+                    solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
+                elif numberOfParameterComb == 2:
+                    solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                    solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
+                    solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
+                elif numberOfParameterComb == 1:
+                    solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                elif numberOfParameterComb == 'Test':
+                    solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0) ### TEST
+
+            else:
+                solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
+                #solution = self._Greedy(inputData, None, 'WithDistanceToCloseTasks', 1.0, 100) ### Different Possibility
         else:
             raise Exception('Unkown constructive solution method: ' + solutionMethod + '.')
 
@@ -76,16 +82,24 @@ class ConstructiveHeuristics:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
         
 
-        if attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
+        if attractivenessFunction == 'WithDistanceToMainAndCloseTasks' or attractivenessFunction == 'WithDistanceToCloseTasks':
             inputData._CreateScoreboard()
 
 
         ''' Assign main tasks to days and cohorts'''
-        print('Assigning main tasks to days and cohorts according to ' + mainTaskPlanner + '.')
+        if mainTaskPlanner is not None:
+            print('Assigning main tasks to days and cohorts according to ' + mainTaskPlanner + '.')
         if mainTaskPlanner == 'MIP':
             prefilled_route_plan = self._create_initial_route_plan_with_MIP(inputData)
         elif mainTaskPlanner == 'OnePerDay':
             prefilled_route_plan = self._create_initial_route_plan(inputData)
+        elif mainTaskPlanner == None:
+                prefilled_route_plan = {}
+                for day in range(inputData.days):
+                    day_list = []
+                    for cohort in range(inputData.cohort_no):
+                        day_list.append([])
+                    prefilled_route_plan[day] = day_list     
         else:
             raise Exception('Unknown main task planner: ' + mainTaskPlanner + '.')
 
@@ -213,7 +227,6 @@ class ConstructiveHeuristics:
                                 next_task_planned = True
                                 route_planned = True
 
-  
         tmpSolution = Solution(prefilled_route_plan, inputData)
 
         self.EvaluationLogic.evaluateSolution(tmpSolution)
@@ -252,6 +265,12 @@ class ConstructiveHeuristics:
 
         if attractivenessFunction == 'OnlyDistanceToNextTask':
             attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance)
+
+        
+        elif attractivenessFunction == 'WithDistanceToCloseTasks':
+            nextTaskIndex = inputData.optionalTasks.index(nextTask)
+            closeProfitScore = len(inputData.scoreboard[nextTaskIndex])/b
+            attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance)
 
 
         elif attractivenessFunction == 'WithDistanceToMainTask':

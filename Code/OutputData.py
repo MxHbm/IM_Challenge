@@ -21,7 +21,7 @@ class Solution:
         return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit) + "\n Waiting Time: " + str(self.WaitingTime)
     
     
-    def _create_StartEndTimes(self, data:InputData):
+    def _create_StartEndTimes(self, data: InputData):
         ''' Calculate the start and the end times of the tasks of the given solution'''
         
         self._startTimes = {}
@@ -32,36 +32,34 @@ class Solution:
             cohort_list_start = []
             cohort_list_end = []
             for cohort in day:
-                route_list_start = [0]
-                route_list_end = [0]
+                if len(cohort) > 0:  # Überprüfen, ob die Kohorte Aufträge enthält
+                    route_list_start = [0]
+                    route_list_end = [0]
 
-                if len(cohort) >= 0:
                     previous_t = cohort[0]
+                    end_time_previous = 0 # Needed to be added (Niklas)
 
-                end_time_previous = 0 # Needed to be added (Niklas)
+                    for t in cohort[1:]:
+                        if t >= 1001:
+                            start_time = data.allTasks[t].start_time
+                        else: 
+                            start_time = data.distances[previous_t][t] + end_time_previous
 
-                for t in cohort[1:]:
+                        end_time = start_time + data.allTasks[t].service_time
+                        end_time_previous = end_time
 
-
-                    if t >= 1001:
-                        start_time = data.allTasks[t].start_time
-                    else: 
-                        start_time = data.distances[previous_t][t] + end_time_previous
-
-
-                    end_time = start_time + data.allTasks[t].service_time
-                    end_time_previous = end_time
+                        previous_t = t
+                        route_list_start.append(start_time)
+                        route_list_end.append(end_time)
                     
+                    cohort_list_start.append(route_list_start)
+                    cohort_list_end.append(route_list_end)
 
-                    previous_t = t
-                    route_list_start.append(start_time)
-                    route_list_end.append(end_time)
-                
-                cohort_list_start.append(route_list_start)
-                cohort_list_end.append(route_list_end)
+            # Nur speichern, wenn die Liste nicht leer ist
+            if cohort_list_start and cohort_list_end:
+                self._startTimes[day_index] = cohort_list_start
+                self._endTimes[day_index] = cohort_list_end
             
-            self._startTimes[day_index] = cohort_list_start
-            self._endTimes[day_index] = cohort_list_end
             day_index += 1
     
 
@@ -103,7 +101,7 @@ class Solution:
         self._waitingTime = new_waiting_time
 
     
-    def WriteSolToJson(self, file_path:str, inputData: InputData):
+    def WriteSolToJson(self, file_path:str, inputData: InputData, main_tasks:bool) -> None:
         ''' Write the solution to a json file'''
 
         days = dict()
@@ -140,13 +138,13 @@ class Solution:
 
                     start_time += inputData.allTasks[i].service_time
  
-                    
-                cohort_dict = {"CohortID"   : cohort,
-                            "Profit"     : profit_route,
-                            "Route"    : route_list}
+                if self.RoutePlan[day][cohort] != []:    
+                    cohort_dict = {"CohortID"   : cohort,
+                                "Profit"     : profit_route,
+                                "Route"    : route_list}
                 
                 
-                day_list.append(cohort_dict)
+                    day_list.append(cohort_dict)
 
 
             days[str(day + 1)] = day_list
@@ -157,7 +155,7 @@ class Solution:
             "Instance": inputData.main_tasks_path.split("/")[-1].split(".")[0],
             "Objective": self.TotalProfit,
             "NumberOfAllTasks": self.TotalTasks,
-            "UseMainTasks" : True,
+            "UseMainTasks" : main_tasks,
             "Days" : days
     }
 
