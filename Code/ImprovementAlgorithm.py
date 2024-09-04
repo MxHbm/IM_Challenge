@@ -38,10 +38,10 @@ class ImprovementAlgorithm:
             return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool)
         elif neighborhoodType == 'Insert':
             return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'SwapExtTaskProfit':
-            return SwapExtTaskProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
-        elif neighborhoodType == 'SwapExtTaskDelta':
-            return SwapExtTaskDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'ReplaceProfit':
+            return ReplaceProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+        elif neighborhoodType == 'ReplaceDelta':
+            return ReplaceDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 

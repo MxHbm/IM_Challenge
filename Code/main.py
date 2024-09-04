@@ -4,12 +4,12 @@ from ImprovementAlgorithm import *
 import time
 
 
-instances = ['7_2_2', '7_5_1', '7_5_2']#, '7_8_1', '7_8_2', '7_10_1', '7_10_2']
+instances = ['7_10_1', '7_10_2']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2', '7_10_1', '7_10_2']
 
 print('______________________________________________________________________')
 
 for i in instances:
-    #print(Path.cwd().parent) 
+    print(Path.cwd().parent) 
     print("Instance: ", i)
     data = InputData("Instance"+i+".json")
 
@@ -19,7 +19,7 @@ for i in instances:
     ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
 
-    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1)
+    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=3)
 
     solution = pool.GetHighestProfitSolution()
 
@@ -29,9 +29,9 @@ for i in instances:
     print(solution)
 
 
-    neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','SwapExtTaskDelta']
-    neighborhoodTypesProfit = ['Insert','SwapExtTaskProfit']
-    iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','SwapExtTaskDelta','Insert','SwapInterRoute','TwoEdgeExchange','SwapExtTaskProfit'])
+    neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta']
+    neighborhoodTypesProfit = ['Insert','ReplaceProfit']
+    iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','ReplaceDelta','Insert','SwapInterRoute','TwoEdgeExchange','ReplaceProfit','SwapIntraRoute','TwoEdgeExchange','Insert','ReplaceProfit'])
 
     iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
 

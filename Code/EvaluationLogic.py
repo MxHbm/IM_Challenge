@@ -173,7 +173,7 @@ class EvaluationLogic:
 
         return delta
     
-    def CalculateSwapExtTaskDelta(self, move):
+    def CalculateReplaceDelta(self, move):
 
         # Retrieve the route for the given day and cohort
         route = move.Route[move.Day][move.Cohort]
