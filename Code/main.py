@@ -4,9 +4,15 @@ from ImprovementAlgorithm import *
 import time
 
 
-instances = ['7_10_1', '7_10_2']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2', '7_10_1', '7_10_2']
+main_tasks = False
+
+if main_tasks:
+    instances = ['7_2_1', '7_2_2', '7_5_1', '7_5_2', '7_8_1', '7_8_2', '7_10_1', '7_10_2']
+else:
+    instances = ['7_2_1', '7_5_1']#, '7_8_1', '7_10_1']
 
 print('______________________________________________________________________')
+
 
 for i in instances:
     print(Path.cwd().parent) 
@@ -16,15 +22,16 @@ for i in instances:
     pool = SolutionPool()
     evaluationLogic = EvaluationLogic(data)
 
+
     ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
 
-    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=3)
+    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=3, main_tasks = main_tasks)
 
     solution = pool.GetHighestProfitSolution()
 
-    
-    solution.WriteSolToJson(Path.cwd().parent / "Data" / "Results_Greedy",data)
+    main_tasks_string = str(main_tasks) 
+    solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) /"Results_Greedy",data, main_tasks)
 
     print(solution)
 
@@ -42,7 +49,7 @@ for i in instances:
     
     runtime = end_time - start_time
     
-    solution.WriteSolToJson(Path.cwd().parent / "Data" / "Results_Iterative",data)
+    solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / "Results_Iterative",data, main_tasks)
 
     print(f"Runtime: {round(runtime, 2)} seconds")
     print('THE END')
