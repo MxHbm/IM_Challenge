@@ -3,10 +3,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2]: #[2,5,8,10]
+    for no_days in [2,5,8,10]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            for define_range in [200]: #[50,200,500,1000]
+            for define_range in [50,200,500,1000]: #[50,200,500,1000]
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
@@ -14,8 +14,8 @@ def main():
                 cwd = Path.cwd()
                 
                 # Define the output folder path relative to the script location
-                outputFilePath_1 = cwd / "Data" / "Results_Flexi_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.txt"
-                outputFilePath_2 = cwd / "Data" / "Results_Flexi_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.json"
+                outputFilePath_1 = cwd / "Data" / "Results_Flexi_MIP" / f"solution_{no_days}_{instance_no}_{define_range}.txt"
+                outputFilePath_2 = cwd / "Data" / "Results_Flexi_MIP" / f"solution_{no_days}_{instance_no}_{define_range}.json"
 
 
                 #### INITIALIZE DATA ####
@@ -94,15 +94,18 @@ def main():
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
                 model.Params.TimeLimit = 10800 # 3 hours
-                model.Params.Threads = 32
+                model.setParam('Threads', 8)  # Limit to 2 threads, or another small number
                 model.Params.PrePasses = 1000000
+                model.Params.NoRelHeurWork = 600
+                model.Params.NoRelHeurTime = 600
+                model.setParam('NodefileStart', 0.5) 
 
                 #### OPTIMIZE MODEL ####
                 model.optimize()
 
                 #### EVALUATION ####
                 model.printAttr(gp.GRB.Attr.ObjVal)
-                model.printAttr(gp.GRB.Attr.X)
+                #model.printAttr(gp.GRB.Attr.X)
 
                 write_txt_solution_flexi(model, x, data, all_tasks,outputFilePath_1)
                 write_json_solution_mip_flexi(model,x, data,all_tasks, d, outputFilePath_2)

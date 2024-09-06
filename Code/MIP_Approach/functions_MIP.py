@@ -210,7 +210,7 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
         # Collect tasks selected by the cohort on the given day
         for i in range(len(allTasks)):
             for j in range(len(allTasks)):
-                if var_x[day,cohort, i, j].X > 0:
+                if var_x[cohort, i, j].X > 0:
                     all_tuples.append((i, j))
 
         subtours = create_subtours(all_tuples)
@@ -262,7 +262,7 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
             }
             
             cohort_lists.append(cohort_dict)
-            print(len(cohort_lists))
+            #print(len(cohort_lists))
 
             cohort_no += 1
     
@@ -330,7 +330,7 @@ def write_txt_solution_flexi(gp_model, var_x, data:InputData, allTasks, file_pat
             # Collect tasks selected by the cohort on the given day
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
-                    if var_x[day,cohort, i, j].X > 0:
+                    if var_x[cohort, i, j].X > 0:
                         all_tuples.append((i, j))
 
             subtours = create_subtours(all_tuples)
