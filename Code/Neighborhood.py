@@ -217,23 +217,25 @@ class ProfitNeighborhood(BaseNeighborhood):
 
 
             if bestNeighborhoodMove is not None:
-                print(f"\nIteration {iterator} in neighborhood {self.Type}")
-                print("New best solution has been found!")
+                #print(f"\nIteration {iterator} in neighborhood {self.Type}")
+                #print("New best solution has been found!")
                 bestNeighborhoodSolution = Solution(bestNeighborhoodMove.Route, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
-                print("New Profit:" , bestNeighborhoodSolution.TotalProfit)
-                print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
+                #print("New Profit:" , bestNeighborhoodSolution.TotalProfit)
+                #print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
 
                 if self.Type == 'Insert':
-                    print("Extra Time:" , bestNeighborhoodMove.ExtraTime)
+                    #print("Extra Time:" , bestNeighborhoodMove.ExtraTime)
+                    pass
                 elif self.Type == 'ReplaceProfit':
-                    print("Profit Delta:", bestNeighborhoodMove.ProfitDelta)
-                    print("Time Delta:" , bestNeighborhoodMove.Delta)
+                    #print("Profit Delta:", bestNeighborhoodMove.ProfitDelta)
+                    #print("Time Delta:" , bestNeighborhoodMove.Delta)
+                    pass
 
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
                 temp_sol = bestNeighborhoodSolution
             else:
-                print(f"\nReached local optimum of {self.Type} neighborhood in Iteration {iterator}. Stop local search.\n")
+                #print(f"\nReached local optimum of {self.Type} neighborhood in Iteration {iterator}. Stop local search.\n")
                 hasSolutionImproved = False
             iterator += 1
             
@@ -306,16 +308,16 @@ class DeltaNeighborhood(BaseNeighborhood):
             bestNeighborhoodMove = self.MakeBestMove()
 
             if bestNeighborhoodMove is not None and bestNeighborhoodMove.Delta < 0:
-                print(f"\nIteration: {iterator} in neighborhood {self.Type}")
-                print("New best solution has been found!")
-                print("Time Delta:" , bestNeighborhoodMove.Delta)
+                #print(f"\nIteration: {iterator} in neighborhood {self.Type}")
+                #print("New best solution has been found!")
+                #print("Time Delta:" , bestNeighborhoodMove.Delta)
                 bestNeighborhoodSolution = Solution(bestNeighborhoodMove.Route, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
-                print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
+                #print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
                 temp_sol = bestNeighborhoodSolution
             else:
-                print(f"\nReached local optimum of {self.Type} neighborhood in iteration {iterator}. Stop local search.\n")
+                #print(f"\nReached local optimum of {self.Type} neighborhood in iteration {iterator}. Stop local search.\n")
                 hasSolutionImproved = False
             iterator += 1
         return temp_sol
@@ -547,7 +549,6 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
                         swapMove = SwapExtMove(self.RoutePlan, day, cohort, taskInRoute, unusedTask, self.InputData)  
                         self.Moves.append(swapMove)
 
-        print(f"Allowed Swaps: {allowedSwaps}")
 
     def EvaluateMove(self, move):
         """

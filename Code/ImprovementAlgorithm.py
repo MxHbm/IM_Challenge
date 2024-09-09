@@ -2,6 +2,7 @@ from Neighborhood import *
 import math
 from copy import deepcopy
 import numpy
+import time
 
 class ImprovementAlgorithm:
     """ Base class for several types of improvement algorithms. """ 
@@ -80,6 +81,144 @@ class IterativeImprovement(ImprovementAlgorithm):
             print(f'Best solution after {usedTypes}: {solution}')
         
         return solution
+
+
+class IteratedLocalSearch(ImprovementAlgorithm):
+    """ Iterative local search with perturbation to escape local optima.
+        Local Search with iterative steps through many different neighborhoods.
+    """
+
+    def __init__(self, inputData: InputData, neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
+        super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
+
+    def Run(self, solution: Solution) -> Solution:
+        ''' Run local search with given solutions and iterate through all given neighborhood types '''
+
+        self.InitializeNeighborhoods(solution)
+        
+        print('\nStarting Iterated Local Search')
+        print(f'\n Running initial local search')
+        for neighborhoodType in self.NeighborhoodTypes:    
+            print(f' Running neighborhood {neighborhoodType}')
+            neighboorhood = self.Neighborhoods[neighborhoodType]
+            solution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
+
+        currentSolution = solution
+        print(f' Solution after initial local search:\n {currentSolution}')
+
+        maxIterations = 10
+        maxTime = 3600*4
+
+        iteration = 1
+        threshold1 = 2
+        iterationsWithoutImprovement = 0
+        bestIteration = 'initial local search'
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+        
+        startTime = time.time()
+        usedTime = 0
+        while maxTime > usedTime:
+            print(f'\nStarting iteration {iteration}')
+            print(f' Running perturbation')
+            currentSolution = self.Perturbation(currentSolution)
+            print(f' Solution after perturbation in iteration {iteration}: \n {currentSolution}')
+            print(f'\n Running local search after perturbation')
+            for neighborhoodType in self.NeighborhoodTypes:
+                print(f' Running neighborhood {neighborhoodType}')
+                neighboorhood = self.Neighborhoods[neighborhoodType]
+                currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, currentSolution)
+            print(f' Solution after local search in iteration {iteration}:\n {currentSolution}')
+
+            
+            if currentSolution.TotalProfit > bestSolution.TotalProfit:
+                iterationsWithoutImprovement = 0
+                bestIteration = iteration
+            else:
+                iterationsWithoutImprovement += 1
+
+            bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            print(f'\n Overall best solution found in iteration {bestIteration}: \n {bestSolution}')
+
+            print(f' Iterations without improvement: {iterationsWithoutImprovement}')
+            
+            if iterationsWithoutImprovement == threshold1:
+                print(f"The threshold of {threshold1} iterations without improvement has been reached.")
+                currentSolution = bestSolution
+                iterationsWithoutImprovement = 0
+            
+            iteration += 1
+
+            usedTime = time.time() - startTime
+
+        print(f'\n Iterated Local Search finished after {iteration} iterations and {usedTime} seconds')
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        return bestSolution
+
+    def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
+        ''' Perturbation to escape local optima '''
+
+
+        # choose type of perturbation randomly
+        types = ['remove', 'shake']
+        type = random.choice(types)
+
+        print(f'\n Perturbation type: {type}')
+        
+        if type == 'remove': # Random removal of jobs
+            valid_elements = [(key, sublist_idx, item_idx, item) 
+                            for key, sublists in solution.RoutePlan.items()
+                            for sublist_idx, sublist in enumerate(sublists) 
+                            for item_idx, item in enumerate(sublist) 
+                            if item <= 1000]
+
+            jobsToRemove = 3
+
+            newRoutePlan = deepcopy(solution.RoutePlan)
+            if len(valid_elements) >= jobsToRemove:
+                to_remove = random.sample(valid_elements, jobsToRemove)
+                for key, sublist_idx, item_idx, item in to_remove:
+                    newRoutePlan[key][sublist_idx].remove(item)
+            else:
+                print('RoutePlan is faulty')
+
+            currentSolution = Solution(newRoutePlan, self.InputData)
+            self.EvaluationLogic.evaluateSolution(currentSolution)
+
+
+        elif type == 'shake': # random removal of consectitive jobs
+            
+            newRoutePlan = deepcopy(solution.RoutePlan)
+            
+            sublists_to_modify = 3
+            consecutive_to_remove = 3
+
+            all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
+            selected_sublists = random.sample(all_sublists, min(sublists_to_modify, len(all_sublists)))
+
+            for key, sublist in selected_sublists:
+                valid_positions = [i for i in range(len(sublist) - consecutive_to_remove + 1)
+                                    if all(sublist[i + j] <= 1000 for j in range(consecutive_to_remove))]
+
+                if valid_positions:
+                    start_pos = random.choice(valid_positions)
+                    del sublist[start_pos:start_pos + consecutive_to_remove]
+
+
+            currentSolution = Solution(newRoutePlan, self.InputData)
+            self.EvaluationLogic.evaluateSolution(currentSolution)
+        
+
+        return currentSolution
+
+        
+
+
+
+
+
+
 
 '''
 class IteratedGreedy(ImprovementAlgorithm):

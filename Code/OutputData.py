@@ -18,8 +18,8 @@ class Solution:
 
     def __str__(self):
         '''Base Function for printing out the results'''
-        return "Solution:\n Route Plan: " + str(self.RoutePlan) + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit) + "\n Waiting Time: " + str(self.WaitingTime)
-    
+        return "Solution:\n Route Plan: " + "\n Number of Tasks: " + str(self.TotalTasks) + "\n Total Profit: " + str(self.TotalProfit) + "\n Waiting Time: " + str(self.WaitingTime)
+        ##+ str(self.RoutePlan)
     
     def _create_StartEndTimes(self, data: InputData):
         ''' Calculate the start and the end times of the tasks of the given solution'''
@@ -221,6 +221,7 @@ class SolutionPool:
     def __init__(self):
         ''' Create an empty list for the solutions'''
         self.Solutions = []
+        
 
     def AddSolution(self, newSolution:Solution) -> None:
         ''' Add a new solution to the solution pool'''
@@ -228,7 +229,7 @@ class SolutionPool:
 
     def GetHighestProfitSolution(self) -> Solution:
         ''' Sort all the solutions in regard to their makespan and return the solution with the lowest makespan'''
-        self.Solutions.sort(key = lambda solution: solution.TotalProfit) # sort solutions according to Profit
+        self.Solutions.sort(key=lambda solution: (solution.TotalProfit, solution.WaitingTime), reverse=True) # sort solutions according to Profit and waiting time
 
         return self.Solutions[0]
 
