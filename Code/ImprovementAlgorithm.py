@@ -156,6 +156,139 @@ class IteratedLocalSearch(ImprovementAlgorithm):
 
         return bestSolution
 
+    
+    
+    
+class SAILS(ImprovementAlgorithm):
+    """ A combination of Simulated Annealing and Iterative local search.."""
+
+    def __init__(self, inputData: InputData, neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
+        super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
+
+    def Run(self, solution: Solution) -> Solution:
+
+        self.InitializeNeighborhoods(solution)
+        
+        print('\nStarting SAILS (Simualted Annealing Iterated Local Search)')
+        print(f'\n Running initial local search')
+
+        initialNeighborhoodTypes = ['SwapIntraRoute', 'SwapInterRoute', 'TwoEdgeExchange', 'ReplaceDelta', 'Insert', 'ReplaceProfit']
+
+        for neighborhoodType in initialNeighborhoodTypes:    
+            print(f' Running neighborhood {neighborhoodType}')
+            neighboorhood = self.Neighborhoods[neighborhoodType]
+            solution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
+
+        currentSolution = solution
+        lineSolution = solution
+        print(f' Solution after initial local search:\n {currentSolution}')
+
+        maxIterations = 10
+        maxTime = 3600*4
+
+        iteration = 1
+        maxIterationsWithoutImprovement = 2
+        iterationsWithoutImprovement = 0
+        bestIteration = 'initial local search'
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        maxInnerLoop = 3
+        temperature = 10
+        a = 0.95
+        
+        startTime = time.time()
+        usedTime = 0
+
+        profitNeighborhoods = ['Insert', 'ReplaceProfit']
+        deltaNeighborhoods = ['SwapIntraRoute', 'TwoEdgeExchange', 'SwapInterRoute', 'ReplaceDelta']
+
+
+        while maxTime > usedTime:
+            print(f'\nStarting iteration {iteration}')
+
+            innerLoop = 0
+            while innerLoop < maxInnerLoop:
+
+                print(f'\n Iteration.InnerLoop {iteration}.{innerLoop}')
+                print(f' Running perturbation')
+                currentSolution = self.Perturbation(currentSolution)
+                print(f' Solution after perturbation in iteration {iteration}.{innerLoop}: \n {currentSolution}')
+                
+                print(f'\n Running local search after perturbation')
+
+                for neighborhoodType in profitNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, currentSolution)
+
+
+                for neighborhoodType in deltaNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch('FirstImprovement', currentSolution)
+
+
+                for neighborhoodType in profitNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, currentSolution)
+
+                print(f' Solution after local search in iteration {iteration}.{innerLoop}:\n {currentSolution}')
+
+                
+                if currentSolution.TotalProfit > lineSolution.TotalProfit:
+                    lineSolution = currentSolution
+                    if currentSolution.TotalProfit > bestSolution.TotalProfit:
+                        bestSolution = currentSolution
+                        iterationsWithoutImprovement = 0
+                        bestIteration = iteration
+                    else:
+                        iterationsWithoutImprovement += 1
+                else:
+                    random_number = numpy.random.uniform(0,1)
+                    print(f'Line solution: {lineSolution.TotalProfit}, Current solution: {currentSolution.TotalProfit}')
+                    print(f"Temperature: {temperature}")
+                    print(f"Random number: {random_number}")
+                    print(f"Exponential: {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}")
+                    if random_number < math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature)):
+                        print(f'Accepting worse solution with probability {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}')
+                        lineSolution = currentSolution   
+                    else:
+                        print(f'Rejecting worse solution with probability {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}')
+                        currentSolution = lineSolution
+
+                    iterationsWithoutImprovement += 1
+                
+                innerLoop += 1
+
+            bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            print(f'\n Overall best solution found in iteration {bestIteration}: \n {bestSolution}')
+
+            print(f' Iterations without improvement: {iterationsWithoutImprovement}')
+            
+            temperature = temperature * a
+
+            if iterationsWithoutImprovement >= maxIterationsWithoutImprovement:
+                print(f"The limit of {maxIterationsWithoutImprovement} iterations without improvement has been reached.")
+                currentSolution = bestSolution
+                lineSolution = currentSolution
+                iterationsWithoutImprovement = 0
+            
+            iteration += 1
+
+            usedTime = time.time() - startTime
+
+        print(f'\n SAILS finished after {iteration} iterations and {usedTime} seconds')
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        return bestSolution
+    
+    
+    
+    
+    
+    
     def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
         ''' Perturbation to escape local optima '''
 

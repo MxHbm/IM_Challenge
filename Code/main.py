@@ -5,10 +5,10 @@ import time
 
 
 main_tasks = True
-algorithm = 'ILS' #Iterative or ILS
+algorithm = 'SAILS' #Iterative or ILS
 
 if main_tasks:
-    instances = ['7_2_1', '7_2_2']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
+    instances = ['7_2_1']#, '7_2_2']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
 else:
     instances = ['7_2_1', '7_5_1']#, '7_8_1', '7_10_1']
 
@@ -42,11 +42,19 @@ for i in instances:
     neighborhoodTypesProfit = ['Insert','ReplaceProfit']
 
     if algorithm == 'ILS':
-        iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+        iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['Insert','TwoEdgeExchange','SwapInterRoute','Insert','ReplaceProfit'])
         iteratedLocalSearch.Initialize(evaluationLogic,pool, rng = None)
         start_time = time.time()
         solution = iteratedLocalSearch.Run(solution)
         end_time = time.time()
+
+    elif algorithm == 'SAILS':
+        sails = SAILS(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+        sails.Initialize(evaluationLogic,pool, rng = None)
+        start_time = time.time()
+        solution = sails.Run(solution)
+        end_time = time.time()
+    
 
     elif algorithm == 'Iterative':
         iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['TwoEdgeExchange','Insert'])   
