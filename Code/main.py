@@ -126,4 +126,4 @@ def main():
 if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
-    p.sort_stats('cumtime').print_stats(10)  # Sort by cumulative time and show the top 10 results
+    p.sort_stats('cumtime').print_stats(50)  # Sort by cumulative time and show the top 10 results
