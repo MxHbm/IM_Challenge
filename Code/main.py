@@ -1,16 +1,19 @@
 from ConstructiveHeuristic import * 
 from EvaluationLogic import *
 from ImprovementAlgorithm import *
+from Solver import * 
 import time
+import cProfile
 
 
 main_tasks = True
-algorithm = 'ILS' #Iterative or ILS
+main_tasks_string = str(main_tasks) 
+algorithm = 'Iterative' #Iterative or ILS
 
 if main_tasks:
-    instances = ['7_2_1', '7_2_2']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
+    instances = ['7_2_1']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
 else:
-    instances = ['7_2_1', '7_5_1']#, '7_8_1', '7_10_1']
+    instances = ['7_2_1']#, '7_8_1', '7_10_1']
 
 print('______________________________________________________________________')
 
@@ -21,14 +24,59 @@ for i in instances:
     print("Instance: ", i)
     data = InputData("Instance"+i+".json")
 
-    pool = SolutionPool()
-    evaluationLogic = EvaluationLogic(data)
+    '''
+    insertionLocalSearch = IterativeImprovement(data, 'FirstImprovement', ['Swap'])
+    iteratedGreedy = IteratedGreedy(
+    data, 
+    numberJobsToRemove=2, 
+    baseTemperature=1, 
+    maxIterations=10, 
+    localSearchAlgorithm=insertionLocalSearch
+    )
 
+    solver = Solver(data, 1008)
 
+    print('Start IG\n')
+    '''
+    solver = Solver(data, 1008)#
+
+    neighborhoodLocalSearch = IterativeImprovement(inputData=data,
+                                                   neighborhoodEvaluationStrategy= 'BestImprovement',
+                                                   neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+    ILS = IteratedLocalSearch(inputData=data,
+                              maxRunTime = 100,
+                              jobs_to_remove=3,
+                              sublists_to_modify=3,
+                              consecutive_to_remove=3,
+                              neighborhoodEvaluationStrategy= 'BestImprovement',
+                              neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+
+    solver.RunIteratedLocalSearch(
+        numberParameterCombination=1,
+        main_tasks=True,
+        algorithm_LS=neighborhoodLocalSearch,
+        algorithm_ILS=ILS
+    )
+
+    '''
+    solver.RunLocalSearch(
+        numberParameterCombination= 3, 
+        main_tasks= main_tasks,
+        algorithm= neighborhoodLocalSearch)
+    '''
+
+    """
+    solver.ConstructionPhase(
+        numberParameterCombination= 1, 
+        main_tasks= main_tasks,
+        )
+    """
+
+    '''
     ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
 
-    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=3, main_tasks = main_tasks)
+    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1, main_tasks = main_tasks)
 
     solution = pool.GetHighestProfitSolution()
 
@@ -65,9 +113,9 @@ for i in instances:
     print(f"Runtime: {round(runtime, 2)} seconds")
     print('THE END')
     print('______________________________________________________________________')
-
+    
 # Create a file with the runtimes
 with open(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) / "runtimes.txt", 'w') as f:
     for key, value in runtimes.items():
         f.write('%s:%s\n' % (key, value))
-
+'''

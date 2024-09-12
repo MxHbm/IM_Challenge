@@ -1,7 +1,6 @@
 from OutputData import *
 from copy import deepcopy
 from EvaluationLogic import EvaluationLogic
-import random
 
 # Dummy class to have one class where all Moves are inheriting --> Potential to implement more funtionalities here! 
 class BaseMove: 
@@ -22,11 +21,12 @@ class BaseMove:
 class BaseNeighborhood:
     ''' Framework for generally needed neighborhood functionalities'''
 
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng = None):
         self.InputData = inputData
         self.RoutePlan = None
         self.EvaluationLogic = evaluationLogic
         self.SolutionPool = solutionPool
+        self.RNG = rng
 
         # Create empty lists for discovering different moves
         self.Moves = []
@@ -156,8 +156,8 @@ class BaseNeighborhood:
 
 class ProfitNeighborhood(BaseNeighborhood):
 
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
-        super().__init__(inputData, evaluationLogic, solutionPool)
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
 
     def EvaluateMove(self, move: BaseMove) -> Solution:
         raise Exception('EvaluateMove() is not implemented for the abstract ProfitNeighborhood class.')
@@ -243,8 +243,8 @@ class ProfitNeighborhood(BaseNeighborhood):
         return temp_sol  
 
 class DeltaNeighborhood(BaseNeighborhood):
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
-        super().__init__(inputData, evaluationLogic, solutionPool)
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
 
     def EvaluateMove(self, move: BaseMove) -> Solution:
         raise Exception('EvaluateMove() is not implemented for the abstract DeltaNeighborhood class.')
@@ -346,8 +346,8 @@ class SwapIntraRouteMove(BaseMove):
 class SwapIntraRouteNeighborhood(DeltaNeighborhood):
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        super().__init__(inputData,  evaluationLogic, solutionPool)
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, rng):
+        super().__init__(inputData,  evaluationLogic, solutionPool, rng)
 
         self.Type = 'SwapIntraRoute'
 
@@ -402,19 +402,19 @@ class SwapInterRouteMove(BaseMove):
 class SwapInterRouteNeighborhood(DeltaNeighborhood):
     """ Contains all moves for swapping tasks between different routes possibly on the same or different days. """
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        super().__init__(inputData, evaluationLogic, solutionPool)
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, rng):
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
         self.Type = 'SwapInterRoute'
 
     def DiscoverMoves(self):
         """ Generate all possible swaps between tasks in different routes. """
 
 
-        # Choose 2 random days to include in the neighborhood, otherwise the neighborhood is too large
-        days = random.sample(range(len(self.RoutePlan)), 2)
+        # Choose 2 rng days to include in the neighborhood, otherwise the neighborhood is too large
+        days = self.RNG.choice(range(len(self.RoutePlan)), 2,  replace=False)
 
-        # Choose 4 random cohorts to include in the neighborhood, otherwise the neighborhood is too large
-        cohorts = random.sample(range(len(self.RoutePlan[days[0]])), 4)
+        # Choose 4 rng cohorts to include in the neighborhood, otherwise the neighborhood is too large
+        cohorts = self.RNG.choice(range(len(self.RoutePlan[days[0]])), 4,  replace=False)
 
                 
         for dayA in days:
@@ -460,8 +460,8 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
 
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
 
-    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool):
-        super().__init__(inputData,  evaluationLogic, solutionPool)
+    def __init__(self, inputData:InputData, evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, rng):
+        super().__init__(inputData,  evaluationLogic, solutionPool, rng)
 
         self.Type = 'TwoEdgeExchange'
 
@@ -499,7 +499,7 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
         Type (str): The type of the neighborhood, which is 'ReplaceDelta'.
     """
 
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
         """
         Initializes the ReplaceDeltaNeighborhood instance.
 
@@ -511,7 +511,7 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
         Returns:
             None
         """
-        super().__init__(inputData, evaluationLogic, solutionPool)
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
 
         self.Type = 'ReplaceDelta'
 
@@ -531,7 +531,7 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
 
         max_number_to_consider = 200
         if len(unusedTasks) > max_number_to_consider:
-            unusedTasks = random.sample(unusedTasks, max_number_to_consider)
+            unusedTasks = self.RNG.choice(list(unusedTasks), max_number_to_consider, replace = False)
 
         allowedSwaps = 0
 
@@ -605,7 +605,7 @@ class InsertNeighborhood(ProfitNeighborhood):
         Type (str): The type of the neighborhood, which is 'Insert'.
     """
 
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
         """
         Initializes the InsertNeighborhood instance.
 
@@ -617,7 +617,7 @@ class InsertNeighborhood(ProfitNeighborhood):
         Returns:
             None
         """
-        super().__init__(inputData, evaluationLogic, solutionPool)
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
 
         self.Type = 'Insert'
 
@@ -636,7 +636,7 @@ class InsertNeighborhood(ProfitNeighborhood):
         # Only consider a subset of all unused tasks to reduce the number of moves
         max_number_to_consider = 50
         if len(unusedTasks) > max_number_to_consider:
-            unusedTasks = random.sample(unusedTasks, max_number_to_consider)
+            unusedTasks = self.RNG.choice(list(unusedTasks), max_number_to_consider, replace=False)
         
         
         for task in unusedTasks:
@@ -700,7 +700,7 @@ class ReplaceProfitNeighborhood(ProfitNeighborhood):
         Type (str): The type of the neighborhood, which is 'ReplaceProfit'.
     """
 
-    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool):
+    def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
         """
         Initializes the ReplaceProfitNeighborhood instance.
 
@@ -712,7 +712,7 @@ class ReplaceProfitNeighborhood(ProfitNeighborhood):
         Returns:
             None
         """
-        super().__init__(inputData, evaluationLogic, solutionPool)
+        super().__init__(inputData, evaluationLogic, solutionPool, rng)
 
         self.Type = 'ReplaceProfit'
 
@@ -756,78 +756,3 @@ class ReplaceProfitNeighborhood(ProfitNeighborhood):
         move.setDelta(self.EvaluationLogic.CalculateReplaceDelta(move))
 
         return move
-
-
-#_______________________________________________________________________________________________________________________
-
-
-#### ALL NEIGHBORHOODS BELOW NEED TO BE ADJUSTED! ####
-
-class BlockMoveK3(BaseMove):
-    """ Represents the extraction of the sequence of elements starting at IndexA and ending at IndexA + $k$, and the reinsertion at the new position IndexB for a given permutation (= solution) for $k = 3$. """
-
-    def __init__(self, initialPermutation:list[int],initialLotMatrix:list[list[int]], indexA:int, indexB:int):
-        self.Permutation = [] # create a copy of the permutation
-        self.IndexA = indexA
-        self.IndexB = indexB
-        self.Length = 3 # pass as parameter to constructor to obtain the general block move
-        self.LotMatrix = initialLotMatrix
-
-        for i in range(len(initialPermutation)):
-            if i >= indexA and i < indexA + self.Length:  # if i in range(indexA, indexA + self.Length):
-                continue
-
-            self.Permutation.append(initialPermutation[i])
-
-        for i in range(self.Length):
-            self.Permutation.insert(indexB + i, initialPermutation[indexA + i])
-
-class BlockNeighborhoodK3(ProfitNeighborhood):
-    """ Contains all $(n - k + 1)(n - k) - \max(0, n - 2k + 1)$ block moves for a given permutation (= solution) for $k = 3$. """
-
-    def __init__(self, inputData:InputData, initialPermutation:list[int],initialLotMatrix:list[list[int]], evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, no_lots_boolean:bool = False):
-        super().__init__(inputData, initialPermutation,initialLotMatrix, evaluationLogic, solutionPool, no_lots_boolean)
-
-        self.Type = 'BlockK3'
-        self.Length = 3
-
-    def DiscoverMoves(self) -> None:
-        ''' Discover all possible moves for given nieghbood and permutation and saves moves in Moves list'''  
-    
-        for i in range(len(self.Permutation) - self.Length + 1):
-            for j in range(len(self.Permutation) - self.Length + 1):
-                # skip if: (the block would be reinserted at its initial position) or (the current block would be swapped with the preceding block to exclude symmetry) 
-                if i == j or j == i - self.Length:
-                    continue
-
-                blockMove = BlockMoveK3(self.Permutation,self.LotMatrix, i, j)
-                self.Moves.append(blockMove)
-
-class OLDTwoEdgeExchangeMove(BaseMove):
-    ''' Represent the move of extracting a sequence of jobs between index A and B and reinserting the reversed sequence at the same position (for len = 2 -> SWAP Move)'''
-
-    def __init__(self, initialPermutation:list[int],initialLotMatrix:list[list[int]], indexA:int, indexB:int):
-        self.Permutation = []
-
-        self.Permutation.extend(initialPermutation[:indexA])
-        self.Permutation.extend(reversed(initialPermutation[indexA:indexB]))
-        self.Permutation.extend(initialPermutation[indexB:])
-        self.LotMatrix = initialLotMatrix   
-
-class OLDTwoEdgeExchangeNeighborhood(ProfitNeighborhood):
-    ''' Neighborhood Class for Two Edge Exchange Move'''
-
-    def __init__(self, inputData:InputData, initialPermutation:list[int],initialLotMatrix:list[list[int]], evaluationLogic:EvaluationLogic, solutionPool:SolutionPool, no_lots_boolean:bool = False):
-        super().__init__(inputData, initialPermutation,initialLotMatrix, evaluationLogic, solutionPool, no_lots_boolean)
-
-        self.Type = 'OLDTwoEdgeExchange'
-    
-    def DiscoverMoves(self) -> None:
-        ''' Discover all possible moves for given nieghbood and permutation and saves moves in Moves list''' 
-
-        for i in range(len(self.Permutation)):
-            for j in range(len(self.Permutation)):
-                if j < i + 1:
-                    continue
-                twoEdgeMove = TwoEdgeExchangeMove(self.Permutation,self.LotMatrix, i, j)
-                self.Moves.append(twoEdgeMove)
