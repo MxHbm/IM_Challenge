@@ -4,6 +4,7 @@ from ImprovementAlgorithm import *
 from Solver import * 
 import time
 import cProfile
+import pstats
 
 
 main_tasks = True
@@ -19,103 +20,110 @@ print('______________________________________________________________________')
 
 runtimes = dict()
 
-for i in instances:
-    print(Path.cwd().parent) 
-    print("Instance: ", i)
-    data = InputData("Instance"+i+".json")
+def main():
+    for i in instances:
+        print(Path.cwd().parent) 
+        print("Instance: ", i)
+        data = InputData("Instance"+i+".json")
 
-    '''
-    insertionLocalSearch = IterativeImprovement(data, 'FirstImprovement', ['Swap'])
-    iteratedGreedy = IteratedGreedy(
-    data, 
-    numberJobsToRemove=2, 
-    baseTemperature=1, 
-    maxIterations=10, 
-    localSearchAlgorithm=insertionLocalSearch
-    )
-
-    solver = Solver(data, 1008)
-
-    print('Start IG\n')
-    '''
-    solver = Solver(data, 1008)#
-
-    neighborhoodLocalSearch = IterativeImprovement(inputData=data,
-                                                   neighborhoodEvaluationStrategy= 'BestImprovement',
-                                                   neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
-    ILS = IteratedLocalSearch(inputData=data,
-                              maxRunTime = 100,
-                              jobs_to_remove=3,
-                              sublists_to_modify=3,
-                              consecutive_to_remove=3,
-                              neighborhoodEvaluationStrategy= 'BestImprovement',
-                              neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
-
-    solver.RunIteratedLocalSearch(
-        numberParameterCombination=1,
-        main_tasks=True,
-        algorithm_LS=neighborhoodLocalSearch,
-        algorithm_ILS=ILS
-    )
-
-    '''
-    solver.RunLocalSearch(
-        numberParameterCombination= 3, 
-        main_tasks= main_tasks,
-        algorithm= neighborhoodLocalSearch)
-    '''
-
-    """
-    solver.ConstructionPhase(
-        numberParameterCombination= 1, 
-        main_tasks= main_tasks,
+        '''
+        insertionLocalSearch = IterativeImprovement(data, 'FirstImprovement', ['Swap'])
+        iteratedGreedy = IteratedGreedy(
+        data, 
+        numberJobsToRemove=2, 
+        baseTemperature=1, 
+        maxIterations=10, 
+        localSearchAlgorithm=insertionLocalSearch
         )
-    """
 
+        solver = Solver(data, 1008)
+
+        print('Start IG\n')
+        '''
+        solver = Solver(data, 1008)#
+
+        neighborhoodLocalSearch = IterativeImprovement(inputData=data,
+                                                    neighborhoodEvaluationStrategy= 'BestImprovement',
+                                                    neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+        ILS = IteratedLocalSearch(inputData=data,
+                                maxRunTime = 100,
+                                jobs_to_remove=3,
+                                sublists_to_modify=3,
+                                consecutive_to_remove=3,
+                                neighborhoodEvaluationStrategy= 'BestImprovement',
+                                neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+
+        solver.RunIteratedLocalSearch(
+            numberParameterCombination=1,
+            main_tasks=True,
+            algorithm_LS=neighborhoodLocalSearch,
+            algorithm_ILS=ILS
+        )
+
+        '''
+        solver.RunLocalSearch(
+            numberParameterCombination= 3, 
+            main_tasks= main_tasks,
+            algorithm= neighborhoodLocalSearch)
+        '''
+
+        """
+        solver.ConstructionPhase(
+            numberParameterCombination= 1, 
+            main_tasks= main_tasks,
+            )
+        """
+
+        '''
+        ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
+
+
+        ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1, main_tasks = main_tasks)
+
+        solution = pool.GetHighestProfitSolution()
+
+        main_tasks_string = str(main_tasks) 
+        solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) /"Results_Greedy",data, main_tasks)
+
+        print(solution)
+
+
+        neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta']
+        neighborhoodTypesProfit = ['Insert','ReplaceProfit']
+
+        if algorithm == 'ILS':
+            iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+            iteratedLocalSearch.Initialize(evaluationLogic,pool, rng = None)
+            start_time = time.time()
+            solution = iteratedLocalSearch.Run(solution)
+            end_time = time.time()
+
+        elif algorithm == 'Iterative':
+            iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['TwoEdgeExchange','Insert'])   
+            iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
+            start_time = time.time()
+            solution = iterativeImpro.Run(solution)
+            end_time = time.time()
+    
+        
+        runtime = end_time - start_time
+        
+        solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) ,data, main_tasks)
+
+        runtimes[i] = round(runtime, 2)
+
+        print(f"Runtime: {round(runtime, 2)} seconds")
+        print('THE END')
+        print('______________________________________________________________________')
+        
+    # Create a file with the runtimes
+    with open(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) / "runtimes.txt", 'w') as f:
+        for key, value in runtimes.items():
+            f.write('%s:%s\n' % (key, value))
     '''
-    ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 
-
-    ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1, main_tasks = main_tasks)
-
-    solution = pool.GetHighestProfitSolution()
-
-    main_tasks_string = str(main_tasks) 
-    solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) /"Results_Greedy",data, main_tasks)
-
-    print(solution)
-
-
-    neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta']
-    neighborhoodTypesProfit = ['Insert','ReplaceProfit']
-
-    if algorithm == 'ILS':
-        iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
-        iteratedLocalSearch.Initialize(evaluationLogic,pool, rng = None)
-        start_time = time.time()
-        solution = iteratedLocalSearch.Run(solution)
-        end_time = time.time()
-
-    elif algorithm == 'Iterative':
-        iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['TwoEdgeExchange','Insert'])   
-        iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
-        start_time = time.time()
-        solution = iterativeImpro.Run(solution)
-        end_time = time.time()
-  
-    
-    runtime = end_time - start_time
-    
-    solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) ,data, main_tasks)
-
-    runtimes[i] = round(runtime, 2)
-
-    print(f"Runtime: {round(runtime, 2)} seconds")
-    print('THE END')
-    print('______________________________________________________________________')
-    
-# Create a file with the runtimes
-with open(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) / "runtimes.txt", 'w') as f:
-    for key, value in runtimes.items():
-        f.write('%s:%s\n' % (key, value))
-'''
+# Profile the main function
+if __name__ == '__main__':
+    cProfile.run('main()', 'profiling_results.prof')
+    p = pstats.Stats('profiling_results.prof')
+    p.sort_stats('cumtime').print_stats(50)  # Sort by cumulative time and show the top 10 results
