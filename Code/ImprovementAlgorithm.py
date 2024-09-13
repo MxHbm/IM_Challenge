@@ -157,11 +157,29 @@ class IteratedLocalSearch(ImprovementAlgorithm):
 
 
     
-class SAILS(ImprovementAlgorithm):
+class SAILS(IteratedLocalSearch):
     """ A combination of Simulated Annealing and Iterative local search.."""
 
-    def __init__(self, inputData: InputData, neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
-        super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
+    def __init__(self, inputData: InputData, 
+                 maxRunTime: int,  # Add the missing parameter
+                 jobs_to_remove: int,  # Add the missing parameter
+                 sublists_to_modify: int,  # Add the missing parameter
+                 consecutive_to_remove: int,  # Add the missing parameter
+                 start_temperature: int,
+                 min_temperature: float,
+                 temp_decrease_factor: float,
+                 maxInnerLoop: int,
+                 maxIterationsWithoutImprovement: int,
+                 neighborhoodEvaluationStrategy: str = 'BestImprovement', 
+                 neighborhoodTypes: list[str] = ['SwapWaiting']):
+        super().__init__(inputData, maxRunTime, jobs_to_remove, sublists_to_modify,consecutive_to_remove,neighborhoodEvaluationStrategy, neighborhoodTypes)
+
+        self.startTemperature = start_temperature
+        self.tempDecreaseFactor = temp_decrease_factor
+        self.minTemp = min_temperature
+        self.maxInnerLoop = maxInnerLoop
+        self.maxIterationsWithoutImprovement = maxIterationsWithoutImprovement
+
 
     def Run(self, solution: Solution) -> Solution:
 
@@ -181,18 +199,12 @@ class SAILS(ImprovementAlgorithm):
         lineSolution = solution
         print(f' Solution after initial local search:\n {currentSolution}')
 
-        maxIterations = 10
-        maxTime = 3600*4
-
         iteration = 1
-        maxIterationsWithoutImprovement = 2
         iterationsWithoutImprovement = 0
         bestIteration = 'initial local search'
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        maxInnerLoop = 3
-        temperature = 10
-        a = 0.95
+        temperature = self.startTemperature
         
         startTime = time.time()
         usedTime = 0
@@ -201,11 +213,11 @@ class SAILS(ImprovementAlgorithm):
         deltaNeighborhoods = ['SwapIntraRoute', 'TwoEdgeExchange', 'SwapInterRoute', 'ReplaceDelta']
 
 
-        while maxTime > usedTime:
+        while self.maxRunTime  > usedTime:
             print(f'\nStarting iteration {iteration}')
 
             innerLoop = 0
-            while innerLoop < maxInnerLoop:
+            while innerLoop < self.maxInnerLoop:
 
                 print(f'\n Iteration.InnerLoop {iteration}.{innerLoop}')
                 print(f' Running perturbation')
@@ -265,10 +277,10 @@ class SAILS(ImprovementAlgorithm):
 
             print(f' Iterations without improvement: {iterationsWithoutImprovement}')
             
-            temperature = temperature * a
+            temperature = temperature * self.tempDecreaseFactor
 
-            if iterationsWithoutImprovement >= maxIterationsWithoutImprovement:
-                print(f"The limit of {maxIterationsWithoutImprovement} iterations without improvement has been reached.")
+            if iterationsWithoutImprovement >= self.maxIterationsWithoutImprovement:
+                print(f"The limit of {self.maxIterationsWithoutImprovement} iterations without improvement has been reached.")
                 currentSolution = bestSolution
                 lineSolution = currentSolution
                 iterationsWithoutImprovement = 0
@@ -281,10 +293,6 @@ class SAILS(ImprovementAlgorithm):
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
         return bestSolution
-    
-    
-    
-    
     
     
     def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
@@ -343,11 +351,20 @@ class SAILS(ImprovementAlgorithm):
 class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
     """ Simulated Annealing algorithm with perturbation to escape local optima. """
 
-    def __init__(self, inputData: InputData, neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'], neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
+    def __init__(self, inputData: InputData,
+                 start_temperature:int,
+                 min_temperature:float,
+                 temp_decrease_factor:float,
+                 maxRunTime:int,
+                 neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'], neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
         super().__init__(inputData)
 
         self.neighborhoodTypesDelta = neighborhoodTypesDelta
         self.neighborhoodTypesProfit = neighborhoodTypesProfit
+        self.maxRunTime = maxRunTime
+        self.startTemperature = start_temperature
+        self.tempDecreaseFactor = temp_decrease_factor
+        self.minTemp = min_temperature
 
 
     def Run(self, solution: Solution) -> Solution:
@@ -356,7 +373,6 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
 
         print('\nStarting Simulated Annealing Local Search Procedure')
 
-        maxTime = 60*60
         startTime = time.time()
         usedTime = 0
 
@@ -365,26 +381,23 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
 
         
         
-        maxInnerLoop = 1000
         bestLoop = 0
+        temperature = self.startTemperature
         iteration = 1
         
 
-        while maxTime > usedTime:
+        while self.maxRunTime > usedTime:
 
             print(f'\nStarting iteration {iteration}')
 
 
             #SA mit Delta Nachbarschaften --> Wartezeit als Kriterium
-            temperature = 1000
             innerLoop = 0
             bestLoop = 0
-            a = 0.99
-            minTemperature = 1e-50
                         
             SAstartTime = time.time()
             print(f'\nRunning Simulated Annealing for Delta neighborhoods')
-            while temperature > minTemperature:
+            while temperature > self.minTemp:
                 
                 number = 1/len(self.neighborhoodTypesDelta)
                 probabilities = [number for i in range(len(self.neighborhoodTypesDelta))]
@@ -406,7 +419,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                     if random_number < math.exp(objDifference / (temperature)):
                         currentSolution = newSolution
 
-                temperature = temperature * a
+                temperature = temperature * self.tempDecreaseFactor
 
                 innerLoop += 1
 
@@ -448,9 +461,6 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
             
             print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
             print(f' Best solution after local search: {currentSolution}')
-
-
-
 
 
             usedTime = time.time() - startTime
