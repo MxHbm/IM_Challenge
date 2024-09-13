@@ -8,6 +8,7 @@ import pstats
 
 
 main_tasks = True
+
 main_tasks_string = str(main_tasks) 
 algorithm = 'Iterative' #Iterative or ILS
 
@@ -16,15 +17,18 @@ if main_tasks:
 else:
     instances = ['7_2_1']#, '7_8_1', '7_10_1']
 
+
 print('______________________________________________________________________')
 
 runtimes = dict()
 
 def main():
+
     for i in instances:
         print(Path.cwd().parent) 
         print("Instance: ", i)
         data = InputData("Instance"+i+".json")
+
 
         '''
         insertionLocalSearch = IterativeImprovement(data, 'FirstImprovement', ['Swap'])
@@ -80,6 +84,7 @@ def main():
 
         ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1, main_tasks = main_tasks)
 
+
         solution = pool.GetHighestProfitSolution()
 
         main_tasks_string = str(main_tasks) 
@@ -92,11 +97,22 @@ def main():
         neighborhoodTypesProfit = ['Insert','ReplaceProfit']
 
         if algorithm == 'ILS':
-            iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+            iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['Insert','TwoEdgeExchange','SwapInterRoute','Insert','ReplaceProfit'])
+
             iteratedLocalSearch.Initialize(evaluationLogic,pool, rng = None)
             start_time = time.time()
             solution = iteratedLocalSearch.Run(solution)
             end_time = time.time()
+
+
+        elif algorithm == 'SAILS':
+            sails = SAILS(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+            sails.Initialize(evaluationLogic,pool, rng = None)
+            start_time = time.time()
+            solution = sails.Run(solution)
+            end_time = time.time()
+        
+
 
         elif algorithm == 'Iterative':
             iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['TwoEdgeExchange','Insert'])   
@@ -104,6 +120,16 @@ def main():
             start_time = time.time()
             solution = iterativeImpro.Run(solution)
             end_time = time.time()
+
+
+
+        elif algorithm == 'SimulatedAnnealingLocalSearch':
+            simulatedAnnealingLocalSearch = SimulatedAnnealingLocalSearch(data)
+            simulatedAnnealingLocalSearch.Initialize(evaluationLogic,pool, rng = None)
+            start_time = time.time()
+            solution = simulatedAnnealingLocalSearch.Run(solution)
+            end_time = time.time()
+
     
         
         runtime = end_time - start_time
@@ -115,11 +141,13 @@ def main():
         print(f"Runtime: {round(runtime, 2)} seconds")
         print('THE END')
         print('______________________________________________________________________')
-        
+
+
     # Create a file with the runtimes
     with open(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) / "runtimes.txt", 'w') as f:
         for key, value in runtimes.items():
             f.write('%s:%s\n' % (key, value))
+
     '''
 
 # Profile the main function
@@ -127,3 +155,4 @@ if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
     p.sort_stats('cumtime').print_stats(50)  # Sort by cumulative time and show the top 10 results
+

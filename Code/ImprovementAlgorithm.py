@@ -155,6 +155,138 @@ class IteratedLocalSearch(ImprovementAlgorithm):
 
         return bestSolution
 
+
+    
+class SAILS(ImprovementAlgorithm):
+    """ A combination of Simulated Annealing and Iterative local search.."""
+
+    def __init__(self, inputData: InputData, neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
+        super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
+
+    def Run(self, solution: Solution) -> Solution:
+
+        self.InitializeNeighborhoods(solution)
+        
+        print('\nStarting SAILS (Simualted Annealing Iterated Local Search)')
+        print(f'\n Running initial local search')
+
+        initialNeighborhoodTypes = ['SwapIntraRoute', 'SwapInterRoute', 'TwoEdgeExchange', 'ReplaceDelta', 'Insert', 'ReplaceProfit']
+
+        for neighborhoodType in initialNeighborhoodTypes:    
+            print(f' Running neighborhood {neighborhoodType}')
+            neighboorhood = self.Neighborhoods[neighborhoodType]
+            solution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
+
+        currentSolution = solution
+        lineSolution = solution
+        print(f' Solution after initial local search:\n {currentSolution}')
+
+        maxIterations = 10
+        maxTime = 3600*4
+
+        iteration = 1
+        maxIterationsWithoutImprovement = 2
+        iterationsWithoutImprovement = 0
+        bestIteration = 'initial local search'
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        maxInnerLoop = 3
+        temperature = 10
+        a = 0.95
+        
+        startTime = time.time()
+        usedTime = 0
+
+        profitNeighborhoods = ['Insert', 'ReplaceProfit']
+        deltaNeighborhoods = ['SwapIntraRoute', 'TwoEdgeExchange', 'SwapInterRoute', 'ReplaceDelta']
+
+
+        while maxTime > usedTime:
+            print(f'\nStarting iteration {iteration}')
+
+            innerLoop = 0
+            while innerLoop < maxInnerLoop:
+
+                print(f'\n Iteration.InnerLoop {iteration}.{innerLoop}')
+                print(f' Running perturbation')
+                currentSolution = self.Perturbation(currentSolution)
+                print(f' Solution after perturbation in iteration {iteration}.{innerLoop}: \n {currentSolution}')
+                
+                print(f'\n Running local search after perturbation')
+
+                for neighborhoodType in profitNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, currentSolution)
+
+
+                for neighborhoodType in deltaNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch('FirstImprovement', currentSolution)
+
+
+                for neighborhoodType in profitNeighborhoods:
+                    print(f' Running neighborhood {neighborhoodType}')
+                    neighboorhood = self.Neighborhoods[neighborhoodType]
+                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, currentSolution)
+
+                print(f' Solution after local search in iteration {iteration}.{innerLoop}:\n {currentSolution}')
+
+                
+                if currentSolution.TotalProfit > lineSolution.TotalProfit:
+                    lineSolution = currentSolution
+                    if currentSolution.TotalProfit > bestSolution.TotalProfit:
+                        bestSolution = currentSolution
+                        iterationsWithoutImprovement = 0
+                        bestIteration = iteration
+                    else:
+                        iterationsWithoutImprovement += 1
+                else:
+                    random_number = numpy.random.uniform(0,1)
+                    print(f'Line solution: {lineSolution.TotalProfit}, Current solution: {currentSolution.TotalProfit}')
+                    print(f"Temperature: {temperature}")
+                    print(f"Random number: {random_number}")
+                    print(f"Exponential: {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}")
+                    if random_number < math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature)):
+                        print(f'Accepting worse solution with probability {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}')
+                        lineSolution = currentSolution   
+                    else:
+                        print(f'Rejecting worse solution with probability {math.exp((currentSolution.TotalProfit - lineSolution.TotalProfit) / (temperature))}')
+                        currentSolution = lineSolution
+
+                    iterationsWithoutImprovement += 1
+                
+                innerLoop += 1
+
+            bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            print(f'\n Overall best solution found in iteration {bestIteration}: \n {bestSolution}')
+
+            print(f' Iterations without improvement: {iterationsWithoutImprovement}')
+            
+            temperature = temperature * a
+
+            if iterationsWithoutImprovement >= maxIterationsWithoutImprovement:
+                print(f"The limit of {maxIterationsWithoutImprovement} iterations without improvement has been reached.")
+                currentSolution = bestSolution
+                lineSolution = currentSolution
+                iterationsWithoutImprovement = 0
+            
+            iteration += 1
+
+            usedTime = time.time() - startTime
+
+        print(f'\n SAILS finished after {iteration} iterations and {usedTime} seconds')
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        return bestSolution
+    
+    
+    
+    
+    
+    
     def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
         ''' Perturbation to escape local optima '''
 
@@ -208,14 +340,200 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         return currentSolution
 
         
+class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
+    """ Simulated Annealing algorithm with perturbation to escape local optima. """
+
+    def __init__(self, inputData: InputData, neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'], neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
+        super().__init__(inputData)
+
+        self.neighborhoodTypesDelta = neighborhoodTypesDelta
+        self.neighborhoodTypesProfit = neighborhoodTypesProfit
+
+
+    def Run(self, solution: Solution) -> Solution:
+
+        #self.InitializeNeighborhoods(solution)
+
+        print('\nStarting Simulated Annealing Local Search Procedure')
+
+        maxTime = 60*60
+        startTime = time.time()
+        usedTime = 0
+
+        currentSolution = solution
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        
+        
+        maxInnerLoop = 1000
+        bestLoop = 0
+        iteration = 1
+        
+
+        while maxTime > usedTime:
+
+            print(f'\nStarting iteration {iteration}')
+
+
+            #SA mit Delta Nachbarschaften --> Wartezeit als Kriterium
+            temperature = 1000
+            innerLoop = 0
+            bestLoop = 0
+            a = 0.99
+            minTemperature = 1e-50
+                        
+            SAstartTime = time.time()
+            print(f'\nRunning Simulated Annealing for Delta neighborhoods')
+            while temperature > minTemperature:
+                
+                number = 1/len(self.neighborhoodTypesDelta)
+                probabilities = [number, number, number, number]
+                selected_neighborhood = random.choices(self.neighborhoodTypesDelta, probabilities)[0]
+
+                neighborhood = self.CreateNeighborhood(selected_neighborhood)
+                newSolution = neighborhood.SingleMove(currentSolution)
+
+                objDifference = newSolution.WaitingTime - currentSolution.WaitingTime
+
+                if objDifference > 0:
+                    currentSolution = newSolution
+                    if newSolution.WaitingTime > bestSolution.WaitingTime:
+                        bestSolution = newSolution
+                        bestLoop = innerLoop
+                        self.SolutionPool.AddSolution(bestSolution)
+                else:
+                    random_number = numpy.random.uniform(0,1)
+                    if random_number < math.exp(objDifference / (temperature)):
+                        currentSolution = newSolution
+
+                temperature = temperature * a
+
+                innerLoop += 1
+
+
+
+            usedTime = time.time() - SAstartTime
+
+            print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after inner loop {bestLoop}/{innerLoop}: {bestSolution}')
+
+            # Lokale Suche mit Insert Nachbarschaft
+
+            neighborhoodType = 'Insert'
+
+            print(f'\nRunning local search for {neighborhoodType} neighborhood')
+            neighborhood = self.CreateNeighborhood(neighborhoodType)
+            
+
+            LSstartTime = time.time()
+            currentSolution = neighborhood.LocalSearch('BestImprovement', bestSolution)
+            usedTime = time.time() - LSstartTime
+            
+            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after local search: {currentSolution}')
+
+
+            # Lokale Suche mit ReplaceProfit Nachbarschaft
+            bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            neighborhoodType = 'ReplaceProfit'
+
+            print(f'\nRunning local search for {neighborhoodType} neighborhood')
+            neighborhood = self.CreateNeighborhood(neighborhoodType)
+            
+
+            LSstartTime = time.time()
+            currentSolution = neighborhood.LocalSearch('BestImprovement', bestSolution)
+            usedTime = time.time() - LSstartTime
+            
+            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after local search: {currentSolution}')
 
 
 
 
+
+            usedTime = time.time() - startTime
+            
+            bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            iteration += 1
+
+
+
+        print(f'Number of total iterations: {iteration}')
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        return bestSolution
 
 
 
 '''
+
+         
+
+            #SA mit ReplaceProfit Nachbarschaft --> Profit als Kriterium
+            SAstartTime = time.time()
+            temperature = 1000
+            a = 0.99
+            minTemperature = 1e-20
+            innerLoop = 0
+            bestLoop = 0
+
+            print(f'\nRunning Simulated Annealing for ReplaceProfit neighborhood')
+            while temperature > minTemperature:
+
+                neighborhood = self.CreateNeighborhood('ReplaceProfit')
+
+                newSolution = neighborhood.SingleMove(currentSolution)
+
+                objDifference = newSolution.TotalProfit - currentSolution.TotalProfit
+
+                if objDifference > 0:
+                    currentSolution = newSolution
+                    if newSolution.TotalProfit > bestSolution.TotalProfit:
+                        bestSolution = newSolution
+                        bestLoop = innerLoop
+                        self.SolutionPool.AddSolution(bestSolution)
+                        print('New best Solution found!!!!')
+                else:
+                    random_number = numpy.random.uniform(0,1)
+                    if random_number < math.exp(objDifference / (temperature)):
+                        currentSolution = newSolution
+
+                temperature = temperature * a
+
+                innerLoop += 1
+
+            
+            usedTime = time.time() - SAstartTime
+
+            print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after inner loop {bestLoop}/{innerLoop}: {bestSolution}')
+
+            iteration += 1        
+            usedTime = time.time() - startTime
+
+            currentSolution = self.SolutionPool.GetHighestProfitSolution()
+        
+        print(f'Number of total iterations: {iteration}')
+        bestSolution = self.SolutionPool.GetHighestProfitSolution()
+
+        return bestSolution
+
+
+
+
+
+
+
+
+                
+                
+
+
+
+
 class IteratedGreedy(ImprovementAlgorithm):
     """ Iterated greedy algorithm with destruction and construction. """
 
