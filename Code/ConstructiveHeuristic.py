@@ -38,48 +38,37 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    def Run(self, inputData: InputData, numberOfParameterComb=3, main_tasks=True) -> None:
-        ''' Choose one of the constructive heuristics and get a first solution due to the chosen heuristic'''
+    
+    def Run(self, inputData:InputData, numberOfParameterComb = 3, main_tasks = True) -> None:
+        ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
 
-        print(f'Generating an initial solution according to Greedy')
+        print('Generating an initial solution according to Greedy.')
 
-        # Function to run the greedy algorithm with various parameters
-        def get_solution(params):
-            return self._Greedy(inputData, *params)
-
+        #Rewrite any present solution
         solution = None
-
-        if main_tasks:
-            # Parameter combinations based on numberOfParameterComb
-            params_list = []
+            
+        if main_tasks == True:
             if numberOfParameterComb == 3:
-                params_list = [
-                    ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
-                    ('MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100),
-                    ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
-                ]
+                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
+                solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
+                solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
             elif numberOfParameterComb == 2:
-                params_list = [
-                    ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
-                    ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
-                ]
+                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
+                solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
+                solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
             elif numberOfParameterComb == 1:
-                params_list = [('OnePerDay', 'WithDistanceToMainTask', 1.0, 0)]
+                solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
             elif numberOfParameterComb == 'Test':
-                params_list = [('MIP', 'OnlyDistanceToNextTask', 1.0, 0)]
-
-            # Execute the solution generation concurrently if multiple solutions are needed
-            if len(params_list) > 1:
-                with ThreadPoolExecutor() as executor:
-                    solutions = list(executor.map(get_solution, params_list))
-                solution = max(solutions, key=lambda x: x.TotalProfit)
-            else:
-                solution = get_solution(params_list[0])
+                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0) ### TEST
 
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
+            #solution = self._Greedy(inputData, None, 'WithDistanceToCloseTasks', 1.0, 100) ### Different Possibility
 
-        # Add the first solution to the solution pool to proceed further with the algorithm
+        
+
+        #Add the first solution to the solution pool to proceed further with the algorithm
         self._SolutionPool.AddSolution(solution)
 
 
@@ -306,7 +295,52 @@ class ConstructiveHeuristics:
 
         return attractiveness
 
+    """
+        def Run(self, inputData: InputData, numberOfParameterComb=3, main_tasks=True) -> None:
+            ''' Choose one of the constructive heuristics and get a first solution due to the chosen heuristic'''
 
+            print(f'Generating an initial solution according to Greedy')
+
+            # Function to run the greedy algorithm with various parameters
+            def get_solution(params):
+                return self._Greedy(inputData, *params)
+
+            solution = None
+
+            if main_tasks:
+                # Parameter combinations based on numberOfParameterComb
+                params_list = []
+                if numberOfParameterComb == 3:
+                    params_list = [
+                        ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
+                        ('MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100),
+                        ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
+                    ]
+                elif numberOfParameterComb == 2:
+                    params_list = [
+                        ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
+                        ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
+                    ]
+                elif numberOfParameterComb == 1:
+                    params_list = [('OnePerDay', 'WithDistanceToMainTask', 1.0, 0)]
+                elif numberOfParameterComb == 'Test':
+                    params_list = [('MIP', 'OnlyDistanceToNextTask', 1.0, 0)]
+
+                # Execute the solution generation concurrently if multiple solutions are needed
+                if len(params_list) > 1:
+                    with ThreadPoolExecutor() as executor:
+                        solutions = list(executor.map(get_solution, params_list))
+                    solution = max(solutions, key=lambda x: x.TotalProfit)
+                else:
+                    solution = get_solution(params_list[0])
+
+            else:
+                solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
+
+            # Add the first solution to the solution pool to proceed further with the algorithm
+            self._SolutionPool.AddSolution(solution)
+
+    """
 
 
     """ 

@@ -243,7 +243,7 @@ class SAILS(ImprovementAlgorithm):
                     else:
                         iterationsWithoutImprovement += 1
                 else:
-                    random_number = numpy.random.uniform(0,1)
+                    random_number = self.RNG.random()
                     print(f'Line solution: {lineSolution.TotalProfit}, Current solution: {currentSolution.TotalProfit}')
                     print(f"Temperature: {temperature}")
                     print(f"Random number: {random_number}")
@@ -387,8 +387,8 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
             while temperature > minTemperature:
                 
                 number = 1/len(self.neighborhoodTypesDelta)
-                probabilities = [number, number, number, number]
-                selected_neighborhood = random.choices(self.neighborhoodTypesDelta, probabilities)[0]
+                probabilities = [number for i in range(len(self.neighborhoodTypesDelta))]
+                selected_neighborhood = self.RNG.choice(self.neighborhoodTypesDelta, p = probabilities)
 
                 neighborhood = self.CreateNeighborhood(selected_neighborhood)
                 newSolution = neighborhood.SingleMove(currentSolution)
@@ -402,7 +402,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                         bestLoop = innerLoop
                         self.SolutionPool.AddSolution(bestSolution)
                 else:
-                    random_number = numpy.random.uniform(0,1)
+                    random_number = self.RNG.random()
                     if random_number < math.exp(objDifference / (temperature)):
                         currentSolution = newSolution
 
