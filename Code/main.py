@@ -57,6 +57,36 @@ def main():
                                 neighborhoodEvaluationStrategy= 'BestImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
         
+        SA_LS = SimulatedAnnealingLocalSearch(
+            inputData=data,
+            start_temperature = 1000,
+            min_temperature = 1e-50,
+            temp_decrease_factor=0.99,
+            maxRunTime=120,
+            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+            neighborhoodTypesProfit = ['Insert','ReplaceProfit']
+        )
+
+        SAILS_algorithm = SAILS(inputData=data,
+                                maxRunTime = 100,
+                                jobs_to_remove=3,
+                                sublists_to_modify=3,
+                                consecutive_to_remove=3,
+                                start_temperature = 1000,
+                                min_temperature = 1e-50,
+                                temp_decrease_factor=0.99,
+                                maxInnerLoop = 10,
+                                maxIterationsWithoutImprovement = 2,
+                                neighborhoodEvaluationStrategy= 'BestImprovement',
+                                neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit']
+
+        )
+        solver.RunAlgorithm(
+            numberParameterCombination=1,
+            main_tasks=True,
+            algorithm = SA_LS
+        )
+
         #Iterated Local Search
         '''
         solver.RunIteratedLocalSearch(
@@ -68,20 +98,20 @@ def main():
         '''
         #Local Search
         '''
-        solver.RunLocalSearch(
+        solver.RunAlgorithm(
             numberParameterCombination= 3, 
             main_tasks= main_tasks,
             algorithm= neighborhoodLocalSearch)
         '''
 
         #Construction Heuristic
-        
+        '''
         solver.ConstructionPhase(
             numberParameterCombination= 3, 
             main_tasks= main_tasks,
             )
         
-
+        '''
         '''
         ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
 

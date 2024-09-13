@@ -425,13 +425,13 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
     
     def MakeOneMove(self, solution:Solution) -> SwapIntraRouteMove:
 
-        day = random.randint(0, len(solution.RoutePlan) - 1)
-        cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
-        index_i = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
-        index_j = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
+        day = self.RNG.integers(0, len(solution.RoutePlan))
+        cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
+        index_i = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
+        index_j = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
 
         while index_i == index_j:
-            index_j = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
+            index_j = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
 
         task_i = solution.RoutePlan[day][cohort][index_i]
         task_j = solution.RoutePlan[day][cohort][index_j]
@@ -500,20 +500,20 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
     
     def MakeOneMove(self, solution:Solution) -> SwapInterRouteMove:
             
-            dayA = random.randint(0, len(solution.RoutePlan) - 1)
-            cohortA = random.randint(0, len(solution.RoutePlan[dayA]) - 1)
-            dayB = random.randint(0, len(solution.RoutePlan) - 1)
-            cohortB = random.randint(0, len(solution.RoutePlan[dayB]) - 1)
+            dayA = self.RNG.integers(0, len(solution.RoutePlan))
+            cohortA = self.RNG.integers(0, len(solution.RoutePlan[dayA]))
+            dayB = self.RNG.integers(0, len(solution.RoutePlan))
+            cohortB = self.RNG.integers(0, len(solution.RoutePlan[dayB]))
             
             while dayA == dayB and cohortA == cohortB:
-                dayA = random.randint(0, len(solution.RoutePlan) - 1)
-                cohortA = random.randint(0, len(solution.RoutePlan[dayA]) - 1)
-                dayB = random.randint(0, len(solution.RoutePlan) - 1)
-                cohortB = random.randint(0, len(solution.RoutePlan[dayB]) - 1)
+                dayA = self.RNG.integers(0, len(solution.RoutePlan))
+                cohortA = self.RNG.integers(0, len(solution.RoutePlan[dayA]))
+                dayB = self.RNG.integers(0, len(solution.RoutePlan))
+                cohortB = self.RNG.integers(0, len(solution.RoutePlan[dayB]))
 
 
-            indexA = random.randint(0, len(solution.RoutePlan[dayA][cohortA]) - 1)
-            indexB = random.randint(0, len(solution.RoutePlan[dayB][cohortB]) - 1)
+            indexA = self.RNG.integers(0, len(solution.RoutePlan[dayA][cohortA]))
+            indexB = self.RNG.integers(0, len(solution.RoutePlan[dayB][cohortB]))
     
             taskA = solution.RoutePlan[dayA][cohortA][indexA]
             taskB = solution.RoutePlan[dayB][cohortB][indexB]
@@ -579,13 +579,13 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
     
     def MakeOneMove(self, solution:Solution) -> TwoEdgeExchangeMove:
 
-        day = random.randint(0, len(solution.RoutePlan) - 1)
-        cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
-        index_i = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
-        index_j = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
+        day = self.RNG.integers(0, len(solution.RoutePlan))
+        cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
+        index_i = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
+        index_j = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
 
         while index_i == index_j:
-            index_j = random.randint(0, len(solution.RoutePlan[day][cohort]) - 1)
+            index_j = self.RNG.integers(0, len(solution.RoutePlan[day][cohort]))
 
         task_i = solution.RoutePlan[day][cohort][index_i]
         task_j = solution.RoutePlan[day][cohort][index_j]
@@ -697,20 +697,20 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
 
         unusedTasks = solution.UnusedTasks
 
-        day = random.randint(0, len(solution.RoutePlan) - 1)
-        cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
+        day = self.RNG.integers(0, len(solution.RoutePlan))
+        cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
 
-        unusedTask = random.choice(list(unusedTasks))
-        while (taskInRoute := random.choice(solution.RoutePlan[day][cohort])) > 1000:
+        unusedTask = self.RNG.choice(list(unusedTasks), replace = False)
+        while (taskInRoute := self.RNG.choice(solution.RoutePlan[day][cohort])) > 1000:
             pass
 
 
         while self.InputData.allTasks[taskInRoute].profit != self.InputData.allTasks[unusedTask].profit:
-            day = random.randint(0, len(solution.RoutePlan) - 1)
-            cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
+            day = self.RNG.integers(0, len(solution.RoutePlan))
+            cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
 
-            unusedTask = random.choice(list(unusedTasks))
-            while (taskInRoute := random.choice(solution.RoutePlan[day][cohort])) > 1000:
+            unusedTask = self.RNG.choice(list(unusedTasks), replace = False)
+            while (taskInRoute := self.RNG.choice(solution.RoutePlan[day][cohort])) > 1000:
                 pass
 
 
@@ -829,8 +829,8 @@ class InsertNeighborhood(ProfitNeighborhood):
         unusedTasks = solution.UnusedTasks
 
         task = random.choice(unusedTasks)
-        day = random.randint(0, len(solution.RoutePlan) - 1)
-        cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
+        day = self.RNG.integers(0, len(solution.RoutePlan))
+        cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
         index = random.randint(0, len(solution.RoutePlan[day][cohort]))
 
         move = InsertMove(solution.RoutePlan, task, day, cohort, index, self.InputData)
@@ -909,11 +909,11 @@ class ReplaceProfitNeighborhood(ProfitNeighborhood):
 
         unusedTasks = solution.UnusedTasks
 
-        day = random.randint(0, len(solution.RoutePlan) - 1)
-        cohort = random.randint(0, len(solution.RoutePlan[day]) - 1)
+        day = self.RNG.integers(0, len(solution.RoutePlan))
+        cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
 
-        unusedTask = random.choice(list(unusedTasks))
-        while (taskInRoute := random.choice(solution.RoutePlan[day][cohort])) > 1000:
+        unusedTask = self.RNG.choice(list(unusedTasks), replace = False)
+        while (taskInRoute := self.RNG.choice(solution.RoutePlan[day][cohort])) > 1000:
             pass
        
 

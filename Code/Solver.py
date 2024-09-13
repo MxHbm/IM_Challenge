@@ -44,7 +44,7 @@ class Solver:
 
         return bestSolution
 
-    def RunLocalSearch(self, numberParameterCombination, main_tasks, algorithm:ImprovementAlgorithm) -> None:
+    def RunAlgorithm(self, numberParameterCombination, main_tasks, algorithm:ImprovementAlgorithm) -> None:
         ''' Run local search with chosen algorithm and neighborhoods'''
 
         starttime = time.time()
