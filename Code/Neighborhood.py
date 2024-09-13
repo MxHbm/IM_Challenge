@@ -643,6 +643,7 @@ class InsertNeighborhood(ProfitNeighborhood):
             for day in range(len(self.RoutePlan)):
                 for cohort in range(len(self.RoutePlan[day])):
                     for index in range(len(self.RoutePlan[day][cohort]) + 1):
+                        #Wenn Service Zeit >= Wartezeit Nächster Job
                         insertMove = InsertMove(self.RoutePlan, task, day, cohort, index, self.InputData)
                         self.Moves.append(insertMove)
 
