@@ -293,7 +293,7 @@ class SAILS(ImprovementAlgorithm):
 
         # choose type of perturbation randomly
         types = ['remove', 'shake']
-        type = self.RNG.choice(types)
+        type = self.RNG.choice(types, replace = False)
 
         print(f'\n Perturbation type: {type}')
         

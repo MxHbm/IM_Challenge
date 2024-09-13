@@ -44,7 +44,7 @@ def main():
 
         print('Start IG\n')
         '''
-        solver = Solver(data, 1008)#
+        solver = Solver(data, 1008)
 
         neighborhoodLocalSearch = IterativeImprovement(inputData=data,
                                                     neighborhoodEvaluationStrategy= 'BestImprovement',
@@ -56,14 +56,17 @@ def main():
                                 consecutive_to_remove=3,
                                 neighborhoodEvaluationStrategy= 'BestImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
-
+        
+        #Iterated Local Search
+        '''
         solver.RunIteratedLocalSearch(
             numberParameterCombination=1,
             main_tasks=True,
             algorithm_LS=neighborhoodLocalSearch,
             algorithm_ILS=ILS
         )
-
+        '''
+        #Local Search
         '''
         solver.RunLocalSearch(
             numberParameterCombination= 3, 
@@ -71,12 +74,13 @@ def main():
             algorithm= neighborhoodLocalSearch)
         '''
 
-        """
+        #Construction Heuristic
+        
         solver.ConstructionPhase(
-            numberParameterCombination= 1, 
+            numberParameterCombination= 3, 
             main_tasks= main_tasks,
             )
-        """
+        
 
         '''
         ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
@@ -154,5 +158,5 @@ def main():
 if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
-    p.sort_stats('cumtime').print_stats(50)  # Sort by cumulative time and show the top 10 results
+    p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
 
