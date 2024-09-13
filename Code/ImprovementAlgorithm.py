@@ -32,17 +32,17 @@ class ImprovementAlgorithm:
         ### NEEDS TO BE ADJUSTED FOR ORIENTEERING PROBLEMLocalSearch
 
         if neighborhoodType == 'SwapIntraRoute':
-            return SwapIntraRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+            return SwapIntraRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool, self.RNG)
         elif neighborhoodType == 'SwapInterRoute':
-            return SwapInterRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+            return SwapInterRouteNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool, self.RNG)
         elif neighborhoodType == 'TwoEdgeExchange':
-            return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool)
+            return TwoEdgeExchangeNeighborhood(self.InputData , self.EvaluationLogic, self.SolutionPool, self.RNG)
         elif neighborhoodType == 'Insert':
-            return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+            return InsertNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool, self.RNG)
         elif neighborhoodType == 'ReplaceProfit':
-            return ReplaceProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+            return ReplaceProfitNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool, self.RNG)
         elif neighborhoodType == 'ReplaceDelta':
-            return ReplaceDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool)
+            return ReplaceDeltaNeighborhood(self.InputData, self.EvaluationLogic, self.SolutionPool, self.RNG)
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 
@@ -88,8 +88,14 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         Local Search with iterative steps through many different neighborhoods.
     """
 
-    def __init__(self, inputData: InputData, neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
+    def __init__(self, inputData: InputData, maxRunTime:int, jobs_to_remove:int, sublists_to_modify:int,consecutive_to_remove:int,
+                    neighborhoodEvaluationStrategy: str = 'BestImprovement', neighborhoodTypes: list[str] = ['SwapWaiting']):
         super().__init__(inputData, neighborhoodEvaluationStrategy, neighborhoodTypes)
+
+        self.maxRunTime = maxRunTime
+        self.jobsToRemove = jobs_to_remove 
+        self.sublists_to_modify = sublists_to_modify
+        self.consecutive_to_remove = consecutive_to_remove
 
     def Run(self, solution: Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types '''
@@ -97,17 +103,10 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         self.InitializeNeighborhoods(solution)
         
         print('\nStarting Iterated Local Search')
-        print(f'\n Running initial local search')
-        for neighborhoodType in self.NeighborhoodTypes:    
-            print(f' Running neighborhood {neighborhoodType}')
-            neighboorhood = self.Neighborhoods[neighborhoodType]
-            solution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
-
         currentSolution = solution
         print(f' Solution after initial local search:\n {currentSolution}')
 
-        maxIterations = 10
-        maxTime = 3600*4
+        maxTime = self.maxRunTime
 
         iteration = 1
         threshold1 = 2
@@ -294,7 +293,7 @@ class SAILS(ImprovementAlgorithm):
 
         # choose type of perturbation randomly
         types = ['remove', 'shake']
-        type = random.choice(types)
+        type = self.RNG.choice(types)
 
         print(f'\n Perturbation type: {type}')
         
@@ -305,11 +304,9 @@ class SAILS(ImprovementAlgorithm):
                             for item_idx, item in enumerate(sublist) 
                             if item <= 1000]
 
-            jobsToRemove = 3
-
             newRoutePlan = deepcopy(solution.RoutePlan)
-            if len(valid_elements) >= jobsToRemove:
-                to_remove = random.sample(valid_elements, jobsToRemove)
+            if len(valid_elements) >= self.jobsToRemove :
+                to_remove = self.RNG.choice(valid_elements, self.jobsToRemove, replace = False)
                 for key, sublist_idx, item_idx, item in to_remove:
                     newRoutePlan[key][sublist_idx].remove(item)
             else:
@@ -322,20 +319,18 @@ class SAILS(ImprovementAlgorithm):
         elif type == 'shake': # random removal of consectitive jobs
             
             newRoutePlan = deepcopy(solution.RoutePlan)
-            
-            sublists_to_modify = 3
-            consecutive_to_remove = 3
 
             all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
-            selected_sublists = random.sample(all_sublists, min(sublists_to_modify, len(all_sublists)))
+            indices = self.RNG.choice(len(all_sublists), min(self.sublists_to_modify, len(all_sublists)), replace=False)
+            selected_sublists = [all_sublists[i] for i in indices]  # Select sublists using the chosen indices
 
             for key, sublist in selected_sublists:
-                valid_positions = [i for i in range(len(sublist) - consecutive_to_remove + 1)
-                                    if all(sublist[i + j] <= 1000 for j in range(consecutive_to_remove))]
+                valid_positions = [i for i in range(len(sublist) - self.consecutive_to_remove + 1)
+                                    if all(sublist[i + j] <= 1000 for j in range(self.consecutive_to_remove))]
 
                 if valid_positions:
-                    start_pos = random.choice(valid_positions)
-                    del sublist[start_pos:start_pos + consecutive_to_remove]
+                    start_pos = self.RNG.choice(a = valid_positions, replace = False)
+                    del sublist[start_pos:start_pos + self.consecutive_to_remove]
 
 
             currentSolution = Solution(newRoutePlan, self.InputData)
