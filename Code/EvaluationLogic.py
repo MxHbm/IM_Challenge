@@ -28,22 +28,25 @@ class EvaluationLogic:
 
         self.calculateWaitingTime(currentSolution)
 
-    def calculateWaitingTime(self, currentSolution:Solution) -> None: 
-        ''' Calculates the waiting time of the given solution'''
 
-        waiting_time = self._data.cohort_no * self._data.days * self._data.maxRouteDuration
+    def calculateWaitingTime(self, currentSolution:Solution) -> None:
+        ''' Calculates the waiting time of the given solution'''       
 
         for day in range(self._data.days):
             for cohort in range(self._data.cohort_no):
+                route_time = self._data.maxRouteDuration
                 previous_task = 0
                 for task_i in currentSolution.RoutePlan[day][cohort]:
-                    waiting_time -= self._data.distances[previous_task][task_i]
-                    waiting_time -= self._data.allTasks[task_i].service_time
+                    route_time -= self._data.distances[previous_task][task_i]
+                    route_time -= self._data.allTasks[task_i].service_time
                     previous_task = task_i
 
-                waiting_time -= self._data.distances[previous_task][0]
+                route_time -= self._data.distances[previous_task][0]
+                currentSolution.WaitingTimes[day, cohort] = route_time
 
+        waiting_time = numpy.sum(currentSolution.WaitingTimes)
         currentSolution.setWaitingTime(waiting_time)
+
 
 
     def CalculateDistanceSubtraction(self, move, successor_list, precessor_list, two_edges:bool):

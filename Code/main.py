@@ -13,7 +13,7 @@ main_tasks_string = str(main_tasks)
 algorithm = 'Iterative' #Iterative or ILS
 
 if main_tasks:
-    instances = ['7_2_1']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
+    instances = ['7_5_1', '7_8_1']#, '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
 else:
     instances = ['7_2_1']#, '7_8_1', '7_10_1']
 
