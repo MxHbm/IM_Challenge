@@ -49,6 +49,12 @@ def main():
         neighborhoodLocalSearch = IterativeImprovement(inputData=data,
                                                     neighborhoodEvaluationStrategy= 'BestImprovement',
                                                     neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+        
+
+        neighborhoodLocalSearch2 = IterativeImprovement(inputData=data,
+                                                    neighborhoodEvaluationStrategy= 'FirstImprovement',
+                                                    neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+        
         ILS = IteratedLocalSearch(inputData=data,
                                 maxRunTime = 100,
                                 jobs_to_remove=3,
@@ -84,7 +90,7 @@ def main():
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = SA_LS
+            algorithm = neighborhoodLocalSearch2
         )
 
         #Iterated Local Search
