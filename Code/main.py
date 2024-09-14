@@ -52,7 +52,7 @@ def main():
         
 
         neighborhoodLocalSearch2 = IterativeImprovement(inputData=data,
-                                                    neighborhoodEvaluationStrategy= 'FirstImprovement',
+                                                    neighborhoodEvaluationStrategy= 'BestImprovement',
                                                     neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
         
         ILS = IteratedLocalSearch(inputData=data,
@@ -90,7 +90,7 @@ def main():
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = neighborhoodLocalSearch
+            algorithm = neighborhoodLocalSearch2
         )
 
         #Iterated Local Search

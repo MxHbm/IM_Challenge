@@ -105,8 +105,8 @@ class EvaluationLogic:
         '''Calculates the delta of the given swap move'''
 
         # Retrieve the route for the given day and cohort
-        routeA = move.Route[move.DayA][move.CohortA]
-        routeB = move.Route[move.DayB][move.CohortB]
+        routeA = move.RouteDayCohortA
+        routeB = move.RouteDayCohortB
         
         precessors = []
         successors = []
@@ -147,7 +147,7 @@ class EvaluationLogic:
         '''Calculates the delta of the given two edge exchange move'''
 
         # Retrieve the route for the given day and cohort
-        route = move.Route[move.Day][move.Cohort]
+        route = move.RouteDayCohort
         precessors = []
         successors = []
 
@@ -174,7 +174,7 @@ class EvaluationLogic:
     def CalculateReplaceDelta(self, move):
 
         # Retrieve the route for the given day and cohort
-        route = move.Route[move.Day][move.Cohort]
+        route = move.RouteDayCohort
         precessor = 0
         successor = 0
 
@@ -207,7 +207,7 @@ class EvaluationLogic:
         '''Calculates the delta of the given insert move'''
 
         # Retrieve the route for the given day and cohort
-        route = move.Route[move.Day][move.Cohort]
+        route = move.RouteDayCohort
         precessor = 0
         successor = 0
 
