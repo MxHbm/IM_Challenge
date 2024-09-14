@@ -345,20 +345,18 @@ class DeltaNeighborhood(BaseNeighborhood):
 class SwapIntraRouteMove(BaseMove):
     """ Represents the swap of the element at IndexA with the element at IndexB for a given permutation (= solution). """
 
-    def __init__(self, initialRoutePlan, day:int, cohort:int, taskA:int, taskB:int):
+    def __init__(self, initialRoutePlan:list, day:int, cohort:int, taskA:int, taskB:int, indexA:int, indexB:int):
 
-        self.Route = deepcopy(initialRoutePlan) # create a copy of the permutation
+        self.RouteDayCohort = deepcopy(initialRoutePlan) # create a copy of the permutation
         self.TaskA = taskA
         self.TaskB = taskB
         self.Day = day
         self.Cohort = cohort
-
-        # Swap the tasks directly by finding their indices once
-        cohort_tasks = self.Route[day][cohort]
-        self.indexA, self.indexB = cohort_tasks.index(self.TaskA), cohort_tasks.index(self.TaskB)
+        self.indexA = indexA
+        self.indexB = indexB
 
         #Swap Tasks 
-        cohort_tasks[self.indexA], cohort_tasks[self.indexB] = cohort_tasks[self.indexB], cohort_tasks[self.indexA]
+        self.RouteDayCohort[self.indexA], self.RouteDayCohort[self.indexB] = self.TaskB, self.TaskA
 
 
 class SwapIntraRouteNeighborhood(DeltaNeighborhood):
@@ -385,7 +383,7 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
                     task_j = valid_tasks[index_j]
 
                     # Create Swap Move Objects with different permutations
-                    swapMove = SwapIntraRouteMove(self.RoutePlan, day, cohort, task_i, task_j)
+                    swapMove = SwapIntraRouteMove(self.RoutePlan[day][cohort], day, cohort, task_i, task_j, index_i, index_j)
 
                     # Add the move to the list
                     self.Moves.append(swapMove)
@@ -400,9 +398,8 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
 
         #Update the Delta of the Move
         move.setDelta(self.EvaluationLogic.CalculateSwapIntraRouteDelta(move))
-
     
-    def MakeOneMove(self, solution: Solution) -> SwapIntraRouteMove:
+    def MakeOneMove(self, solution: Solution) -> SwapIntraRouteMove:  
         # Randomly select a day and cohort
         day = self.RNG.integers(0, len(solution.RoutePlan))
         cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
@@ -413,8 +410,10 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
         # Randomly select two distinct indices in one step
         task_i, task_j = self.RNG.choice(cohort_tasks, size=2, replace=False)
 
+        index_i, index_j = cohort_tasks.index(task_i), cohort_tasks.index(task_j)
+
         # Create and return the move
-        return SwapIntraRouteMove(solution.RoutePlan, day, cohort, task_i, task_j)
+        return SwapIntraRouteMove(cohort_tasks, day, cohort, task_i, task_j, index_i, index_j)
 
        
 class SwapInterRouteMove(BaseMove):

@@ -71,13 +71,11 @@ class EvaluationLogic:
         return difference
     
 
-
-
     def CalculateSwapIntraRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
         # Retrieve the route for the given day and cohort
-        route = move.Route[move.Day][move.Cohort]
+        route = move.RouteDayCohort
         
         precessors = []
         successors = []
