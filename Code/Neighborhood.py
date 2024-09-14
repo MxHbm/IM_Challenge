@@ -668,7 +668,7 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
         for day in range(len(self.RoutePlan)):
             for cohort in range(len(self.RoutePlan[day])):
                 #TODO: Added randomness and only added one more 
-                for taskInRoute in self.RNG.choice(self.RoutePlan[day][cohort], 10, replace = False):
+                for taskInRoute in self.RoutePlan[day][cohort]:
                     if taskInRoute > 1000:
                         continue
 
