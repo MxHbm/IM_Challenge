@@ -1,7 +1,8 @@
 import json
 from InputData import *
 import os
-import numpy
+import numpy as np
+
 
 class Solution:
     ''' 

@@ -10,10 +10,10 @@ import pstats
 main_tasks = True
 
 main_tasks_string = str(main_tasks) 
-algorithm = 'Iterative' #Iterative or ILS
 
 if main_tasks:
-    instances = ['7_5_1', '7_8_1']#, '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
+
+    instances = ['7_8_1']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
 else:
     instances = ['7_2_1']#, '7_8_1', '7_10_1']
 
@@ -47,10 +47,16 @@ def main():
         solver = Solver(data, 1008)
 
         neighborhoodLocalSearch = IterativeImprovement(inputData=data,
-                                                    neighborhoodEvaluationStrategy= 'BestImprovement',
-                                                    neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
+                                                    neighborhoodEvaluationStrategy= 'FirstImprovement',
+                                                    neighborhoodTypes=['SwapIntraRoute'])
+        
+
+        neighborhoodLocalSearch2 = IterativeImprovement(inputData=data,
+                                                    neighborhoodEvaluationStrategy= 'FirstImprovement',
+                                                    neighborhoodTypes=['TwoEdgeExchange'])
+        
         ILS = IteratedLocalSearch(inputData=data,
-                                maxRunTime = 100,
+                                maxRunTime = 60,
                                 jobs_to_remove=3,
                                 sublists_to_modify=3,
                                 consecutive_to_remove=3,
@@ -79,20 +85,25 @@ def main():
                                 maxIterationsWithoutImprovement = 2,
                                 neighborhoodEvaluationStrategy= 'BestImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit']
-
         )
+
+
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = SA_LS
+            algorithm = neighborhoodLocalSearch
         )
 
-        #Iterated Local Search
+        # Define the directory and file name
+        output_directory = Path.cwd().parent / "Data" / "Debug"
+
+        solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, True)
         '''
+        #Iterated Local Search
         solver.RunIteratedLocalSearch(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm_LS=neighborhoodLocalSearch,
+            algorithm_LS=neighborhoodLocalSearch2,
             algorithm_ILS=ILS
         )
         '''

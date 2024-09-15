@@ -97,16 +97,13 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         self.sublists_to_modify = sublists_to_modify
         self.consecutive_to_remove = consecutive_to_remove
 
-    def Run(self, solution: Solution) -> Solution:
+    def Run(self, currentSolution: Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types '''
 
-        self.InitializeNeighborhoods(solution)
+        self.InitializeNeighborhoods(currentSolution)
         
         print('\nStarting Iterated Local Search')
-        currentSolution = solution
         print(f' Solution after initial local search:\n {currentSolution}')
-
-        maxTime = self.maxRunTime
 
         iteration = 1
         threshold1 = 2
@@ -116,7 +113,7 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         
         startTime = time.time()
         usedTime = 0
-        while maxTime > usedTime:
+        while self.maxRunTime > usedTime:
             print(f'\nStarting iteration {iteration}')
             print(f' Running perturbation')
             currentSolution = self.Perturbation(currentSolution)
@@ -154,6 +151,58 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
         return bestSolution
+    
+    def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
+        ''' Perturbation to escape local optima '''
+
+
+        # choose type of perturbation randomly
+        types = ['remove', 'shake']
+        type = self.RNG.choice(types, replace = False)
+
+        print(f'\n Perturbation type: {type}')
+        
+        if type == 'remove': # Random removal of jobs
+            valid_elements = [(key, sublist_idx, item_idx, item) 
+                            for key, sublists in solution.RoutePlan.items()
+                            for sublist_idx, sublist in enumerate(sublists) 
+                            for item_idx, item in enumerate(sublist) 
+                            if item <= 1000]
+
+            newRoutePlan = deepcopy(solution.RoutePlan)
+            if len(valid_elements) >= self.jobsToRemove :
+                to_remove = self.RNG.choice(valid_elements, self.jobsToRemove, replace = False)
+                for key, sublist_idx, item_idx, item in to_remove:
+                    newRoutePlan[key][sublist_idx].remove(item)
+            else:
+                print('RoutePlan is faulty')
+
+            currentSolution = Solution(newRoutePlan, self.InputData)
+            self.EvaluationLogic.evaluateSolution(currentSolution)
+
+
+        elif type == 'shake': # random removal of consectitive jobs
+            
+            newRoutePlan = deepcopy(solution.RoutePlan)
+
+            all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
+            indices = self.RNG.choice(len(all_sublists), min(self.sublists_to_modify, len(all_sublists)), replace=False)
+            selected_sublists = [all_sublists[i] for i in indices]  # Select sublists using the chosen indices
+
+            for key, sublist in selected_sublists:
+                valid_positions = [i for i in range(len(sublist) - self.consecutive_to_remove + 1)
+                                    if all(sublist[i + j] <= 1000 for j in range(self.consecutive_to_remove))]
+
+                if valid_positions:
+                    start_pos = self.RNG.choice(a = valid_positions, replace = False)
+                    del sublist[start_pos:start_pos + self.consecutive_to_remove]
+
+
+            currentSolution = Solution(newRoutePlan, self.InputData)
+            self.EvaluationLogic.evaluateSolution(currentSolution)
+        
+
+        return currentSolution
 
 
     
