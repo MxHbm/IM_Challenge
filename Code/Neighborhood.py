@@ -317,15 +317,15 @@ class DeltaNeighborhood(BaseNeighborhood):
 
             if bestNeighborhoodMove is not None and bestNeighborhoodMove.Delta < 0:
                 #print(f"\nIteration: {iterator} in neighborhood {self.Type}")
-                #print("New best solution has been found!")
-                #print("Time Delta:" , bestNeighborhoodMove.Delta)
+                print("New best solution has been found!")
+                print("Time Delta:" , bestNeighborhoodMove.Delta)
                 completeRoute = self.constructCompleteRoute(bestNeighborhoodMove)
                 bestNeighborhoodSolution = Solution(completeRoute, self.InputData)
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
-                #print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
+                print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
             else:
-                #print(f"\nReached local optimum of {self.Type} neighborhood in iteration {iterator}. Stop local search.\n")
+                print(f"\nReached local optimum of {self.Type} neighborhood in iteration. Stop local search.\n")
                 hasSolutionImproved = False
             #iterator += 1
         return bestNeighborhoodSolution
@@ -386,15 +386,12 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
                 valid_tasks = [task for task in cohort_tasks if task <= 1000]
 
                 # Generate combinations of two distinct tasks
-                for index_i, index_j in itertools.combinations(range(len(valid_tasks)), 2):
-                    task_i = valid_tasks[index_i]
-                    task_j = valid_tasks[index_j]
+                for task_i, task_j in itertools.combinations(valid_tasks, 2):
+                    index_i = cohort_tasks.index(task_i)
+                    index_j = cohort_tasks.index(task_j)
 
                     # Create Swap Move Objects with different permutations
-                    swapMove = SwapIntraRouteMove(self.RoutePlan[day][cohort], day, cohort, task_i, task_j, index_i, index_j)
-
-                    # Add the move to the list
-                    self.Moves.append(swapMove)
+                    self.Moves.append(SwapIntraRouteMove(cohort_tasks, day, cohort, task_i, task_j, index_i, index_j))
 
         # Shuffle the Moves at the end
         self.RNG.shuffle(self.Moves)
@@ -608,10 +605,8 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
                             task_j = valid_tasks[j]
                             
                             # Create the move
-                            twoEdgeExchangeMove = TwoEdgeExchangeMove(self.RoutePlan[day][cohort], day, cohort, task_i, task_j)
+                            self.Moves.append(TwoEdgeExchangeMove(self.RoutePlan[day][cohort], day, cohort, task_i, task_j))
 
-                            # Append the move to the list
-                            self.Moves.append(twoEdgeExchangeMove)  
         
         #Shuffles the Moves
         self.RNG.shuffle(self.Moves)
