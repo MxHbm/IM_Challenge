@@ -3,6 +3,7 @@ from InputData import *
 import os
 import numpy as np
 
+
 class Solution:
     ''' 
     '''
@@ -15,6 +16,7 @@ class Solution:
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
         self._waitingTime = -1
+        self._waitingTimes = numpy.zeros((data.days, data.cohort_no))
         self._create_unused_tasks(data)
 
     def __str__(self):
@@ -202,6 +204,12 @@ class Solution:
         """Retutns the waiting time of the solution"""
 
         return self._waitingTime
+    
+    @property
+    def WaitingTimes(self) -> int: 
+        """Retutns the waiting times of each route of the solution"""
+
+        return self._waitingTimes
     
     @property
     def EndTimes(self) -> dict[str, list[list[int]]]: 
