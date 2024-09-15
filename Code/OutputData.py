@@ -16,7 +16,7 @@ class Solution:
         self._route_plan = route_plan
         self._create_StartEndTimes(data)
         self._waitingTime = -1
-        self._waitingTimes = numpy.zeros((data.days, data.cohort_no))
+        self._waitingTimes = np.zeros((data.days, data.cohort_no))
         self._create_unused_tasks(data)
 
     def __str__(self):
@@ -66,15 +66,19 @@ class Solution:
             day_index += 1
     
 
-    def _create_unused_tasks(self, data:InputData) -> None: 
-        ''' Create an initial set of all unused tasks'''
-
-        self._unusedTasks = {task.no for task in data.allTasks}
-
+    def _create_unused_tasks(self, data: InputData) -> None:
+        ''' Create an initial list of all unused tasks '''
+        
+        # Create a list of all task numbers
+        self._unusedTasks = [task.no for task in data.allTasks]
+        
+        # Iterate through the route plan and remove used tasks
         for day, cohorts in self._route_plan.items():
             for cohort in cohorts:
                 for task in cohort:
-                    self._unusedTasks.discard(task)
+                    if task in self._unusedTasks:
+                        self._unusedTasks.remove(task)  # Remove the task from the list if it's in the unused list
+
 
     def add_unused_Task(self, task_id:int) -> None:
         '''Adds one task id to the set of unused tasks'''

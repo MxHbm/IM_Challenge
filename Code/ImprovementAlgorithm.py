@@ -416,6 +416,140 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
         self.minTemp = min_temperature
 
 
+    def Run(self, currentSolution: Solution) -> Solution:
+
+        #self.InitializeNeighborhoods(solution)
+
+        print('\nStarting Simulated Annealing Local Search Procedure')
+
+        startTime = time.time()
+        usedTime = 0
+
+        
+        bestLoop = 0
+        temperature = self.startTemperature
+        iteration = 1
+
+        neighborhoods = [self.CreateNeighborhood(neighborhood_type) for neighborhood_type in self.neighborhoodTypesDelta]
+        number = 1/len(self.neighborhoodTypesDelta)
+        probabilities = [number for i in range(len(self.neighborhoodTypesDelta))]
+        
+        neighborhood = self.CreateNeighborhood('SwapIntraRoute') 
+
+        while self.maxRunTime > usedTime:
+
+            bestSolutionWaitingTime = self.SolutionPool.GetHighestProfitSolution().WaitingTime
+            print(f'\nStarting iteration {iteration}')
+
+
+            #SA mit Delta Nachbarschaften --> Wartezeit als Kriterium
+            innerLoop = 0
+            bestLoop = 0
+                        
+            SAstartTime = time.time()
+            print(f'\nRunning Simulated Annealing for Delta neighborhoods')
+            temperature = self.startTemperature
+
+            while temperature > self.minTemp:
+          
+                #neighborhood = self.RNG.choice(neighborhoods, p = probabilities)
+
+                move = neighborhood.SingleMove(currentSolution)
+
+                if move.Delta  < 0:
+                    completeRouteplan = neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                    currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                    self.EvaluationLogic.evaluateSolution(currentSolution)
+
+                    if currentSolution.WaitingTime > bestSolutionWaitingTime:
+
+                        bestLoop = innerLoop
+                        self.SolutionPool.AddSolution(currentSolution)
+                        bestSolutionWaitingTime = currentSolution.WaitingTime
+                else:
+                    random_number = self.RNG.random()
+                    if random_number < math.exp(-move.Delta / (temperature)):
+                        completeRouteplan = neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                        currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                        self.EvaluationLogic.evaluateSolution(currentSolution)
+                
+
+                temperature = temperature * self.tempDecreaseFactor
+
+                innerLoop += 1
+
+
+
+            usedTime = time.time() - SAstartTime
+
+            print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after inner loop {bestLoop}/{innerLoop}, {currentSolution}')
+
+            # Lokale Suche mit Insert Nachbarschaft
+            currentSolution = self.SolutionPool.GetHighestProfitSolution()
+
+            neighborhoodType = 'Insert'
+
+            print(f'\nRunning local search for {neighborhoodType} neighborhood')
+            neighborhood = self.CreateNeighborhood(neighborhoodType)
+            
+
+            LSstartTime = time.time()
+            currentSolution = neighborhood.LocalSearch('BestImprovement', currentSolution)
+            usedTime = time.time() - LSstartTime
+            
+            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after local search: {currentSolution}')
+
+
+            # Lokale Suche mit ReplaceProfit Nachbarschaft
+
+            neighborhoodType = 'ReplaceProfit'
+
+            print(f'\nRunning local search for {neighborhoodType} neighborhood')
+            neighborhood = self.CreateNeighborhood(neighborhoodType)
+            
+
+            LSstartTime = time.time()
+            currentSolution = neighborhood.LocalSearch('BestImprovement', currentSolution)
+            usedTime = time.time() - LSstartTime
+            
+            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
+            print(f' Best solution after local search: {currentSolution}')
+
+
+            usedTime = time.time() - startTime
+        
+
+            iteration += 1
+
+
+
+        print(f'Number of total iterations: {iteration}')
+        return  self.SolutionPool.GetHighestProfitSolution()
+
+
+# ------------------------------------------ PREVIOUS ATTEMPT # ------------------------------------------ 
+'''
+class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
+    """ Simulated Annealing algorithm with perturbation to escape local optima. """
+
+    def _init_(self, inputData: InputData,
+                 start_temperature:int,
+                 min_temperature:float,
+                 temp_decrease_factor:float,
+                 maxRunTime:int,
+                 neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'], neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
+        super()._init_(inputData)
+
+        self.neighborhoodTypesDelta = neighborhoodTypesDelta
+        self.neighborhoodTypesProfit = neighborhoodTypesProfit
+        self.maxRunTime = maxRunTime
+        self.startTemperature = start_temperature
+        self.tempDecreaseFactor = temp_decrease_factor
+        self.minTemp = min_temperature
+
+
     def Run(self, solution: Solution) -> Solution:
 
         #self.InitializeNeighborhoods(solution)
@@ -525,7 +659,9 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
 
         return bestSolution
 
+'''
 
+#### OLD STUFF 
 
 '''
 

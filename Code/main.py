@@ -48,7 +48,7 @@ def main():
 
         neighborhoodLocalSearch = IterativeImprovement(inputData=data,
                                                     neighborhoodEvaluationStrategy= 'FirstImprovement',
-                                                    neighborhoodTypes=['SwapIntraRoute'])
+                                                    neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
         
 
         neighborhoodLocalSearch2 = IterativeImprovement(inputData=data,
@@ -60,7 +60,7 @@ def main():
                                 jobs_to_remove=3,
                                 sublists_to_modify=3,
                                 consecutive_to_remove=3,
-                                neighborhoodEvaluationStrategy= 'BestImprovement',
+                                neighborhoodEvaluationStrategy= 'FirstImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
         
         SA_LS = SimulatedAnnealingLocalSearch(
@@ -68,7 +68,7 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-50,
             temp_decrease_factor=0.99,
-            maxRunTime=120,
+            maxRunTime=20,
             neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
@@ -86,14 +86,20 @@ def main():
                                 neighborhoodEvaluationStrategy= 'BestImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit']
         )
-
-
+        '''
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = neighborhoodLocalSearch
+            algorithm = SAILS_algorithm
         )
-
+        '''
+        #Iterated Local Search
+        solver.RunIteratedLocalSearch(
+            numberParameterCombination=1,
+            main_tasks=True,
+            algorithm_LS=neighborhoodLocalSearch,
+            algorithm_ILS=ILS
+        )
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
 
@@ -193,7 +199,7 @@ def main():
         for key, value in runtimes.items():
             f.write('%s:%s\n' % (key, value))
 
-    '''
+
 
 # Profile the main function
 if __name__ == '__main__':
@@ -201,3 +207,5 @@ if __name__ == '__main__':
     p = pstats.Stats('profiling_results.prof')
     p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
 
+    '''
+main()
