@@ -1,0 +1,17 @@
+jobs_to_remove,sublists_to_modify,consecutive_to_remove,start_temperature,temp_decrease_factor,maxInnerLoop,maxIterationsWithoutImprovement,neighborhoodEvaluationStrategyDelta,TotalProfit,WaitingTime,TotalTasks
+9,5,3,250,0.95,9,3,FirstImprovement,2144,17548.0,920
+9,5,3,250,0.95,9,3,BestImprovement,2150,15529.0,925
+9,5,3,250,0.95,45,15,FirstImprovement,2152,15024.0,926
+9,5,3,250,0.95,45,15,BestImprovement,2152,15198.0,926
+9,5,3,1000,0.95,9,3,FirstImprovement,2152,15698.0,925
+9,5,3,1000,0.95,9,3,BestImprovement,2152,15796.0,925
+9,5,3,1000,0.95,45,15,FirstImprovement,2152,15855.0,925
+9,5,3,1000,0.95,45,15,BestImprovement,2152,15862.0,925
+9,5,6,250,0.95,9,3,FirstImprovement,2152,16286.0,925
+9,5,6,250,0.95,9,3,BestImprovement,2153,15811.0,927
+9,5,6,250,0.95,45,15,FirstImprovement,2153,15817.0,927
+9,5,6,250,0.95,45,15,BestImprovement,2153,15882.0,927
+9,5,6,1000,0.95,9,3,FirstImprovement,2153,15882.0,927
+9,5,6,1000,0.95,9,3,BestImprovement,2153,16138.0,927
+9,5,6,1000,0.95,45,15,FirstImprovement,2153,16138.0,927
+9,5,6,1000,0.95,45,15,BestImprovement,2153,16155.0,927
