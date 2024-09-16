@@ -68,7 +68,7 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-50,
             temp_decrease_factor=0.99,
-            maxRunTime=30,
+            maxRunTime=180,
             #neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
@@ -105,6 +105,8 @@ def main():
         output_directory = Path.cwd().parent / "Data" / "Debug"
 
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, True)
+        #for sol in solver.SolutionPool.Solutions: 
+         #   print(sol)
         '''
         #Iterated Local Search
         solver.RunIteratedLocalSearch(

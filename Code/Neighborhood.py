@@ -633,7 +633,8 @@ class TwoEdgeExchangeMove(BaseMove):
     """ Represents the swap of the element at IndexA with the element at IndexB for a given permutation (= solution). """
 
     def __init__(self, initialRoutePlan, day:int, cohort:int, taskA:int, taskB:int):
-        self.RouteDayCohort = initialRoutePlan.copy() # create a copy of the permutation
+        self.RouteDayCohort = initialRoutePlan.copy()  # Create a copy for RouteDayCohort
+        self.OldRouteDayCohort = initialRoutePlan.copy()  # Create a separate copy for OldRouteDayCohort
         self.Day = day
         self.Cohort = cohort
         self.TaskA = taskA
@@ -688,7 +689,7 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
         ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
 
         #Update the Delta of the Move
-        move.setDelta(self.EvaluationLogic.CalculateTwoEdgeExchangeDelta(move))
+        move.setDelta(self.EvaluationLogic.WaitingTimeDifferenceOneRoute(move))
     
     def MakeOneMove(self, solution:Solution) -> TwoEdgeExchangeMove:
 

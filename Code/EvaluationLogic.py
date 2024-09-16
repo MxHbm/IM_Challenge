@@ -47,27 +47,53 @@ class EvaluationLogic:
         waiting_time = numpy.sum(currentSolution.WaitingTimes)
         currentSolution.setWaitingTime(waiting_time)
 
+    def WaitingTimeOneRoute(self, RouteDayCohort:list) -> None: 
+        ''' Calculates the Waiting Time for one Route'''
+        # Retrieve the route for the given day and cohort
+        route_time = self._data.maxRouteDuration
+        previous_task = 0
 
+        for task_i in RouteDayCohort:
+            route_time -= self._data.distances[previous_task][task_i]
+            route_time -= self._data.allTasks[task_i].service_time
+            previous_task = task_i
+        
+        route_time -= self._data.distances[previous_task][0]
 
-    def CalculateDistanceSubtraction(self, move, successor_list, precessor_list, two_edges:bool):
+        return route_time
+    
+    def WaitingTimeDifferenceOneRoute(self, move) -> int:
+        ''' Calculates the Difference of the Waiting Time for old and new Two Edge Exchange Route'''
+
+        difference =self.WaitingTimeOneRoute(move.OldRouteDayCohort) - self.WaitingTimeOneRoute(move.RouteDayCohort)
+
+        return difference
+
+    def CalculateDistanceSubtractionTwoEdge(self, move, successor_list, precessor_list):
         '''Calculates the distance subtraction of the given lists'''
 
-        # Calculate the original distances
-        if two_edges: 
 
-            distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskB][successor_list[1]]
-                
-            # Calculate the new distances after swap
-            distance_new = self._data.distances[move.TaskA][successor_list[1]] + self._data.distances[precessor_list[0]][move.TaskB]
+        distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskB][successor_list[1]]
+            
+        # Calculate the new distances after swap
+        distance_new = self._data.distances[move.TaskA][successor_list[1]] + self._data.distances[precessor_list[0]][move.TaskB]
         
-        else: 
-            distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskA][successor_list[0]] \
-                + self._data.distances[precessor_list[1]][move.TaskB] + self._data.distances[move.TaskB][successor_list[1]]
-                
-            # Calculate the new distances after swap
-            distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
-                        + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
-        
+        difference = distance_new - distance_old
+
+        # Return the difference between the new and original distances
+        return difference
+
+    def CalculateDistanceSubtraction(self, move, successor_list, precessor_list):
+        '''Calculates the distance subtraction of the given lists'''
+
+
+        distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskA][successor_list[0]] \
+            + self._data.distances[precessor_list[1]][move.TaskB] + self._data.distances[move.TaskB][successor_list[1]]
+            
+        # Calculate the new distances after swap
+        distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
+                    + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
+    
         difference = distance_new - distance_old
 
         # Return the difference between the new and original distances
@@ -99,7 +125,7 @@ class EvaluationLogic:
                 successors.append(route[index + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.CalculateDistanceSubtraction(move, successors, precessors, two_edges=False)
+        delta = self.CalculateDistanceSubtraction(move, successors, precessors)
         #print("Delta: ",delta)
 
         return delta
@@ -139,7 +165,7 @@ class EvaluationLogic:
             successors.append(routeB[indexB + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.CalculateDistanceSubtraction(move, successors, precessors, two_edges=False)
+        delta = self.CalculateDistanceSubtraction(move, successors, precessors)
         #print("Delta: ",delta)
 
         return delta
@@ -170,7 +196,7 @@ class EvaluationLogic:
                 successors.append(route[index + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.CalculateDistanceSubtraction(move, successors, precessors, two_edges=True)
+        delta = self.CalculateDistanceSubtractionTwoEdge(move, successors, precessors)
 
         return delta
     

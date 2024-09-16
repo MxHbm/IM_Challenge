@@ -447,8 +447,9 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
         probabilities = [1/len(self.DeltaNeighborhoods) for i in range(len(self.DeltaNeighborhoods))]
 
         while self.maxRunTime > usedTime:
-
-            bestSolutionWaitingTime = self.SolutionPool.GetHighestWaitingTimeSolution().WaitingTime
+            
+            #Update at beginning and before every iteration of Local Improvement
+            bestSolutionWaitingTime = currentSolution.WaitingTime
             print(f'\nStarting iteration {iteration}')
 
             #SA mit Delta Nachbarschaften --> Wartezeit als Kriterium
@@ -471,14 +472,16 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                     else:
                         currentSolution.setRoutePlanNewUnusedTasks(completeRouteplan, self.InputData)
                     self.EvaluationLogic.evaluateSolution(currentSolution)
-
+            
                     if currentSolution.WaitingTime > bestSolutionWaitingTime:
-
+                        
+                        #Create Best Known Solution
                         bestLoop = innerLoop
                         bestKnownSolution = Solution(deepcopy(completeRouteplan), self.InputData)
-                        self.SolutionPool.AddSolution(bestKnownSolution)
+                        self.EvaluationLogic.evaluateSolution(bestKnownSolution) #Evaluate Sol
+                        #self.SolutionPool.AddSolution(bestKnownSolution)
                         #Schauen ob die vorhergehenden Lösungen gleich bleiben -> Debug Modus 
-                        bestSolutionWaitingTime = currentSolution.WaitingTime
+                        bestSolutionWaitingTime = bestKnownSolution.WaitingTime
                 else:
                     random_number = self.RNG.random()
                     if random_number < math.exp(-move.Delta / (temperature)):
@@ -495,11 +498,16 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 innerLoop += 1
 
 
-            # Lokale Suche mit Insert Nachbarschaft
-            currentSolution = self.SolutionPool.GetHighestWaitingTimeSolution()
+            #Overwrite before Local Search
+            if bestLoop > 0:
+                currentSolution = bestKnownSolution
 
-            #print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
-            print(f' Best solution after inner loop {bestLoop}/{innerLoop}, {currentSolution}')
+                #print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+                print(f' Best solution after inner loop {bestLoop}/{innerLoop}, {bestKnownSolution}')
+
+            else: 
+                #print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+                print(f' Best solution after inner loop {bestLoop}/{innerLoop}, {currentSolution}')
 
 
             for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
@@ -511,7 +519,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 print(f' Best solution after local search: {currentSolution}')
 
             usedTime = time.time() - startTime
-
+ 
             iteration += 1
 
 
