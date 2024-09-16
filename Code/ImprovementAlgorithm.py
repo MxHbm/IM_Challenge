@@ -862,7 +862,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                     completeRouteplan = delta_neighborhood.constructCompleteRoute(move,currentSolution)
                     
                     currentSolution.setRoutePlan(completeRouteplan, self.InputData)
-                    if delta_neighborhood.Type != "ReplaceDelta":
+                    if delta_neighborhood.Type == "ReplaceDelta":
                         currentSolution.remove_unused_Task(move.UnusedTask)
                     self.EvaluationLogic.evaluateSolution(currentSolution)
             
@@ -880,7 +880,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                     if random_number < math.exp(-move.Delta / (temperature)):
                         completeRouteplan = delta_neighborhood.constructCompleteRoute(move,currentSolution)
                         currentSolution.setRoutePlan(completeRouteplan, self.InputData)
-                        if delta_neighborhood.Type != "ReplaceDelta":
+                        if delta_neighborhood.Type == "ReplaceDelta":
                             currentSolution.remove_unused_Task(move.UnusedTask)
                         self.EvaluationLogic.evaluateSolution(currentSolution)
                 
@@ -888,11 +888,6 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 temperature = temperature * self.tempDecreaseFactor
 
                 innerLoop += 1
-            
-            bestSolution = Solution(bestSolutionRoutePlan, self.InputData)
-            self.EvaluationLogic.evaluateSolution(bestSolution)
-            self.SolutionPool.AddSolution(bestSolution)
-            #bestSolution = self.SolutionPool.GetHighestProfitSolution() # Need to update current solution since SA algorithm could result in a worse current solution
 
 
             #Overwrite before Local Search

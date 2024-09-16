@@ -23,7 +23,7 @@ print('______________________________________________________________________')
 
 runtimes = dict()
 
-def main_single_run():
+def main():
 
     for i in instances:
         print(Path.cwd().parent) 
@@ -129,13 +129,12 @@ def main_single_run():
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
        
-        solver.RunIteratedLocalSearch(
+        solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm_LS=neighborhoodLocalSearch2,
-            algorithm_ILS=Adaptive_ILS
+            algorithm = SA_LS
         )
-        '''
+
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
 
@@ -176,7 +175,7 @@ def main_single_run():
         
         '''
 
-
+'''
 def main_parameterstudy():
 
     for i in instances:
