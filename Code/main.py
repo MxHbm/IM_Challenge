@@ -68,8 +68,8 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-50,
             temp_decrease_factor=0.99,
-            maxRunTime=20,
-            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+            maxRunTime=180,
+            #neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
@@ -86,11 +86,11 @@ def main():
                                 neighborhoodEvaluationStrategy= 'BestImprovement',
                                 neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit']
         )
-        '''
+
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = SAILS_algorithm
+            algorithm = SA_LS
         )
         '''
         #Iterated Local Search
@@ -100,10 +100,13 @@ def main():
             algorithm_LS=neighborhoodLocalSearch,
             algorithm_ILS=ILS
         )
+        '''
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
 
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, True)
+        #for sol in solver.SolutionPool.Solutions: 
+         #   print(sol)
         '''
         #Iterated Local Search
         solver.RunIteratedLocalSearch(

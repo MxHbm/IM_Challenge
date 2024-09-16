@@ -225,7 +225,6 @@ class ProfitNeighborhood(BaseNeighborhood):
 
         while hasSolutionImproved:
             
-
             # Sets Algorithm back!
             self.Update(bestNeighborhoodSolution.RoutePlan) 
             self.DiscoverMoves(bestNeighborhoodSolution)
@@ -242,13 +241,12 @@ class ProfitNeighborhood(BaseNeighborhood):
                 self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
                 #print("New Profit:" , bestNeighborhoodSolution.TotalProfit)
                 #print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
-
                 self.SolutionPool.AddSolution(bestNeighborhoodSolution)
+
             else:
                 #print(f"\nReached local optimum of {self.Type} neighborhood in Iteration {iterator}. Stop local search.\n")
                 hasSolutionImproved = False
             #iterator += 1
-            
 
         return bestNeighborhoodSolution
     
@@ -368,7 +366,6 @@ class DeltaNeighborhood(BaseNeighborhood):
         '''
         return move
     
-
 #_______________________________________________________________________________________________________________________
 
 class SwapIntraRouteMove(BaseMove):
@@ -386,7 +383,6 @@ class SwapIntraRouteMove(BaseMove):
 
         #Swap Tasks 
         self.RouteDayCohort[self.indexA], self.RouteDayCohort[self.indexB] = self.TaskB, self.TaskA
-
 
 class SwapIntraRouteNeighborhood(DeltaNeighborhood):
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
@@ -442,7 +438,6 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
 
         # Create and return the move
         return SwapIntraRouteMove(cohort_tasks, day, cohort, task_i, task_j, index_i, index_j)
-
        
 class SwapInterRouteMove(BaseMove):
     """ Represents the swap of tasks between different routes possibly on the same or different days. """
@@ -633,13 +628,13 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
                 hasSolutionImproved = False
 
         return bestNeighborhoodSolution
-
     
 class TwoEdgeExchangeMove(BaseMove):
     """ Represents the swap of the element at IndexA with the element at IndexB for a given permutation (= solution). """
 
     def __init__(self, initialRoutePlan, day:int, cohort:int, taskA:int, taskB:int):
-        self.RouteDayCohort = initialRoutePlan.copy() # create a copy of the permutation
+        self.RouteDayCohort = initialRoutePlan.copy()  # Create a copy for RouteDayCohort
+        self.OldRouteDayCohort = initialRoutePlan.copy()  # Create a separate copy for OldRouteDayCohort
         self.Day = day
         self.Cohort = cohort
         self.TaskA = taskA
@@ -654,7 +649,6 @@ class TwoEdgeExchangeMove(BaseMove):
         else:
             # If indexA is after indexB, still reverse, but handle the indices correctly
             self.RouteDayCohort[self.indexB:self.indexA+1] = reversed(self.RouteDayCohort[self.indexB:self.indexA+1])
-
 
 class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):         
 
@@ -695,19 +689,22 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
         ''' Calculates the MakeSpan of thr certain move - adds to recent Solution'''
 
         #Update the Delta of the Move
-        move.setDelta(self.EvaluationLogic.CalculateTwoEdgeExchangeDelta(move))
+        move.setDelta(self.EvaluationLogic.WaitingTimeDifferenceOneRoute(move))
     
     def MakeOneMove(self, solution:Solution) -> TwoEdgeExchangeMove:
 
         day = self.RNG.integers(0, len(solution.RoutePlan))
         cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
 
+        cohort_tasks = solution.RoutePlan[day][cohort]
+                    
+        # Filter tasks that are <= 1000 to reduce unnecessary checks
+        valid_tasks = [task for task in cohort_tasks if task <= 1000]
+
         # Randomly select two distinct indices
-        task_i, task_j = self.RNG.choice(solution.RoutePlan[day][cohort], size=2, replace=False)
+        task_i, task_j = self.RNG.choice(valid_tasks, size=2, replace=False)
 
-        move = TwoEdgeExchangeMove(solution.RoutePlan[day][cohort], day, cohort, task_i, task_j)
-
-        return move
+        return TwoEdgeExchangeMove(cohort_tasks, day, cohort, task_i, task_j)
 
 
 class ReplaceMove(BaseMove):
@@ -892,7 +889,6 @@ class ReplaceDeltaNeighborhood(DeltaNeighborhood):
         return move
       
         '''
-
 
 #_______________________________________________________________________________________________________________________
 
