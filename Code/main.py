@@ -87,8 +87,8 @@ def main_single_run():
             start_temperature = 1000,
             min_temperature = 1e-50,
             temp_decrease_factor=0.99,
-            maxRunTime=60*60,
-            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute'],
+            maxRunTime=30,
+            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
@@ -135,7 +135,7 @@ def main_single_run():
             algorithm_LS=neighborhoodLocalSearch2,
             algorithm_ILS=Adaptive_ILS
         )
-
+        '''
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
 
@@ -148,6 +148,7 @@ def main_single_run():
             main_tasks=True,
             algorithm = ILS
         )
+
         '''
         #Iterated Local Search
         '''
@@ -174,77 +175,6 @@ def main_single_run():
             )
         
         '''
-        '''
-        ConstructiveHeuristic = ConstructiveHeuristics(pool, evaluationLogic)
-
-
-        ConstructiveHeuristic.Run(data, 'Greedy', numberOfParameterComb=1, main_tasks = main_tasks)
-
-
-        solution = pool.GetHighestProfitSolution()
-
-        main_tasks_string = str(main_tasks) 
-        solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) /"Results_Greedy",data, main_tasks)
-
-        print(solution)
-
-
-        neighborhoodTypesDelta = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta']
-        neighborhoodTypesProfit = ['Insert','ReplaceProfit']
-
-        if algorithm == 'ILS':
-            iteratedLocalSearch = IteratedLocalSearch(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['Insert','TwoEdgeExchange','SwapInterRoute','Insert','ReplaceProfit'])
-
-            iteratedLocalSearch.Initialize(evaluationLogic,pool, rng = None)
-            start_time = time.time()
-            solution = iteratedLocalSearch.Run(solution)
-            end_time = time.time()
-
-
-        elif algorithm == 'SAILS':
-            sails = SAILS(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
-            sails.Initialize(evaluationLogic,pool, rng = None)
-            start_time = time.time()
-            solution = sails.Run(solution)
-            end_time = time.time()
-        
-
-
-        elif algorithm == 'Iterative':
-            iterativeImpro = IterativeImprovement(data, neighborhoodEvaluationStrategy= 'BestImprovement', neighborhoodTypes = ['TwoEdgeExchange','Insert'])   
-            iterativeImpro.Initialize(evaluationLogic,pool, rng = None)
-            start_time = time.time()
-            solution = iterativeImpro.Run(solution)
-            end_time = time.time()
-
-
-
-        elif algorithm == 'SimulatedAnnealingLocalSearch':
-            simulatedAnnealingLocalSearch = SimulatedAnnealingLocalSearch(data)
-            simulatedAnnealingLocalSearch.Initialize(evaluationLogic,pool, rng = None)
-            start_time = time.time()
-            solution = simulatedAnnealingLocalSearch.Run(solution)
-            end_time = time.time()
-
-    
-        
-        runtime = end_time - start_time
-        
-        solution.WriteSolToJson(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) ,data, main_tasks)
-
-        runtimes[i] = round(runtime, 2)
-
-        print(f"Runtime: {round(runtime, 2)} seconds")
-        print('THE END')
-        print('______________________________________________________________________')
-
-
-    # Create a file with the runtimes
-    with open(Path.cwd().parent / "Data" / ("Main_Tasks = " + main_tasks_string) / ("Results_" + algorithm) / "runtimes.txt", 'w') as f:
-        for key, value in runtimes.items():
-            f.write('%s:%s\n' % (key, value))
-
-'''
 
 
 def main_parameterstudy():
@@ -356,4 +286,4 @@ if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
     p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
-'''
+
