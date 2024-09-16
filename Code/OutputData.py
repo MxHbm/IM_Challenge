@@ -75,7 +75,7 @@ class Solution:
     def remove_unused_Task(self, task_id:int) -> None:
         '''Remove one task id to the set of unused tasks'''
 
-        self._unusedTasks.discard(task_id)      
+        self._unusedTasks.remove(task_id)      
 
     def setRoutePlan(self, route_plan, data:InputData) -> None:
         ''' Sets a new route plan to the given solution'''

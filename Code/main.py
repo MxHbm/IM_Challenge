@@ -68,8 +68,8 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-50,
             temp_decrease_factor=0.99,
-            maxRunTime=180,
-            #neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+            maxRunTime=30,
+            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
@@ -203,12 +203,10 @@ def main():
             f.write('%s:%s\n' % (key, value))
 
 
-
+'''
 # Profile the main function
 if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
     p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
 
-    '''
-main()
