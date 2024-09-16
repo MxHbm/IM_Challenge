@@ -466,11 +466,10 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 move = delta_neighborhood.SingleMove(currentSolution)
 
                 if move.Delta  < 0:
-                    completeRouteplan = delta_neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                    completeRouteplan = delta_neighborhood.constructCompleteRoute(move,currentSolution)
+                    currentSolution.setRoutePlan(completeRouteplan, self.InputData)
                     if delta_neighborhood.Type != "ReplaceDelta":
-                        currentSolution.setRoutePlan(completeRouteplan, self.InputData)
-                    else:
-                        currentSolution.setRoutePlanNewUnusedTasks(completeRouteplan, self.InputData)
+                        currentSolution.remove_unused_Task(move.UnusedTask)
                     self.EvaluationLogic.evaluateSolution(currentSolution)
             
                     if currentSolution.WaitingTime > bestSolutionWaitingTime:
@@ -485,11 +484,10 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 else:
                     random_number = self.RNG.random()
                     if random_number < math.exp(-move.Delta / (temperature)):
-                        completeRouteplan = delta_neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                        completeRouteplan = delta_neighborhood.constructCompleteRoute(move,currentSolution)
+                        currentSolution.setRoutePlan(completeRouteplan, self.InputData)
                         if delta_neighborhood.Type != "ReplaceDelta":
-                            currentSolution.setRoutePlan(completeRouteplan, self.InputData)
-                        else:
-                            currentSolution.setRoutePlanNewUnusedTasks(completeRouteplan, self.InputData)
+                            currentSolution.remove_unused_Task(move.UnusedTask)
                         self.EvaluationLogic.evaluateSolution(currentSolution)
                 
 
