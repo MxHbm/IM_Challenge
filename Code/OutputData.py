@@ -66,19 +66,6 @@ class Solution:
             day_index += 1
     
 
-    def _create_unused_tasks(self, data: InputData) -> None:
-        ''' Create an initial list of all unused tasks '''
-        
-        # Create a list of all task numbers
-        self._unusedTasks = [task.no for task in data.allTasks]
-        
-        # Iterate through the route plan and remove used tasks
-        for day, cohorts in self._route_plan.items():
-            for cohort in cohorts:
-                for task in cohort:
-                    if task in self._unusedTasks:
-                        self._unusedTasks.remove(task)  # Remove the task from the list if it's in the unused list
-
 
     def add_unused_Task(self, task_id:int) -> None:
         '''Adds one task id to the set of unused tasks'''
@@ -93,7 +80,24 @@ class Solution:
     def setRoutePlan(self, route_plan, data:InputData) -> None:
         ''' Sets a new route plan to the given solution'''
         self._route_plan = route_plan
-        self._create_StartEndTimes(data)
+
+    def setRoutePlanNewUnusedTasks(self, route_plan, data:InputData) -> None:
+        ''' Sets a new route plan to the given solution'''
+        self._route_plan = route_plan
+        self._create_unused_tasks(data)
+
+    def _create_unused_tasks(self, data: InputData) -> None:
+        ''' Create an initial list of all unused tasks '''
+        
+        # Create a list of all task numbers
+        self._unusedTasks = [task.no for task in data.allTasks]
+        
+        # Iterate through the route plan and remove used tasks
+        for day, cohorts in self._route_plan.items():
+            for cohort in cohorts:
+                for task in cohort:
+                    if task in self._unusedTasks:
+                        self._unusedTasks.remove(task)  # Remove the task from the list if it's in the unused list
 
     def setTotalProfit(self, new_profit) -> None:
         ''' Sets a new profit to the given solution'''
@@ -111,6 +115,7 @@ class Solution:
     def WriteSolToJson(self, file_path:str, inputData: InputData, main_tasks:bool) -> None:
         ''' Write the solution to a json file'''
 
+        self._create_StartEndTimes(inputData)
         days = dict()
         
         for day in range(inputData.days):
@@ -243,6 +248,12 @@ class SolutionPool:
     def GetHighestProfitSolution(self) -> Solution:
         ''' Sort all the solutions in regard to their makespan and return the solution with the lowest makespan'''
         self.Solutions.sort(key=lambda solution: (solution.TotalProfit, solution.WaitingTime), reverse=True) # sort solutions according to Profit and waiting time
+
+        return self.Solutions[0]
+    
+    def GetHighestWaitingTimeSolution(self) -> Solution:
+        ''' Sort all the solutions in regard to their makespan and return the solution with the lowest makespan'''
+        self.Solutions.sort(key=lambda solution: (solution.WaitingTime), reverse=True) # sort solutions according to Profit and waiting time
 
         return self.Solutions[0]
 

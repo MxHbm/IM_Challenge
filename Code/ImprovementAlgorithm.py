@@ -46,12 +46,22 @@ class ImprovementAlgorithm:
         else:
             raise Exception(f"Neighborhood type {neighborhoodType} not defined.")
 
-    def InitializeNeighborhoods(self, solution: Solution) -> None:
+    def InitializeNeighborhoods(self, neighborhoodtypes=None, neighborhoods_dict=None) -> None:
         ''' Create several neighborhoods for every neighborhood in the list neighborhoodTypes'''
+        
+        # If no neighborhood types are passed, default to self.NeighborhoodTypes
+        if neighborhoodtypes is None:
+            neighborhoodtypes = self.NeighborhoodTypes
 
-        for neighborhoodType in self.NeighborhoodTypes:
+        # If no neighborhoods dict is passed, default to self.Neighborhoods
+        if neighborhoods_dict is None:
+            neighborhoods_dict = self.Neighborhoods
+
+        # Iterate over the neighborhood types and create neighborhoods
+        for neighborhoodType in neighborhoodtypes:
             neighborhood = self.CreateNeighborhood(neighborhoodType)
-            self.Neighborhoods[neighborhoodType] = neighborhood
+            neighborhoods_dict[neighborhoodType] = neighborhood
+
 
 
 class IterativeImprovement(ImprovementAlgorithm):
@@ -65,7 +75,7 @@ class IterativeImprovement(ImprovementAlgorithm):
     def Run(self, solution:Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types'''
 
-        self.InitializeNeighborhoods(solution)    
+        self.InitializeNeighborhoods()    
 
         # According to "Hansen et al. (2017): Variable neighorhood search", this is equivalent to the 
         # sequential variable neighborhood descent with a pipe neighborhood change step.
@@ -100,7 +110,7 @@ class IteratedLocalSearch(ImprovementAlgorithm):
     def Run(self, currentSolution: Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types '''
 
-        self.InitializeNeighborhoods(currentSolution)
+        self.InitializeNeighborhoods()
         
         print('\nStarting Iterated Local Search')
         print(f' Solution after initial local search:\n {currentSolution}')
@@ -232,7 +242,7 @@ class SAILS(IteratedLocalSearch):
 
     def Run(self, solution: Solution) -> Solution:
 
-        self.InitializeNeighborhoods(solution)
+        self.InitializeNeighborhoods()
         
         print('\nStarting SAILS (Simualted Annealing Iterated Local Search)')
         print(f'\n Running initial local search')
@@ -405,7 +415,10 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                  min_temperature:float,
                  temp_decrease_factor:float,
                  maxRunTime:int,
-                 neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'], neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
+                 #'SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'
+                 #Replace Delta select tasks more than once! 
+                 neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute',"ReplaceDelta"],
+                 neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
         super().__init__(inputData)
 
         self.neighborhoodTypesDelta = neighborhoodTypesDelta
@@ -414,63 +427,66 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
         self.startTemperature = start_temperature
         self.tempDecreaseFactor = temp_decrease_factor
         self.minTemp = min_temperature
-
+        self.DeltaNeighborhoods = {}
+        self.ProfitNeighborhoods = {}
 
     def Run(self, currentSolution: Solution) -> Solution:
 
-        #self.InitializeNeighborhoods(solution)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesDelta, neighborhoods_dict = self.DeltaNeighborhoods)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesProfit, neighborhoods_dict = self.ProfitNeighborhoods)
 
         print('\nStarting Simulated Annealing Local Search Procedure')
 
         startTime = time.time()
         usedTime = 0
 
-        
         bestLoop = 0
         temperature = self.startTemperature
         iteration = 1
 
-        neighborhoods = [self.CreateNeighborhood(neighborhood_type) for neighborhood_type in self.neighborhoodTypesDelta]
-        number = 1/len(self.neighborhoodTypesDelta)
-        probabilities = [number for i in range(len(self.neighborhoodTypesDelta))]
-        
-        neighborhood = self.CreateNeighborhood('SwapIntraRoute') 
+        probabilities = [1/len(self.DeltaNeighborhoods) for i in range(len(self.DeltaNeighborhoods))]
 
         while self.maxRunTime > usedTime:
 
-            bestSolutionWaitingTime = self.SolutionPool.GetHighestProfitSolution().WaitingTime
+            bestSolutionWaitingTime = self.SolutionPool.GetHighestWaitingTimeSolution().WaitingTime
             print(f'\nStarting iteration {iteration}')
-
 
             #SA mit Delta Nachbarschaften --> Wartezeit als Kriterium
             innerLoop = 0
             bestLoop = 0
                         
-            SAstartTime = time.time()
             print(f'\nRunning Simulated Annealing for Delta neighborhoods')
             temperature = self.startTemperature
 
             while temperature > self.minTemp:
           
-                #neighborhood = self.RNG.choice(neighborhoods, p = probabilities)
+                delta_neighborhood = self.RNG.choice(list(self.DeltaNeighborhoods.values()), p = probabilities)
 
-                move = neighborhood.SingleMove(currentSolution)
+                move = delta_neighborhood.SingleMove(currentSolution)
 
                 if move.Delta  < 0:
-                    completeRouteplan = neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
-                    currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                    completeRouteplan = delta_neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                    if delta_neighborhood.Type != "ReplaceDelta":
+                        currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                    else:
+                        currentSolution.setRoutePlanNewUnusedTasks(completeRouteplan, self.InputData)
                     self.EvaluationLogic.evaluateSolution(currentSolution)
 
                     if currentSolution.WaitingTime > bestSolutionWaitingTime:
 
                         bestLoop = innerLoop
-                        self.SolutionPool.AddSolution(currentSolution)
+                        bestKnownSolution = Solution(deepcopy(completeRouteplan), self.InputData)
+                        self.SolutionPool.AddSolution(bestKnownSolution)
+                        #Schauen ob die vorhergehenden Lösungen gleich bleiben -> Debug Modus 
                         bestSolutionWaitingTime = currentSolution.WaitingTime
                 else:
                     random_number = self.RNG.random()
                     if random_number < math.exp(-move.Delta / (temperature)):
-                        completeRouteplan = neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
-                        currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                        completeRouteplan = delta_neighborhood.constructCompleteRouteFromSolution(move,currentSolution)
+                        if delta_neighborhood.Type != "ReplaceDelta":
+                            currentSolution.setRoutePlan(completeRouteplan, self.InputData)
+                        else:
+                            currentSolution.setRoutePlanNewUnusedTasks(completeRouteplan, self.InputData)
                         self.EvaluationLogic.evaluateSolution(currentSolution)
                 
 
@@ -479,54 +495,29 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                 innerLoop += 1
 
 
+            # Lokale Suche mit Insert Nachbarschaft
+            currentSolution = self.SolutionPool.GetHighestWaitingTimeSolution()
 
-            usedTime = time.time() - SAstartTime
-
-            print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
+            #print(f'\n Time needed to find simulated annealing solution: {round(usedTime,2)} seconds')
             print(f' Best solution after inner loop {bestLoop}/{innerLoop}, {currentSolution}')
 
-            # Lokale Suche mit Insert Nachbarschaft
-            currentSolution = self.SolutionPool.GetHighestProfitSolution()
 
-            neighborhoodType = 'Insert'
+            for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
 
-            print(f'\nRunning local search for {neighborhoodType} neighborhood')
-            neighborhood = self.CreateNeighborhood(neighborhoodType)
+                print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+                currentSolution = profit_neighbor.LocalSearch('BestImprovement', currentSolution)
             
-
-            LSstartTime = time.time()
-            currentSolution = neighborhood.LocalSearch('BestImprovement', currentSolution)
-            usedTime = time.time() - LSstartTime
-            
-            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
-            print(f' Best solution after local search: {currentSolution}')
-
-
-            # Lokale Suche mit ReplaceProfit Nachbarschaft
-
-            neighborhoodType = 'ReplaceProfit'
-
-            print(f'\nRunning local search for {neighborhoodType} neighborhood')
-            neighborhood = self.CreateNeighborhood(neighborhoodType)
-            
-
-            LSstartTime = time.time()
-            currentSolution = neighborhood.LocalSearch('BestImprovement', currentSolution)
-            usedTime = time.time() - LSstartTime
-            
-            print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
-            print(f' Best solution after local search: {currentSolution}')
-
+                #print(f'\n Time to find local search solution: {round(usedTime,2)} seconds')
+                print(f' Best solution after local search: {currentSolution}')
 
             usedTime = time.time() - startTime
-        
 
             iteration += 1
 
 
 
         print(f'Number of total iterations: {iteration}')
-        return  self.SolutionPool.GetHighestProfitSolution()
+        return self.SolutionPool.GetHighestProfitSolution()
 
 
 # ------------------------------------------ PREVIOUS ATTEMPT # ------------------------------------------ 
