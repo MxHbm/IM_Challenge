@@ -132,6 +132,7 @@ class ConstructiveHeuristics:
                     
                     ''' Calculate attractiveness of potential next tasks based on previous taks'''
                     attractiveness = dict() # Save the attractiveness in a dictionary and reset attractiveness after each task is planned
+
                     for t in range(len(inputData.optionalTasks)):
                         if inputData.allTasks[t] != previousT and inputData.allTasks[t] != depot and inputData.allTasks[t].ID not in planned_tasks:
                                     attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[nextMainT] ,main_task_visited, a, b)
@@ -153,7 +154,7 @@ class ConstructiveHeuristics:
                         if main_task_visited == False:
                             
                             ''' Calculate the potential time to insert the task before the main task'''
-                            previosTIndex = inputData.allTasks.index(previousT)
+                            previosTIndex = previousT.no
                             potentialTime = inputData.distances[previosTIndex][nextT] + inputData.allTasks[nextT].service_time + inputData.distances[nextT][nextMainT]
                             
                             
@@ -190,8 +191,8 @@ class ConstructiveHeuristics:
                         elif main_task_visited == True:
                             
                             ''' Calculate the potential time to insert the task to the route plan before the end of the day'''
-                            previosTIndex = inputData.allTasks.index(previousT)
-                            depotIndex = inputData.allTasks.index(depot)
+                            previosTIndex = previousT.no
+                            depotIndex = depot.no
                             potentialTime = inputData.distances[previosTIndex][nextT] + inputData.allTasks[nextT].service_time + inputData.distances[nextT][depotIndex]
 
                             ''' 3 Cases: 
@@ -250,24 +251,25 @@ class ConstructiveHeuristics:
         ''' Calculate the attractiveness of a nextTask based on profit, service time and distance to the previous task'''
 
         distance = inputData.distances[previousTask.no][nextTask.no]
+        nextTaskProfitWeighted = nextTask.profit ** a
 
         if attractivenessFunction == 'OnlyDistanceToNextTask':
-            attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance)
+            attractiveness = (nextTaskProfitWeighted)/(nextTask.service_time + distance)
 
         
         elif attractivenessFunction == 'WithDistanceToCloseTasks':
             nextTaskIndex = inputData.optionalTasks.index(nextTask)
             closeProfitScore = len(inputData.scoreboard[nextTaskIndex])/b
-            attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance)
+            attractiveness = (nextTaskProfitWeighted + closeProfitScore)/(nextTask.service_time + distance)
 
 
         elif attractivenessFunction == 'WithDistanceToMainTask':
 
             if mainTaskVisited == False:
                 distanceToMainTask = inputData.distances[nextTask.no][mainTask.no]
-                attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance + distanceToMainTask)
+                attractiveness = (nextTaskProfitWeighted)/(nextTask.service_time + distance + distanceToMainTask)
             else:
-                attractiveness = (nextTask.profit**a)/(nextTask.service_time + distance)
+                attractiveness = (nextTaskProfitWeighted)/(nextTask.service_time + distance)
 
         elif attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
             
@@ -278,9 +280,9 @@ class ConstructiveHeuristics:
 
             if mainTaskVisited == False:
                 distanceToMainTask = inputData.distances[nextTask.no][mainTask.no]
-                attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance + distanceToMainTask)
+                attractiveness = (nextTaskProfitWeighted + closeProfitScore)/(nextTask.service_time + distance + distanceToMainTask)
             else:
-                attractiveness = (nextTask.profit**a + closeProfitScore)/(nextTask.service_time + distance)
+                attractiveness = (nextTaskProfitWeighted + closeProfitScore)/(nextTask.service_time + distance)
             
         else:
             raise Exception('Unknown attractiveness function: ' + attractivenessFunction + '.')
