@@ -2,6 +2,7 @@ from OutputData import Solution
 from OutputData import *
 import itertools        
 from EvaluationLogic import EvaluationLogic
+import concurrent.futures  # For parallelism
 
 # Dummy class to have one class where all Moves are inheriting --> Potential to implement more funtionalities here! 
 class BaseMove: 
@@ -93,7 +94,7 @@ class BaseNeighborhood:
 
         return adapted_Route_Plan
     
-    def SingleRouteFeasibilityCheck(self, route: list[int], inputData: InputData) -> bool:
+    def SingleRouteFeasibilityCheck(self, route: list[int]) -> bool:
         """
         Checks the feasibility of a single route considering service times, travel distances, and main task constraints.
 
@@ -114,9 +115,12 @@ class BaseNeighborhood:
         feasible = True
         serviceDuration = 0
         previousTask = 0  # Start at depot
-
-
         mainTasks = [task for task in route if task > 1000]  # Identify all main tasks in the route
+        
+        #Cache
+        distances = self.InputData.distances
+        allTasks = self.InputData.allTasks
+        maxRouteDuration = self.InputData.maxRouteDuration
 
         if mainTasks:
             mainIndices = [i for i, task in enumerate(route) if task in mainTasks]  # Find the indices of all main tasks
@@ -129,17 +133,17 @@ class BaseNeighborhood:
 
                 # Process tasks before the main task
                 for task in tasksBeforeMain:
-                    serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
+                    serviceDuration += distances[previousTask][task] + allTasks[task].service_time
                     previousTask = task
 
-                serviceDuration += inputData.distances[previousTask][mainTask]  # Add travel time to main task
+                serviceDuration += distances[previousTask][mainTask]  # Add travel time to main task
 
                 # Check if the main task can be started at the earliest start time
-                if serviceDuration > inputData.allTasks[mainTask].start_time:
+                if serviceDuration > allTasks[mainTask].start_time:
                     return False
 
                 # Reset the service duration to the main task's start time and process the main task
-                serviceDuration = inputData.allTasks[mainTask].start_time + inputData.allTasks[mainTask].service_time
+                serviceDuration = allTasks[mainTask].start_time + allTasks[mainTask].service_time
                 previousTask = mainTask
 
                 # Process tasks after the main task
@@ -148,26 +152,46 @@ class BaseNeighborhood:
 
             # Process remaining tasks after the last main task
             for task in route:
-                serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
+                serviceDuration += distances[previousTask][task] + allTasks[task].service_time
                 previousTask = task
 
-            serviceDuration += inputData.distances[previousTask][0]  # Add travel time to depot
+            serviceDuration += distances[previousTask][0]  # Add travel time to depot
 
-            if serviceDuration > inputData.maxRouteDuration:
+            if serviceDuration > maxRouteDuration:
                 return False
 
         else:  # Route consists of optional tasks only
             for task in route:
-                serviceDuration += inputData.distances[previousTask][task] + inputData.optionalTasks[task].service_time
+                serviceDuration += distances[previousTask][task] + allTasks[task].service_time
                 previousTask = task
 
-            serviceDuration += inputData.distances[previousTask][0]  # Add travel time to depot
+            serviceDuration += distances[previousTask][0]  # Add travel time to depot
             
-            if serviceDuration > inputData.maxRouteDuration:
+            if serviceDuration > maxRouteDuration:
                 return  False
 
         return feasible
 
+        
+    def SingleMove(self, solution: Solution) -> Solution:
+        ''' Overwritten to avoid comparisons of strings'''
+        
+        MAX_ATTEMPTS = 10000  # Maximum attempts limit
+        feasible = False
+        attempt = 0
+        move = None  # Placeholder for the move
+
+        while not feasible and attempt < MAX_ATTEMPTS:
+            move = self.MakeOneMove(solution)
+            feasible = self.SingleRouteFeasibilityCheck(move.RouteDayCohort)
+            attempt += 1
+
+        # If a feasible move is found, evaluate and return it
+        if feasible:
+            self.EvaluateMove(move)
+
+        return move
+    
 #_______________________________________________________________________________________________________________________
 
 class ProfitNeighborhood(BaseNeighborhood):
@@ -185,7 +209,7 @@ class ProfitNeighborhood(BaseNeighborhood):
         
         for move_solution in self.MoveSolutions:
 
-            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohort, self.InputData): 
+            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohort): 
                 return move_solution
                     
         return None
@@ -201,7 +225,7 @@ class ProfitNeighborhood(BaseNeighborhood):
             self.EvaluateMove(move)
 
             ### NEED OF FEASIBILITY CHECK!! 
-            if self.SingleRouteFeasibilityCheck(move.RouteDayCohort, self.InputData):
+            if self.SingleRouteFeasibilityCheck(move.RouteDayCohort):
                 self.MoveSolutions.append(move)
                 return None
         
@@ -238,19 +262,6 @@ class ProfitNeighborhood(BaseNeighborhood):
                 hasSolutionImproved = False
 
         return bestNeighborhoodSolution
-    
-    
-    def SingleMove(self, solution: Solution) -> Solution:
-        
-        feasible = False
-
-        while feasible == False:
-            move = self.MakeOneMove(solution)
-            feasible = self.SingleRouteFeasibilityCheck(move.RouteDayCohort, self.InputData)
-        
-        self.EvaluateMove(move)
-
-        return move
 
 class DeltaNeighborhood(BaseNeighborhood):
     def __init__(self, inputData: InputData, evaluationLogic: EvaluationLogic, solutionPool: SolutionPool, rng):
@@ -266,7 +277,7 @@ class DeltaNeighborhood(BaseNeighborhood):
  
         for move_solution in self.MoveSolutions:
 
-            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohort, self.InputData): 
+            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohort): 
                 return move_solution
                     
         return None
@@ -281,7 +292,7 @@ class DeltaNeighborhood(BaseNeighborhood):
 
             if move.Delta < 0:
                 
-                if self.SingleRouteFeasibilityCheck(move.RouteDayCohort, self.InputData):
+                if self.SingleRouteFeasibilityCheck(move.RouteDayCohort):
                     
                     self.MoveSolutions.append(move)
                     # abort neighborhood evaluation because an improvement has been found
@@ -318,20 +329,6 @@ class DeltaNeighborhood(BaseNeighborhood):
 
         return bestNeighborhoodSolution
     
-
-    def SingleMove(self, solution: Solution) -> Solution:
-        ''' Function which is generic for all DeltaNeighborhoods EXCEPT SWAPINTERROUTE -> Own function definition
-        '''
-        
-        feasible = False
-
-        while feasible == False:
-            move = self.MakeOneMove(solution)
-            feasible = self.SingleRouteFeasibilityCheck(move.RouteDayCohort, self.InputData)
-        
-        self.EvaluateMove(move)
-
-        return move
     
 #_______________________________________________________________________________________________________________________
 
@@ -489,14 +486,20 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
     def SingleMove(self, solution: Solution) -> Solution:
         ''' Overwritten to avoid comparisons of strings'''
         
+        MAX_ATTEMPTS = 10000  # Maximum attempts limit
         feasible = False
+        attempt = 0
+        move = None  # Placeholder for the move
 
-        while feasible == False:
+
+        while not feasible and attempt < MAX_ATTEMPTS:
             move = self.MakeOneMove(solution)
-            feasible = self.SingleRouteFeasibilityCheck(move.RouteDayCohortA, self.InputData) and self.SingleRouteFeasibilityCheck(move.RouteDayCohortB, self.InputData)
+            feasible = self.SingleRouteFeasibilityCheck(move.RouteDayCohortA) and self.SingleRouteFeasibilityCheck(move.RouteDayCohortB)
+            attempt += 1
 
-                
-        self.EvaluateMove(move)
+        # If a feasible move is found, evaluate and return it
+        if feasible:
+            self.EvaluateMove(move)
 
         return move
     
@@ -522,7 +525,7 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 
             if move.Delta < 0:
                 
-                if self.SingleRouteFeasibilityCheck(move.RouteDayCohortA, self.InputData) and self.SingleRouteFeasibilityCheck(move.RouteDayCohortB, self.InputData):
+                if self.SingleRouteFeasibilityCheck(move.RouteDayCohortA) and self.SingleRouteFeasibilityCheck(move.RouteDayCohortB):
                     
                     self.MoveSolutions.append(move)
                     # abort neighborhood evaluation because an improvement has been found
@@ -536,7 +539,7 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 
         for move_solution in self.MoveSolutions:
 
-            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohortA, self.InputData) and self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohortB, self.InputData): 
+            if self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohortA) and self.SingleRouteFeasibilityCheck(move_solution.RouteDayCohortB): 
                 return move_solution
                     
         return None

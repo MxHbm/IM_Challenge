@@ -65,13 +65,10 @@ class ConstructiveHeuristics:
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
             #solution = self._Greedy(inputData, None, 'WithDistanceToCloseTasks', 1.0, 100) ### Different Possibility
-
-        
+   
 
         #Add the first solution to the solution pool to proceed further with the algorithm
         self._SolutionPool.AddSolution(solution)
-
-
 
     def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
@@ -118,9 +115,8 @@ class ConstructiveHeuristics:
                 
                 ''' Check if there are main tasks for the respective cohort on the respective day and create a list of main tasks'''
                 if len(prefilled_route_plan[day][cohort]) > 0: # If there are main tasks for the respective cohort on the respective day
-                    mainT_list = deepcopy(prefilled_route_plan[day][cohort]) # Main task(s) list for the respective cohort on the respective day
-                    nextMainT = mainT_list[0] # Save the next main task to visit
-                    mainT_list.pop(0) # Already remove the next main task from the main taks list
+                    mainT_list = [main_task for main_task in prefilled_route_plan[day][cohort]] # Main task(s) list for the respective cohort on the respective day
+                    nextMainT = mainT_list.pop(0) # Already remove the next main task from the main taks list and save it
                     main_task_visited = False
                 else:
                     nextMainT = 0 # Just set to zero if there are no main tasks for the respective cohort on the respective day
@@ -186,8 +182,7 @@ class ConstructiveHeuristics:
                                 totalTime = inputData.allTasks[nextMainT].start_time + inputData.allTasks[nextMainT].service_time # Total time is now the end of the main task
 
                                 if mainT_list != []:
-                                    nextMainT = mainT_list[0]
-                                    mainT_list.pop(0)
+                                    nextMainT = mainT_list.pop(0)
                                 else:
                                     main_task_visited = True
                                     
@@ -241,8 +236,6 @@ class ConstructiveHeuristics:
             pass
 
 
-
-
     def _InsertTaskBeforeMainTask(self, current_route_plan , task_to_insert, main_task):
         ''' Insert a task before the main task in the current route plan'''
         if main_task in current_route_plan:
@@ -294,323 +287,211 @@ class ConstructiveHeuristics:
         
 
         return attractiveness
-
-    """
-        def Run(self, inputData: InputData, numberOfParameterComb=3, main_tasks=True) -> None:
-            ''' Choose one of the constructive heuristics and get a first solution due to the chosen heuristic'''
-
-            print(f'Generating an initial solution according to Greedy')
-
-            # Function to run the greedy algorithm with various parameters
-            def get_solution(params):
-                return self._Greedy(inputData, *params)
-
-            solution = None
-
-            if main_tasks:
-                # Parameter combinations based on numberOfParameterComb
-                params_list = []
-                if numberOfParameterComb == 3:
-                    params_list = [
-                        ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
-                        ('MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100),
-                        ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
-                    ]
-                elif numberOfParameterComb == 2:
-                    params_list = [
-                        ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
-                        ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
-                    ]
-                elif numberOfParameterComb == 1:
-                    params_list = [('OnePerDay', 'WithDistanceToMainTask', 1.0, 0)]
-                elif numberOfParameterComb == 'Test':
-                    params_list = [('MIP', 'OnlyDistanceToNextTask', 1.0, 0)]
-
-                # Execute the solution generation concurrently if multiple solutions are needed
-                if len(params_list) > 1:
-                    with ThreadPoolExecutor() as executor:
-                        solutions = list(executor.map(get_solution, params_list))
-                    solution = max(solutions, key=lambda x: x.TotalProfit)
-                else:
-                    solution = get_solution(params_list[0])
-
-            else:
-                solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
-
-            # Add the first solution to the solution pool to proceed further with the algorithm
-            self._SolutionPool.AddSolution(solution)
+    
 
     """
 
-
-    """ 
-    def _GreedyOldVersion(self, inputData:InputData, attractivenessFunction) -> Solution:
+      def _Greedy(self, inputData: InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
 
-        prefilled_route_plan = self._create_initial_route_plan(inputData)
+        # Initialize scoreboard if applicable
+        if attractivenessFunction in ['WithDistanceToMainAndCloseTasks', 'WithDistanceToCloseTasks']:
+            inputData._CreateScoreboard()
 
-        depot = inputData.allTasks[0]
-        planned_tasks = [] # Save the tasks that are already planned
+        # Assign main tasks to days and cohorts based on the planner
+        prefilled_route_plan = self._assign_main_tasks(inputData, mainTaskPlanner)
+        depot = inputData.allTasks[0].no
+        planned_tasks = set()  # Using a set for faster lookups
+        unplanned_tasks = set(task for task in inputData.optionalTasks.no)
 
+        # Flag to stop the loop if all tasks are planned
+        breakFlag = False 
 
         for day in range(inputData.days):
+            if breakFlag:
+                break
 
             for cohort in range(inputData.cohort_no):
+                if breakFlag:
+                    break
 
-                
                 route_planned = False
-                previousT = depot # Depot is the starting point for each day and cohort      
-                mainT_list = prefilled_route_plan[day][cohort] # Main task(s) for the respective cohort on the respective day
-                mainT = mainT_list[0] # Currently only one main task per cohort per day
-                main_task_visited = False
-                totalTime = 0 # Start of the day
+                previousT = depot  # Start with depot at the beginning of each route
+                
+                # Get the main tasks for this day and cohort, or set a default
+                nextMainT, main_task_visited = self._initialize_main_task(prefilled_route_plan, day, cohort)
 
+                totalTime = 0  # Start of the day
 
-                while route_planned == False: # While the route of one cohort for one day is not planned
+                while not route_planned:
+                    if breakFlag:
+                        break
 
-                    ''' Calculate attractiveness of potential next tasks based on previous taks'''
-                    attractiveness = dict() # Save the attractiveness in a dictionary and reset attractiveness after each task is planned
-                    for t in range(0,len(inputData.optionalTasks)):
-                        if inputData.allTasks[t] != previousT:
-                            if inputData.allTasks[t] != depot:
-                                if inputData.allTasks[t].ID not in planned_tasks:
-                                    attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[mainT] ,main_task_visited)
-                    attractiveness = dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True)) # Sort the tasks by attractiveness
+                    # Calculate attractiveness of potential next tasks based on the previous task
+                    attractiveness = self._calculate_attractiveness_for_tasks(inputData, attractivenessFunction, previousT, nextMainT, main_task_visited,unplanned_tasks, a, b)
 
+                    # Try to plan the next task
+                    next_task_planned, totalTime, previousT = self._plan_next_task(inputData, day, cohort, previousT, nextMainT, main_task_visited, planned_tasks, totalTime, depot, prefilled_route_plan, attractiveness)
 
-                    next_task_planned = False
-                    index = 0 # Start with the best possible attractiveness
-                    while next_task_planned == False: # While the next task in the sequence is not planned
-                        
-                        ''' Choose the task with the highest attractiveness as next task to visit'''                
-                        nextT = list(attractiveness.keys())[index]
+                    if next_task_planned is None:
+                        # If no task could be planned and all tasks are finished
+                        route_planned = True
+                        if len(planned_tasks) == len(inputData.optionalTasks) - 1:
+                            print('All optional tasks are planned.')
+                            breakFlag = True
+                            break
 
-                        #print('Next Task: ', inputData.allTasks[nextT].ID, ' Attractiveness: ', attractiveness[nextT])
-
-                        ''' Check if the task can be added to the route plan, depending on the time slot for the Main Task or the end of the day'''
-                        
-
-                        if main_task_visited == False:
-                            potentialTime = inputData._CalculateDistance(previousT, inputData.allTasks[nextT]) + inputData.allTasks[nextT].service_time + inputData._CalculateDistance(inputData.allTasks[nextT], inputData.allTasks[mainT])
-                            if totalTime + potentialTime <= inputData.allTasks[mainT].start_time: # Calculate distance+service time in matrix in InputData
-                                totalTime += potentialTime
-                                previousT = inputData.allTasks[nextT]
-                                ''' Add Taks to route plan before Main Task'''
-                                self._InsertTaskBeforeMainTask(prefilled_route_plan[day][cohort], nextT, mainT)
-                                next_task_planned = True
-                                planned_tasks.append(inputData.allTasks[nextT].ID)
-                                #print(prefilled_route_plan)
-
-                            elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
-                                index += 1
-
-                            else:
-                                main_task_visited = True
-                                next_task_planned = True
-                                previousT = inputData.allTasks[mainT]
-                                totalTime = inputData.allTasks[mainT].start_time + inputData.allTasks[mainT].service_time # Total time is now the end of the main task
-
-
-
-                        elif main_task_visited == True:
-                            potentialTime = inputData._CalculateDistance(previousT, inputData.allTasks[nextT]) + inputData.allTasks[nextT].service_time + inputData._CalculateDistance(inputData.allTasks[nextT], depot)
-                            if totalTime + potentialTime <= inputData.maxRouteDuration:
-                                totalTime += potentialTime
-                                previousT = inputData.allTasks[nextT]
-                                ''' Add Taks to route plan after Main Task'''
-                                prefilled_route_plan[day][cohort].append(nextT)
-                                next_task_planned = True
-                                planned_tasks.append(inputData.allTasks[nextT].ID)
-
-                            elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
-                                index += 1
-
-                            else:
-                                next_task_planned = True
-                                route_planned = True
-
-                    #print(prefilled_route_plan)
-        #print(prefilled_route_plan)
-                    
-                        
-        
+            # Create the solution
         tmpSolution = Solution(prefilled_route_plan, inputData)
-
         self.EvaluationLogic.evaluateSolution(tmpSolution)
 
         print('Initial Solution found.')
-
         return tmpSolution
+        
 
-    def ROS(self, jobList:list[OutputJob],stagelist:list[DataStage], x:int, seed:int) -> Solution:
-        '''Create a random permutation x times for finding the best permutation''''''
-
-        # Create dummy solution
-        numpy.random.seed(seed)
-        tmpSolution = Solution(jobList,stagelist,0)
-        bestCmax = numpy.inf
-
-        #Repeat x times 
-        for i in range(x):
-            tmpPermutation = numpy.random.permutation(len(jobList))
-            # initialize Solution            
-            tmpSolution.Permutation = tmpPermutation
-
-            self.EvaluationLogic.DefineStartEnd(tmpSolution)
-
-            if(tmpSolution.Makespan < bestCmax):
-                bestCmax = tmpSolution.Makespan
-                bestPermutation = tmpPermutation
-
-        # Take best solution from x random permuations as return object 
-        bestRandomSolution = Solution(jobList, stagelist,bestPermutation, no_lots=self.no_lots)
-        self.EvaluationLogic.DefineStartEnd(bestRandomSolution)
-
-        return bestRandomSolution
-
-    def CheckAllPermutations(self, jobList:list[OutputJob],stagelist:list[DataStage]) -> Solution:
-        ''' Create a set with all possible permutations and find the one with lowest makespan'''
-
-        allPerms = set(permutations(range(len(jobList))))
-        bestCmax = numpy.inf
-        tmpSolution = Solution(jobList,stagelist,0)
-
-        for tmpPerm in allPerms:
-            tmpSolution.SetPermutation(tmpPerm)
-            self.EvaluationLogic.DefineStartEnd(tmpSolution)  
-
-            if(tmpSolution.Makespan < bestCmax):
-                bestCmax = tmpSolution.Makespan
-                bestPerm = tmpPerm
-
-        bestSol = Solution(jobList,stagelist, bestPerm, no_lots=self.no_lots)
-        self.EvaluationLogic.DefineStartEnd(bestSol)
-
-        return bestSol 
-
-    def FirstComeFirstServe(self, jobList:list[OutputJob],stagelist:list[DataStage] ) -> Solution:
-        ''' Sorts jobs from 0 to x. job and calculates makespan'''
-
-        tmpPermutation = [*range(len(jobList))]
-
-        tmpSolution = Solution(jobList, stagelist,tmpPermutation, no_lots=self.no_lots)
-
-        #Calculate makespan for FIFO solution
-        self.EvaluationLogic.DefineStartEnd(tmpSolution)
-
-        return tmpSolution
+    def _assign_main_tasks(self, inputData, mainTaskPlanner):
+        ''' Helper function to assign main tasks based on the planner '''
+        if mainTaskPlanner:
+            print(f'Assigning main tasks to days and cohorts according to {mainTaskPlanner}.')
+            if mainTaskPlanner == 'MIP':
+                return self._create_initial_route_plan_with_MIP(inputData)
+            elif mainTaskPlanner == 'OnePerDay':
+                return self._create_initial_route_plan(inputData)
+        # Default to empty plan if no main task planner
+        return {day: [[] for _ in range(inputData.cohort_no)] for day in range(inputData.days)}
     
-    def createTuple_Processing_Times(self, jobList:list[OutputJob], allMachines:bool) -> list: 
-        ''' Creates a list of tuples with the job id and either the processing time of one machine or all machines (allMachines = True)'''
-
-        jobPool = []
-
-        # Creates a list of tuples with the jobIds and the sum of the processing times 
-        for i in range(len(jobList)):
-            if(allMachines):
-                jobPool.append((i,sum(jobList[i].ProcessingTime(x) for x in range(len(jobList[i].Operations)))))
-            else: 
-                jobPool.append((i,jobList[i].ProcessingTime(0)))
-
-        return jobPool
-
-    def ShortestProcessingTime(self, jobList:list[OutputJob],stagelist:list[DataStage], allMachines:bool = False ) -> Solution:
-        ''' Sorts the jobs from jobPool in ascending order of the processing times'''
-        
-        jobPool = self.createTuple_Processing_Times(jobList, allMachines)
-
-        #Sort tuple list by the processing time 
-        jobPool.sort(key=lambda x: x[1])
-
-        #Get permutation list from the sorted tuple list
-        tmpPermutation = [x[0] for x in jobPool]
-        tmpSolution = Solution(jobList,stagelist, tmpPermutation, no_lots=self.no_lots)
-
-        #Calculate Makespan
-        self.EvaluationLogic.DefineStartEnd(tmpSolution)
-
-        return tmpSolution  
+    def _initialize_main_task(self, prefilled_route_plan, day, cohort):
+        ''' Initialize the main task list for a given day and cohort '''
+        if prefilled_route_plan[day][cohort]:
+            mainT_list = list(prefilled_route_plan[day][cohort])
+            return mainT_list.pop(0), False
+        return 0, True  # No main task
     
-    def LongestProcessingTime(self, jobList:list[OutputJob],stagelist:list[DataStage], allMachines:bool = False) -> Solution:
-        ''' Sorts the jobs from jobPool in descending order of the processing times'''
+    def _calculate_attractiveness_for_tasks(self, inputData, attractivenessFunction, previousT, nextMainT, main_task_visited,unplanned_tasks, a, b):
+        ''' Calculate attractiveness for each optional task '''
+        attractiveness = {}
+        depot = inputData.allTasks[0].no
+        for task_no in unplanned_tasks:
+            if task_no != previousT and task_no != depot:
+                attractiveness[task_no] = self._CalculateAttractiveness(inputData, attractivenessFunction, previousT, task_no, nextMainT, main_task_visited, a, b)
+        return dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True))  # Sort tasks by attractiveness
 
-        jobPool = self.createTuple_Processing_Times(jobList, allMachines)
+    def _plan_next_task(self, inputData, day, cohort, previousT, nextMainT, main_task_visited, planned_tasks, totalTime, depot, prefilled_route_plan, attractiveness):
+        ''' Plan the next task based on attractiveness '''
+        index = 0
+        next_task_planned = False
+        while not next_task_planned:
+            if index >= len(attractiveness):
+                return None, totalTime, previousT
 
-        #Sort tuple list descending by the processing time 
-        jobPool.sort(key=lambda x: x[1], reverse=True)
+            nextT = list(attractiveness.keys())[index]
+            nextT_task = inputData.allTasks[nextT]
 
-        #Get permutation list from the sorted tuple list
-        tmpPermutation = [x[0] for x in jobPool]
-        tmpSolution = Solution(jobList,stagelist, tmpPermutation, no_lots=self.no_lots)
+            # Insert task based on whether the main task is visited or not
+            if not main_task_visited:
+                next_task_planned, totalTime, previousT = self._insert_before_main(inputData, day, cohort, nextT, nextT_task, nextMainT, previousT, planned_tasks, prefilled_route_plan, totalTime,attractiveness)
+            else:
+                next_task_planned, totalTime, previousT = self._insert_after_main(inputData, day, cohort, nextT, nextT_task, previousT, depot, planned_tasks, prefilled_route_plan, totalTime, attractiveness)
 
-        self.EvaluationLogic.DefineStartEnd(tmpSolution)
-
-        return tmpSolution   
-
-    def NEH(self, jobList:list[DataJob],stagelist:list[DataStage]) -> Solution:
-        '''
-        NEH heuristic (according to Nawaz, Enscore and Ham) -> Very good constructive heuristic for flow shop problems 
-        Field of application: Minimization of the cycle time for general permutation flow store problems (F|prmtn|Cmax)
-
-        1. order orders according to monotonically decreasing sum of processing times.
-        2. set j = 2. take the first two orders and determine the cycle time for the sequences 1-2 and 2-1. fix the sequence with the lowest cycle time.
-        3. set j = j + 1. create j new sequences by scheduling the order at position j at each position. Choose the permutation with the shortest cycle time.
-        4. if j := n STOP, otherwise go to step 3.
-                
-        '''
-        #Create lists for possible solutions and permutations
-        jobPool = []
-        tmpPerm = []
-
-        # Calculate sum of processing times and sort descending (highest first!)
-        for i in range(len(jobList)):
-
-            jobPool.append((jobList[i].JobId,sum(jobList[i].ProcessingTime(x) for x in range(len(jobList[i].Operations)))))
-
-        jobPool.sort(key=lambda x: x[1], reverse=True)
-
-        # Initalize input
-        tmpNEHOrder = [x[0] for x in jobPool]
-
-        #add the first job of the sorted list to the permutation
-        tmpPerm.append(tmpNEHOrder[0])
-
-        #Create Solution
-        tmpSolution = Solution(jobList,stagelist,tmpPerm, no_lots=self.no_lots)
-
-        # Add next jobs in a loop and check all permutations
-        for i in range(1,len(tmpNEHOrder)):
-            # add next job to end and calculate makespan
-            
-                self.EvaluationLogic.DetermineBestInsertion(tmpSolution, tmpNEHOrder[i])
+            index += 1
+        return next_task_planned, totalTime, previousT
+    
+    def _insert_before_main(self, inputData, day, cohort, nextT, nextT_task, nextMainT, previousT, planned_tasks, prefilled_route_plan, totalTime, attractivenessFunction):
+        ''' Try to insert a task before the main task '''
+        previosTIndex = inputData.allTasks.index(previousT)
+        potentialTime = inputData.distances[previosTIndex][nextT] + nextT_task.service_time + inputData.distances[nextT][nextMainT]
         
-        return tmpSolution
+        if totalTime + potentialTime <= inputData.allTasks[nextMainT].start_time:
+            realTime = potentialTime - inputData.distances[nextT][nextMainT]
+            totalTime += realTime
 
-    def Run(self, inputData:InputData, solutionMethod:str, no_lots:bool = False) -> None:
-        ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
+            self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
+            previousT = nextT_task
+            self._InsertTaskBeforeMainTask(prefilled_route_plan[day][cohort], nextT, nextMainT)
+            planned_tasks.add(nextT_task.ID)
 
-        print('Generating an initial solution according to ' + solutionMethod + '.')
+            return True, totalTime, previousT
+        return False, totalTime, previousT
+    
+    def _insert_after_main(self, inputData, day, cohort, nextT, nextT_task, previousT, depot, planned_tasks, prefilled_route_plan, totalTime, attractivenessFunction):
+        ''' Try to insert a task after the main task '''
+        previosTIndex = inputData.allTasks.index(previousT)
+        depotIndex = inputData.allTasks.index(depot)
+        potentialTime = inputData.distances[previosTIndex][nextT] + nextT_task.service_time + inputData.distances[nextT][depotIndex]
 
-        #Rewrite any present solution
-        solution = None 
-        
-        # Decision tree for choosing constructive heuristic 
-        if solutionMethod == 'FCFS':
-            solution = self.FirstComeFirstServe(inputData.InputJobs, inputData.InputStages)
-        elif solutionMethod == 'SPT':
-            solution = self.ShortestProcessingTime(inputData.InputJobs,inputData.InputStages)
-        elif solutionMethod == 'LPT':
-            solution = self.LongestProcessingTime(inputData.InputJobs,inputData.InputStages)
-        elif solutionMethod == 'ROS':
-            solution = self.ROS(inputData.InputJobs,inputData.InputStages, self.RandomRetries, self.RandomSeed)
-        elif solutionMethod == 'NEH':
-            solution = self.NEH(inputData.InputJobs,inputData.InputStages)
-        elif solutionMethod == "BruteForce": 
-            solution = self.CheckAllPermutations(inputData.InputJobs,inputData.InputStages)
+        if totalTime + potentialTime <= inputData.maxRouteDuration:
+            realTime = potentialTime - inputData.distances[nextT][depotIndex]
+            totalTime += realTime
+
+            self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
+            previousT = nextT_task
+            prefilled_route_plan[day][cohort].append(nextT)
+            planned_tasks.add(nextT_task.ID)
+
+            return True, totalTime, previousT
+        return False, totalTime, previousT
+    
+    def _UpdateScoreboard(self, task, inputData: InputData, attractivenessFunction):
+        if attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
+            for key, values in inputData.scoreboard.items():
+                if task in values:
+                    values.remove(task)
+
+    def _InsertTaskBeforeMainTask(self, current_route_plan, task_to_insert, main_task):
+        ''' Insert a task before the main task in the current route plan '''
+        if main_task in current_route_plan:
+            index = current_route_plan.index(main_task)
+            current_route_plan.insert(index, task_to_insert)
         else:
-            print('Unkown constructive solution method: ' + solutionMethod + '.')
+            print('Main task not in route plan')
 
-        #Add the first solution to the solution pool to proceed further with the algorithm
-        self.SolutionPool.AddSolution(solution)
+    
+    def _CalculateAttractiveness(self, inputData: InputData, attractivenessFunction, previousTask, nextTask, mainTask, mainTaskVisited, a, b):
+        ''' Calculate the attractiveness of a nextTask based on profit, service time, and distance to the previous task '''
+        
+        # Calculate distance between previous task and next task
+        distance = inputData.distances[previousTask][nextTask]
 
-        """
+        # Different attractiveness functions based on user input
+        if attractivenessFunction == 'OnlyDistanceToNextTask':
+            # Attractiveness based only on distance and service time
+            attractiveness = (nextTask.profit ** a) / (nextTask.service_time + distance)
+
+        elif attractivenessFunction == 'WithDistanceToCloseTasks':
+            # Include score based on how many close tasks are left
+            nextTaskIndex = inputData.optionalTasks.index(nextTask)
+            closeProfitScore = len(inputData.scoreboard[nextTaskIndex]) / b
+            attractiveness = (nextTask.profit ** a + closeProfitScore) / (nextTask.service_time + distance)
+
+        elif attractivenessFunction == 'WithDistanceToMainTask':
+            # Include distance to the main task if it hasn't been visited yet
+            if not mainTaskVisited:
+                distanceToMainTask = inputData.distances[nextTask.no][mainTask.no]
+                attractiveness = (nextTask.profit ** a) / (nextTask.service_time + distance + distanceToMainTask)
+            else:
+                attractiveness = (nextTask.profit ** a) / (nextTask.service_time + distance)
+
+        elif attractivenessFunction == 'WithDistanceToMainAndCloseTasks':
+            # Combination of close tasks and main task distance if not visited
+            nextTaskIndex = inputData.optionalTasks.index(nextTask)
+            closeProfitScore = len(inputData.scoreboard[nextTaskIndex]) / b
+
+            if not mainTaskVisited:
+                distanceToMainTask = inputData.distances[nextTask.no][mainTask.no]
+                attractiveness = (nextTask.profit ** a + closeProfitScore) / (nextTask.service_time + distance + distanceToMainTask)
+            else:
+                attractiveness = (nextTask.profit ** a + closeProfitScore) / (nextTask.service_time + distance)
+
+        else:
+            # Raise an error if the attractiveness function is unknown
+            raise Exception(f'Unknown attractiveness function: {attractivenessFunction}')
+
+        return attractiveness
+
+
+
+
+
+
+
+"""

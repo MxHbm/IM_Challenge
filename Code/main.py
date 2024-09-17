@@ -331,13 +331,10 @@ def main_parameterstudy_SA_LS():
 
 
 
-# Run single run or parameter study
-main()
 
-'''
 # Profile the main function
 if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
-    p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
-'''
+    p.sort_stats('cumtime').print_stats(80)  # Sort by cumulative time and show the top 10 results
+
