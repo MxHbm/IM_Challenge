@@ -118,11 +118,14 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         self.NeighborhoodTypesProfit = neighborhoodTypesProfit
         self.NeighborhoodTypes = neighborhoodTypesDelta + neighborhoodTypesProfit
         self.Threshold1 = threshold1
+        self.DeltaNeighborhoods = {}
+        self.ProfitNeighborhoods = {}
 
     def Run(self, currentSolution: Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types '''
 
-        self.InitializeNeighborhoods()
+        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesDelta, neighborhoods_dict = self.DeltaNeighborhoods)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesProfit, neighborhoods_dict = self.ProfitNeighborhoods)
         
         print('\nStarting Iterated Local Search')
 
@@ -142,20 +145,17 @@ class IteratedLocalSearch(ImprovementAlgorithm):
             
             print(f'\n Running local search after perturbation')
             
-            for neighborhoodType in self.NeighborhoodTypesProfit:
-                print(f' Running neighborhood {neighborhoodType}')
-                neighboorhood = self.Neighborhoods[neighborhoodType]
-                currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
-            
-            for neighborhoodType in self.NeighborhoodTypesDelta:
-                print(f' Running neighborhood {neighborhoodType}')
-                neighboorhood = self.Neighborhoods[neighborhoodType]
-                currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyDelta, currentSolution)
+            for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
+                print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+                currentSolution = profit_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
 
-            for neighborhoodType in self.NeighborhoodTypesProfit:
-                print(f' Running neighborhood {neighborhoodType}')
-                neighboorhood = self.Neighborhoods[neighborhoodType]
-                currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
+            for delta_neighbor_name, delta_neighbor in self.DeltaNeighborhoods.items():
+                print(f'\nRunning local search for {delta_neighbor_name} neighborhood')
+                currentSolution = delta_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyDelta, currentSolution)
+
+            for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
+                print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+                currentSolution = profit_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
 
             print(f' Solution after local search in iteration {iteration}:\n {currentSolution}')
 
