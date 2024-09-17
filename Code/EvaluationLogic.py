@@ -28,172 +28,178 @@ class EvaluationLogic:
 
         self.calculateWaitingTime(currentSolution)
 
+    def calculateWaitingTime(self, currentSolution: Solution) -> None:
+        """Calculates the waiting time of the given solution"""
+        
+        # Cache commonly accessed attributes
+        max_route_duration = self._data.maxRouteDuration
+        distances = self._data.distances
+        all_tasks = self._data.allTasks
+        route_plan = currentSolution.RoutePlan
+        waiting_times = currentSolution.WaitingTimes
 
-    def calculateWaitingTime(self, currentSolution:Solution) -> None:
-        ''' Calculates the waiting time of the given solution'''       
-
+        # Loop through days and cohorts
         for day in range(self._data.days):
             for cohort in range(self._data.cohort_no):
-                route_time = self._data.maxRouteDuration
+                route_time = max_route_duration
                 previous_task = 0
-                for task_i in currentSolution.RoutePlan[day][cohort]:
-                    route_time -= self._data.distances[previous_task][task_i]
-                    route_time -= self._data.allTasks[task_i].service_time
+                current_route = route_plan[day][cohort]  # Cache the route for the cohort
+
+                # Loop through tasks in the current route
+                for task_i in current_route:
+                    route_time -= distances[previous_task][task_i]  # Subtract travel time
+                    route_time -= all_tasks[task_i].service_time  # Subtract service time
                     previous_task = task_i
 
-                route_time -= self._data.distances[previous_task][0]
-                currentSolution.WaitingTimes[day, cohort] = route_time
+                # Subtract return distance to the start point
+                route_time -= distances[previous_task][0]
+                
+                # Store the result in the waiting times matrix
+                waiting_times[day, cohort] = route_time
 
-        waiting_time = numpy.sum(currentSolution.WaitingTimes)
-        currentSolution.setWaitingTime(waiting_time)
+        # Sum all waiting times using NumPy for efficiency
+        total_waiting_time = numpy.sum(waiting_times)
+        
+        # Set the waiting time in the solution
+        currentSolution.setWaitingTime(total_waiting_time)
 
-    def WaitingTimeOneRoute(self, RouteDayCohort:list) -> None: 
-        ''' Calculates the Waiting Time for one Route'''
-        # Retrieve the route for the given day and cohort
-        route_time = self._data.maxRouteDuration
+    def WaitingTimeOneRoute(self, RouteDayCohort: list[int]) -> int:
+        """Calculates the Waiting Time for one route."""
+
+        # Cache commonly used attributes
+        max_route_duration = self._data.maxRouteDuration
+        distances = self._data.distances
+        all_tasks = self._data.allTasks
+
+        # Initialize route time and previous task
+        route_time = max_route_duration
         previous_task = 0
 
+        # Loop through each task in the route
         for task_i in RouteDayCohort:
-            route_time -= self._data.distances[previous_task][task_i]
-            route_time -= self._data.allTasks[task_i].service_time
+            # Subtract travel time and service time in one step
+            route_time -= distances[previous_task][task_i] + all_tasks[task_i].service_time
             previous_task = task_i
-        
-        route_time -= self._data.distances[previous_task][0]
+
+        # Subtract return distance to the start (task 0)
+        route_time -= distances[previous_task][0]
 
         return route_time
-    
+
     def WaitingTimeDifferenceOneRoute(self, move) -> int:
         ''' Calculates the Difference of the Waiting Time for old and new Two Edge Exchange Route'''
 
-        difference =self.WaitingTimeOneRoute(move.OldRouteDayCohort) - self.WaitingTimeOneRoute(move.RouteDayCohort)
+        difference = move.OldWaitingTime - self.WaitingTimeOneRoute(move.RouteDayCohort)
 
         return difference
 
     def CalculateDistanceSubtractionTwoEdge(self, move, successor_list, precessor_list):
-        '''Calculates the distance subtraction of the given lists'''
+        """Calculates the distance subtraction for two edges"""
 
+        # Cache distances and tasks for efficiency
+        distances = self._data.distances
+        taskA = move.TaskA
+        taskB = move.TaskB
 
-        distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskB][successor_list[1]]
-            
-        # Calculate the new distances after swap
-        distance_new = self._data.distances[move.TaskA][successor_list[1]] + self._data.distances[precessor_list[0]][move.TaskB]
-        
+        # Precompute the old distances
+        distance_old = distances[precessor_list[0]][taskA] + distances[taskB][successor_list[1]]
+
+        # Precompute the new distances after the swap
+        distance_new = distances[taskA][successor_list[1]] + distances[precessor_list[0]][taskB]
+
+        # Calculate the total distance difference
         difference = distance_new - distance_old
 
-        # Return the difference between the new and original distances
         return difference
 
-    def CalculateDistanceSubtraction(self, move, successor_list, precessor_list):
-        '''Calculates the distance subtraction of the given lists'''
-
-
-        distance_old = self._data.distances[precessor_list[0]][move.TaskA] + self._data.distances[move.TaskA][successor_list[0]] \
-            + self._data.distances[precessor_list[1]][move.TaskB] + self._data.distances[move.TaskB][successor_list[1]]
-            
-        # Calculate the new distances after swap
-        distance_new = self._data.distances[precessor_list[1]][move.TaskA] + self._data.distances[move.TaskA][successor_list[1]] \
-                    + self._data.distances[precessor_list[0]][move.TaskB] + self._data.distances[move.TaskB][successor_list[0]]
     
-        difference = distance_new - distance_old
+    def CalculateDistanceSubtraction(self, move, successor_list, precessor_list):
+        """Calculates the distance subtraction of the given lists"""
 
-        # Return the difference between the new and original distances
+        # Cache distances for efficiency
+        distances = self._data.distances
+        taskA = move.TaskA
+        taskB = move.TaskB
+
+        # Precompute the old distances
+        distance_old_a = distances[precessor_list[0]][taskA] + distances[taskA][successor_list[0]]
+        distance_old_b = distances[precessor_list[1]][taskB] + distances[taskB][successor_list[1]]
+
+        # Precompute the new distances after the swap
+        distance_new_a = distances[precessor_list[1]][taskA] + distances[taskA][successor_list[1]]
+        distance_new_b = distances[precessor_list[0]][taskB] + distances[taskB][successor_list[0]]
+
+        # Calculate the total distance difference
+        difference = (distance_new_a + distance_new_b) - (distance_old_a + distance_old_b)
+
         return difference
+
+  
+    def get_predecessors_and_successors(self, route: list[int], indexes: list[int]):
+        """Helper function to get predecessors and successors for swap moves."""
+        
+        n = len(route)
+        
+        # Preallocate lists to avoid repeated appends
+        precessors = [0] * len(indexes)
+        successors = [0] * len(indexes)
+
+        for i, index in enumerate(indexes):
+            if index == 0:
+                precessors[i] = 0
+                successors[i] = route[index + 1] # Ensure the route has more than 1 task
+            elif index == n - 1:
+                precessors[i] = route[index - 1]
+                successors[i] = 0
+            else:
+                precessors[i] = route[index - 1]
+                successors[i] = route[index + 1]
+
+        return precessors, successors
+
+    
+    def get_predecessor_and_succesor(self, route:list[int], index:int):
+        ''' Calculates the precessor and successor for one Index'''
+
+        # Determine predecessor and successor
+        if index == 0:
+            return 0, route[1]
+        elif index == len(route) - 1:
+            return route[index - 1], 0
+        else:
+            return route[index - 1], route[index + 1]
     
 
     def CalculateSwapIntraRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
         # Retrieve the route for the given day and cohort
-        route = move.RouteDayCohort
-        
-        precessors = []
-        successors = []
-
-        # List of indices to process
-        indexes = [move.indexA, move.indexB]
-
-        # Iterate over the indices to determine predecessors and successors
-        for index in indexes:
-            if index == 0:
-                precessors.append(0)
-                successors.append(route[index + 1])
-            elif index == len(route) - 1:
-                precessors.append(route[index - 1])
-                successors.append(0)
-            else: 
-                precessors.append(route[index - 1])
-                successors.append(route[index + 1])
+        precessors, successors = self.get_predecessors_and_successors(route=move.RouteDayCohort, indexes=[move.indexA, move.indexB])
 
         # Calculate the delta using the distance subtraction method
         delta = self.CalculateDistanceSubtraction(move, successors, precessors)
-        #print("Delta: ",delta)
 
         return delta
     
     def CalculateSwapInterRouteDelta(self, move): 
         '''Calculates the delta of the given swap move'''
 
-        # Retrieve the route for the given day and cohort
-        routeA = move.RouteDayCohortA
-        routeB = move.RouteDayCohortB
-        
-        precessors = []
-        successors = []
+        predA, succA = self.get_predecessor_and_succesor(move.RouteDayCohortA, move.indexA)
+        predB, succB = self.get_predecessor_and_succesor(move.RouteDayCohortB, move.indexB)
 
-        indexA = move.indexA
-        indexB = move.indexB
-
-        
-        if indexA == 0:
-            precessors.append(0)
-            successors.append(routeA[indexA + 1])
-        elif indexA == len(routeA) - 1:
-            precessors.append(routeA[indexA - 1])
-            successors.append(0)
-        else: 
-            precessors.append(routeA[indexA - 1])
-            successors.append(routeA[indexA + 1])
-
-        if indexB == 0:
-            precessors.append(0)
-            successors.append(routeB[indexB + 1])
-        elif indexB == len(routeB) - 1:
-            precessors.append(routeB[indexB - 1])
-            successors.append(0)
-        else:
-            precessors.append(routeB[indexB - 1])
-            successors.append(routeB[indexB + 1])
 
         # Calculate the delta using the distance subtraction method
-        delta = self.CalculateDistanceSubtraction(move, successors, precessors)
+        delta = self.CalculateDistanceSubtraction(move, [succA, succB], [predA, predB])
         #print("Delta: ",delta)
 
         return delta
-    
 
 
     def CalculateTwoEdgeExchangeDelta(self, move):
         '''Calculates the delta of the given two edge exchange move'''
 
         # Retrieve the route for the given day and cohort
-        route = move.RouteDayCohort
-        precessors = []
-        successors = []
-
-        # List of indices to process
-        indexes = [move.indexA, move.indexB]
-
-        # Iterate over the indices to determine predecessors and successors
-        for index in indexes:
-            if index == 0:
-                precessors.append(0)
-                successors.append(route[index + 1])
-            elif index == len(route) - 1:
-                precessors.append(route[index - 1])
-                successors.append(0)
-            else: 
-                precessors.append(route[index - 1])
-                successors.append(route[index + 1])
+        precessors, successors = self.get_predecessors_and_successors(route=move.RouteDayCohort, indexes=[move.indexA, move.indexB])
 
         # Calculate the delta using the distance subtraction method
         delta = self.CalculateDistanceSubtractionTwoEdge(move, successors, precessors)
@@ -201,66 +207,54 @@ class EvaluationLogic:
         return delta
     
     def CalculateReplaceDelta(self, move):
+        """Calculates the delta of the Replace Delta action"""
 
-        # Retrieve the route for the given day and cohort
-        route = move.RouteDayCohort
-        precessor = 0
-        successor = 0
+        # Cache commonly used data
+        distances = self._data.distances
+        all_tasks = self._data.allTasks
+        task_in_route = move.TaskInRoute
+        unused_task = move.UnusedTask
 
+        # Get predecessor and successor for the current task in the route
+        precessor, successor = self.get_predecessor_and_succesor(move.RouteDayCohort, move.indexInRoute)
 
-        index = move.indexInRoute
+        # Calculate the old distances for the task being replaced
+        distance_old = distances[precessor][task_in_route] + distances[task_in_route][successor]
 
-        if index == 0:
-            precessor = 0
-            successor = route[index+1]
-        elif index == len(route) - 1:
-            precessor = route[index-1]
-            successor = 0
-        else:
-            precessor = route[index-1]
-            successor = route[index+1]
+        # Calculate the new distances for the task being inserted (unused task)
+        distance_new = distances[precessor][unused_task] + distances[unused_task][successor]
 
-        distance_old = self._data.distances[precessor][move.TaskInRoute] + self._data.distances[move.TaskInRoute][successor]
-        distance_new = self._data.distances[precessor][move.UnusedTask] + self._data.distances[move.UnusedTask][successor]
+        # Get service times for the old and new tasks
+        service_time_old = all_tasks[task_in_route].service_time
+        service_time_new = all_tasks[unused_task].service_time
 
-        service_time_old = self._data.allTasks[move.TaskInRoute].service_time
-        service_time_new = self._data.allTasks[move.UnusedTask].service_time
-
-        delta = distance_new + service_time_new - distance_old - service_time_old
+        # Calculate the delta
+        delta = (distance_new + service_time_new) - (distance_old + service_time_old)
 
         return delta
 
 
-
     def CalculateInsertExtraTime(self, move):
-        '''Calculates the delta of the given insert move'''
+        """Calculates the delta of the given insert move"""
 
-        # Retrieve the route for the given day and cohort
-        route = move.RouteDayCohort
-        precessor = 0
-        successor = 0
+        # Cache data access to minimize repeated lookups
+        distances = self._data.distances
+        all_tasks = self._data.allTasks
+        task = move.Task
 
-        index = move.Index
+        # Retrieve predecessor and successor once
+        precessor, successor = self.get_predecessor_and_succesor(move.RouteDayCohort, move.Index)
 
-        if index == 0:
-            precessor = 0
-            successor = route[index+1]
-        elif index == len(route) - 1:
-            precessor = route[index-1]
-            successor = 0
-        else:
-            precessor = route[index-1]
-            successor = route[index+1]
+        # Calculate old distance
+        distance_old = distances[precessor][successor]
 
+        # Calculate new distance after insertion of 'task'
+        distance_new = distances[precessor][task] + distances[task][successor]
 
-        # Calculate the original distances 
-        distance_old = self._data.distances[precessor][successor]
+        # Fetch the service time for the task being inserted
+        service_time = all_tasks[task].service_time
 
-        # Calculate the new distances after insert
-        distance_new = self._data.distances[precessor][move.Task] + self._data.distances[move.Task][successor]
-        service_time = self._data.allTasks[move.Task].service_time
-        
+        # Calculate the extra time
         extra_time = distance_new + service_time - distance_old
 
         return extra_time
-
