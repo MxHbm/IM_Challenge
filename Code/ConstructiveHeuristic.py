@@ -4,7 +4,7 @@ import numpy
 from OutputData import *
 from MIP_initial_routeplan import * # MIP for initial route plan in in the same folder
 from EvaluationLogic import *
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures 
 
 class ConstructiveHeuristics:
     ''' Class for creating objects to run different constructive heuristics'''
@@ -38,37 +38,54 @@ class ConstructiveHeuristics:
         #Return the prefilled route plan
         return routeplan
 
-    
-    def Run(self, inputData:InputData, numberOfParameterComb = 3, main_tasks = True) -> None:
-        ''' Choose one of the constructive heuristics and get a first solutiuon due to the chosen heuristic'''
+        
+    def Run(self, inputData: InputData, numberOfParameterComb=3, main_tasks=True) -> None:
+        ''' Choose one of the constructive heuristics and get a first solution due to the chosen heuristic '''
 
         print('Generating an initial solution according to Greedy.')
 
-        #Rewrite any present solution
+        # Rewriting any present solution
         solution = None
-            
-        if main_tasks == True:
+
+        # Prepare a list of tasks (combinations of parameters) for parallel execution
+        tasks = []
+
+        if main_tasks:
             if numberOfParameterComb == 3:
-                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
-                solution2 = self._Greedy(inputData, 'MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100)
-                solution3 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20)
-                solution = max([solution1, solution2, solution3], key=lambda x: x.TotalProfit)
+                tasks = [
+                    ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
+                    ('MIP', 'WithDistanceToMainAndCloseTasks', 0.5, 100),
+                    ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 2.0, 20),
+                ]
             elif numberOfParameterComb == 2:
-                solution1 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
-                solution2 = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100)
-                solution = max([solution1, solution2], key=lambda x: x.TotalProfit)  
+                tasks = [
+                    ('OnePerDay', 'WithDistanceToMainTask', 1.0, 0),
+                    ('OnePerDay', 'WithDistanceToMainAndCloseTasks', 1.0, 100),
+                ]
             elif numberOfParameterComb == 1:
                 solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
             elif numberOfParameterComb == 'Test':
-                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0) ### TEST
-
+                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0)
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
-            #solution = self._Greedy(inputData, None, 'WithDistanceToCloseTasks', 1.0, 100) ### Different Possibility
-   
 
-        #Add the first solution to the solution pool to proceed further with the algorithm
-        self._SolutionPool.AddSolution(solution)
+        # If we have tasks to run in parallel, execute them
+        if tasks:
+            # Use ProcessPoolExecutor to parallelize the greedy solutions
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                # Submit all tasks to the executor for parallel execution
+                futures = [executor.submit(self._Greedy, inputData, task[0], task[1], task[2], task[3]) for task in tasks]
+                
+                # Wait for all futures to complete and collect the solutions
+                solutions = [future.result() for future in concurrent.futures.as_completed(futures)]
+            
+            # Select the solution with the maximum profit
+            solution = max(solutions, key=lambda x: x.TotalProfit)
+
+        # Add the first solution to the solution pool
+        if solution:
+            self._SolutionPool.AddSolution(solution)
+            
 
     def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''
@@ -79,24 +96,10 @@ class ConstructiveHeuristics:
 
 
         ''' Assign main tasks to days and cohorts'''
-        if mainTaskPlanner is not None:
-            print('Assigning main tasks to days and cohorts according to ' + mainTaskPlanner + '.')
-        if mainTaskPlanner == 'MIP':
-            prefilled_route_plan = self._create_initial_route_plan_with_MIP(inputData)
-        elif mainTaskPlanner == 'OnePerDay':
-            prefilled_route_plan = self._create_initial_route_plan(inputData)
-        elif mainTaskPlanner == None:
-                prefilled_route_plan = {}
-                for day in range(inputData.days):
-                    day_list = []
-                    for cohort in range(inputData.cohort_no):
-                        day_list.append([])
-                    prefilled_route_plan[day] = day_list     
-        else:
-            raise Exception('Unknown main task planner: ' + mainTaskPlanner + '.')
+        prefilled_route_plan = self._assign_main_tasks(inputData, mainTaskPlanner)
 
         depot = inputData.allTasks[0]
-        planned_tasks = [] # Save the tasks that are already planned --> List of planned task IDs
+        planned_tasks = set() # Save the tasks that are already planned --> List of planned task IDs
 
         breakFlag = False # Flag to break the loop if all tasks are planned
 
@@ -134,7 +137,7 @@ class ConstructiveHeuristics:
                     attractiveness = dict() # Save the attractiveness in a dictionary and reset attractiveness after each task is planned
 
                     for t in range(len(inputData.optionalTasks)):
-                        if inputData.allTasks[t] != previousT and inputData.allTasks[t] != depot and inputData.allTasks[t].ID not in planned_tasks:
+                        if inputData.allTasks[t] != previousT and inputData.allTasks[t] != depot and inputData.allTasks[t].no not in planned_tasks:
                                     attractiveness[t] = self._CalculateAttractiveness(inputData,attractivenessFunction,previousT,inputData.allTasks[t], inputData.allTasks[nextMainT] ,main_task_visited, a, b)
                     attractiveness = dict(sorted(attractiveness.items(), key=lambda item: item[1], reverse=True)) # Sort the tasks by attractiveness
 
@@ -172,7 +175,7 @@ class ConstructiveHeuristics:
                                 previousT = inputData.allTasks[nextT]
                                 self._InsertTaskBeforeMainTask(prefilled_route_plan[day][cohort], nextT, nextMainT)
                                 next_task_planned = True
-                                planned_tasks.append(inputData.allTasks[nextT].ID)
+                                planned_tasks.add(inputData.allTasks[nextT].no)
 
                             elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
                                 index += 1
@@ -209,7 +212,7 @@ class ConstructiveHeuristics:
                                 previousT = inputData.allTasks[nextT]
                                 prefilled_route_plan[day][cohort].append(nextT)
                                 next_task_planned = True
-                                planned_tasks.append(inputData.allTasks[nextT].ID)
+                                planned_tasks.add(inputData.allTasks[nextT].no)
 
                             elif len(attractiveness) > index + 1: # Only raise the index if there are more tasks to check
                                 index += 1
@@ -222,9 +225,19 @@ class ConstructiveHeuristics:
 
         self.EvaluationLogic.evaluateSolution(tmpSolution)
 
-        print('Initial Solution found.')
-
         return tmpSolution
+    
+    
+    def _assign_main_tasks(self, inputData, mainTaskPlanner):
+        ''' Helper function to assign main tasks based on the planner '''
+        if mainTaskPlanner:
+            print(f'Assigning main tasks to days and cohorts according to {mainTaskPlanner}.')
+            if mainTaskPlanner == 'MIP':
+                return self._create_initial_route_plan_with_MIP(inputData)
+            elif mainTaskPlanner == 'OnePerDay':
+                return self._create_initial_route_plan(inputData)
+        # Default to empty plan if no main task planner
+        return {day: [[] for _ in range(inputData.cohort_no)] for day in range(inputData.days)}
 
 
     def _UpdateScoreboard(self, task ,inputData:InputData, attractivenessFunction):
@@ -410,7 +423,7 @@ class ConstructiveHeuristics:
             self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
             previousT = nextT_task
             self._InsertTaskBeforeMainTask(prefilled_route_plan[day][cohort], nextT, nextMainT)
-            planned_tasks.add(nextT_task.ID)
+            planned_tasks.add(nextT_task.no)
 
             return True, totalTime, previousT
         return False, totalTime, previousT
@@ -428,7 +441,7 @@ class ConstructiveHeuristics:
             self._UpdateScoreboard(nextT, inputData, attractivenessFunction)
             previousT = nextT_task
             prefilled_route_plan[day][cohort].append(nextT)
-            planned_tasks.add(nextT_task.ID)
+            planned_tasks.add(nextT_task.no)
 
             return True, totalTime, previousT
         return False, totalTime, previousT

@@ -23,8 +23,6 @@ def get_distance_matrix(tasks:list[Union[MainTask, OptionalTask]]) -> list[list[
 
     distances = [[100000 if i == j else 0 for i in range(len(tasks))] for j in range(len(tasks))]
 
-    print("Calculate Distances")
-
     for task_i_id in range(len(tasks)):
         for task_j_id in range(task_i_id): 
             # Calculate the distance between the two tasks
@@ -44,7 +42,6 @@ def get_profits(tasks: List[Union[MainTask, OptionalTask]]) -> list[int]:
     ''' Get the profit of the tasks in the data and add zeros for the depots to run the model'''
 
     # Fill profits vector
-    print("Get Profits")
     profits = [task.profit for task in tasks]
 
     return profits
@@ -67,8 +64,6 @@ def get_distance_service_time_matrix(tasks:List[Union[MainTask, OptionalTask]]) 
     internal_tasks = tasks.copy()
 
     distances_service_time = [[100000 if i == j else 0 for i in range(len(internal_tasks))] for j in range(len(internal_tasks))]
-
-    print("Calculate Distance plus Service Times")
 
     for task_i_id in range(len(internal_tasks)):
         for task_j_id in range(task_i_id): 
