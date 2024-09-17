@@ -51,7 +51,7 @@ def main():
                                 consecutive_to_remove=3,
                                 neighborhoodEvaluationStrategyDelta = 'BestImprovement',
                                 neighborhoodEvaluationStrategyProfit = 'BestImprovement',
-                                neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+                                neighborhoodTypesDelta=['SwapIntraRoute','SwapInterRoute','TwoEdgeExchange','ReplaceDelta'],
                                 neighborhoodTypesProfit= ['Insert','ReplaceProfit']
         )
         
@@ -65,7 +65,7 @@ def main():
                                 consecutive_to_remove=3,
                                 neighborhoodEvaluationStrategyDelta = 'BestImprovement',
                                 neighborhoodEvaluationStrategyProfit = 'BestImprovement',
-                                neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+                                neighborhoodTypesDelta=['SwapIntraRoute','SwapInterRoute','TwoEdgeExchange','ReplaceDelta'],
                                 neighborhoodTypesProfit= ['Insert','ReplaceProfit'])
         
         SA_LS = SimulatedAnnealingLocalSearch(
@@ -117,7 +117,7 @@ def main():
         iteration = solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = neighborhoodLocalSearch
+            algorithm = SA_LS
         )
 
         print(f'Anzahl Iterationen: {iteration}')
