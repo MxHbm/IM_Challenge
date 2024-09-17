@@ -394,7 +394,7 @@ class SwapIntraRouteNeighborhood(DeltaNeighborhood):
         validTasks = {task for task in solution.RoutePlan[day][cohort] if task <= 1000}
 
         # Randomly select two distinct indices in one step
-        task_i, task_j = self.RNG.choice(validTasks, size=2, replace=False)
+        task_i, task_j = self.RNG.choice(list(validTasks), size=2, replace=False)
 
         index_i, index_j = cohort_tasks.index(task_i), cohort_tasks.index(task_j)
 
@@ -559,12 +559,11 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         else:
             cohortA, cohortB = self.RNG.choice(len(solution.RoutePlan[dayB]), size=2, replace=True)
 
-        #TODO: Also main tasks can be selected! 
         validTasksA = {task for task in solution.RoutePlan[dayA][cohortA] if task <= 1000}
         validTasksB = {task for task in solution.RoutePlan[dayB][cohortB] if task <= 1000}
 
-        taskA = self.RNG.choice(validTasksA)
-        taskB = self.RNG.choice(validTasksB)
+        taskA = self.RNG.choice(list(validTasksA))
+        taskB = self.RNG.choice(list(validTasksB))
 
         return SwapInterRouteMove(solution.RoutePlan, dayA, cohortA, taskA, dayB, cohortB, taskB)
     
@@ -661,6 +660,7 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
 
         day = self.RNG.integers(0, len(solution.RoutePlan))
         cohort = self.RNG.integers(0, len(solution.RoutePlan[day]))
+        waiting_time_old = solution.WaitingTimes[day,cohort]
 
         cohort_tasks = solution.RoutePlan[day][cohort]
                     
@@ -668,9 +668,9 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
         valid_tasks = {task for task in cohort_tasks if task <= 1000}
 
         # Randomly select two distinct tasks
-        task_i, task_j = self.RNG.choice(valid_tasks, size=2, replace=False)
+        task_i, task_j = self.RNG.choice(list(valid_tasks), size=2, replace=False)
 
-        return TwoEdgeExchangeMove(cohort_tasks, day, cohort, task_i, task_j)
+        return TwoEdgeExchangeMove(cohort_tasks, waiting_time_old,day, cohort, task_i, task_j)
     
     def LocalSearch(self, neighborhoodEvaluationStrategy: str, solution: Solution) -> Solution:
         ''' Own Definition to avoid string comparisons'''

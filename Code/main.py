@@ -114,13 +114,13 @@ def main():
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
-        iteration = solver.RunAlgorithm(
+        solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = neighborhoodLocalSearch
+            algorithm = SA_LS
         )
 
-        print(f'Anzahl Iterationen: {iteration}')
+        #print(f'Anzahl Iterationen: {iteration}')
 
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
