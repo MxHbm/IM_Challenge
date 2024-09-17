@@ -288,11 +288,11 @@ class InputData:
         listOfCloseHighProfit = list()
         for task in self.optionalTasks:
             if task.profit == 3 and task != currentTask:
-                taskIndex = self.optionalTasks.index(task)
+                taskIndex = task.no
                 currentTaskIndex = self.optionalTasks.index(currentTask)
                 distanceToTask = self.distances[taskIndex][currentTaskIndex]
                 if distanceToTask < 180: # Distance needs to be lower than 180 seconds to be included as a point
-                    taskIndex = self.optionalTasks.index(task)
+                    taskIndex = task.no
                     listOfCloseHighProfit.append(taskIndex)
         
         return listOfCloseHighProfit
@@ -304,7 +304,7 @@ class InputData:
         scoreboard = dict()
 
         for task in self.optionalTasks:
-            taskIndex = self.optionalTasks.index(task)
+            taskIndex = task.no
             scoreboard[taskIndex] = self._CalculateScore(task)
 
         self._scoreboard = scoreboard
