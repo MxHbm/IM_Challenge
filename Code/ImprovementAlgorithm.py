@@ -124,8 +124,8 @@ class IteratedLocalSearch(ImprovementAlgorithm):
     def Run(self, currentSolution: Solution) -> Solution:
         ''' Run local search with given solutions and iterate through all given neighborhood types '''
 
-        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesDelta, neighborhoods_dict = self.DeltaNeighborhoods)
-        self.InitializeNeighborhoods(neighborhoodtypes = self.neighborhoodTypesProfit, neighborhoods_dict = self.ProfitNeighborhoods)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.NeighborhoodTypesDelta, neighborhoods_dict = self.DeltaNeighborhoods)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.NeighborhoodTypesProfit, neighborhoods_dict = self.ProfitNeighborhoods)
         
         print('\nStarting Iterated Local Search')
 
@@ -186,15 +186,31 @@ class IteratedLocalSearch(ImprovementAlgorithm):
 
         return bestSolution
     
-    def Perturbation(self, solution: Solution, type = 'shake') -> Solution:
+    def Perturbation(self, solution: Solution) -> Solution:
         ''' Perturbation to escape local optima '''
 
+        types = ['shake']
+        # choose destuction based on probabilities
+        destructions = ['big', 'small']
+        # choose destruction based on probabilities
+        probability_destruction = [0.05, 0.95]
+        destruction = self.RNG.choice(destructions, p=probability_destruction)
 
-        # choose type of perturbation randomly
-        types = ['remove', 'shake']
-        type = self.RNG.choice(types, replace = False)
+        if destruction == 'big':
+            #jobs_to_remove = int(self.jobsToRemove * 3)
+            
+            consective_to_remove = int(self.consecutive_to_remove * 2)
+            sublists_to_modify = int(self.sublists_to_modify * 2)
 
-        print(f'\n Perturbation type: {type}')
+        elif destruction == 'small':
+            #jobs_to_remove = self.jobsToRemove
+
+            consective_to_remove = self.consecutive_to_remove
+            sublists_to_modify = self.sublists_to_modify
+
+        ''''
+        print(f'\n Perturbation types: {types}')
+        print(f' Perturbation type this iteration: {type}')
         
         if type == 'remove': # Random removal of jobs
             valid_elements = [(key, sublist_idx, item_idx, item) 
@@ -204,8 +220,8 @@ class IteratedLocalSearch(ImprovementAlgorithm):
                             if item <= 1000]
 
             newRoutePlan = deepcopy(solution.RoutePlan)
-            if len(valid_elements) >= self.jobsToRemove :
-                to_remove = self.RNG.choice(valid_elements, self.jobsToRemove, replace = False)
+            if len(valid_elements) >= jobs_to_remove:
+                to_remove = self.RNG.choice(valid_elements, jobs_to_remove, replace = False)
                 for key, sublist_idx, item_idx, item in to_remove:
                     newRoutePlan[key][sublist_idx].remove(item)
             else:
@@ -216,24 +232,25 @@ class IteratedLocalSearch(ImprovementAlgorithm):
 
 
         elif type == 'shake': # random removal of consectitive jobs
+        '''
             
-            newRoutePlan = deepcopy(solution.RoutePlan)
+        newRoutePlan = deepcopy(solution.RoutePlan)
 
-            all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
-            indices = self.RNG.choice(len(all_sublists), min(self.sublists_to_modify, len(all_sublists)), replace=False)
-            selected_sublists = [all_sublists[i] for i in indices]  # Select sublists using the chosen indices
+        all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
+        indices = self.RNG.choice(len(all_sublists), min(sublists_to_modify, len(all_sublists)), replace=False)
+        selected_sublists = [all_sublists[i] for i in indices]  # Select sublists using the chosen indices
 
-            for key, sublist in selected_sublists:
-                valid_positions = [i for i in range(len(sublist) - self.consecutive_to_remove + 1)
-                                    if all(sublist[i + j] <= 1000 for j in range(self.consecutive_to_remove))]
+        for key, sublist in selected_sublists:
+            valid_positions = [i for i in range(len(sublist) - consective_to_remove + 1)
+                                if all(sublist[i + j] <= 1000 for j in range(consective_to_remove))]
 
-                if valid_positions:
-                    start_pos = self.RNG.choice(a = valid_positions, replace = False)
-                    del sublist[start_pos:start_pos + self.consecutive_to_remove]
+            if valid_positions:
+                start_pos = self.RNG.choice(a = valid_positions, replace = False)
+                del sublist[start_pos:start_pos + consective_to_remove]
 
 
-            currentSolution = Solution(newRoutePlan, self.InputData)
-            self.EvaluationLogic.evaluateSolution(currentSolution)
+        currentSolution = Solution(newRoutePlan, self.InputData)
+        self.EvaluationLogic.evaluateSolution(currentSolution)
         
 
         return currentSolution
@@ -354,6 +371,7 @@ class Adaptive_IteratedLocalSearch(IteratedLocalSearch):
 
         return bestSolution
 
+
 class SAILS(IteratedLocalSearch):
     """ A combination of Simulated Annealing and Iterative local search.."""
 
@@ -383,19 +401,26 @@ class SAILS(IteratedLocalSearch):
         self.NeighborhoodTypesDelta = neighborhoodTypesDelta
         self.NeighborhoodTypesProfit = neighborhoodTypesProfit
         self.NeighborhoodTypes = neighborhoodTypesDelta + neighborhoodTypesProfit
+        self.DeltaNeighborhoods = {}
+        self.ProfitNeighborhoods = {}
+
 
 
     def Run(self, solution: Solution) -> Solution:
 
-        self.InitializeNeighborhoods()
+        self.InitializeNeighborhoods(neighborhoodtypes = self.NeighborhoodTypesDelta, neighborhoods_dict = self.DeltaNeighborhoods)
+        self.InitializeNeighborhoods(neighborhoodtypes = self.NeighborhoodTypesProfit, neighborhoods_dict = self.ProfitNeighborhoods)
         
         print('\nStarting SAILS (Simualted Annealing Iterated Local Search)')
         print(f'\n Running initial local search')
 
-        for neighborhoodType in self.NeighborhoodTypesDelta + self.NeighborhoodTypesProfit:    
-            print(f' Running neighborhood {neighborhoodType}')
-            neighboorhood = self.Neighborhoods[neighborhoodType]
-            solution = neighboorhood.LocalSearch('BestImprovement', solution)
+        for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
+            print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+            solutuion = profit_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, solution)
+
+        for delta_neighbor_name, delta_neighbor in self.DeltaNeighborhoods.items():
+            print(f'\nRunning local search for {delta_neighbor_name} neighborhood')
+            solution = delta_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyDelta, solution)
 
         currentSolution = solution
         lineSolution = solution
@@ -425,29 +450,24 @@ class SAILS(IteratedLocalSearch):
                 
                 print(f'\n Running local search after perturbation')
 
-                for neighborhoodType in self.NeighborhoodTypesProfit:
-                    print(f' Running neighborhood {neighborhoodType}')
-                    neighboorhood = self.Neighborhoods[neighborhoodType]
-                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
+                for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
+                    print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+                    currentSolution = profit_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
 
+                for delta_neighbor_name, delta_neighbor in self.DeltaNeighborhoods.items():
+                    print(f'\nRunning local search for {delta_neighbor_name} neighborhood')
+                    currentSolution = delta_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyDelta, currentSolution)
 
-                for neighborhoodType in self.NeighborhoodTypesDelta:
-                    print(f' Running neighborhood {neighborhoodType}')
-                    neighboorhood = self.Neighborhoods[neighborhoodType]
-                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyDelta, currentSolution)
-
-
-                for neighborhoodType in self.NeighborhoodTypesProfit:
-                    print(f' Running neighborhood {neighborhoodType}')
-                    neighboorhood = self.Neighborhoods[neighborhoodType]
-                    currentSolution = neighboorhood.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
+                for profit_neighbor_name,profit_neighbor in self.ProfitNeighborhoods.items():
+                    print(f'\nRunning local search for {profit_neighbor_name} neighborhood')
+                    currentSolution = profit_neighbor.LocalSearch(self.NeighborhoodEvaluationStrategyProfit, currentSolution)
 
                 print(f' Solution after local search in iteration {iteration}.{innerLoop}:\n {currentSolution}')
 
                 if currentSolution.TotalProfit > lineSolution.TotalProfit:
                     lineSolution = currentSolution
                     if currentSolution.TotalProfit > bestSolution.TotalProfit:
-                        bestSolution = currentSolution
+                        bestSolution = deepcopy(currentSolution)
                         iterationsWithoutImprovement = 0
                         bestIteration = iteration
                     else:
@@ -463,6 +483,12 @@ class SAILS(IteratedLocalSearch):
                 
                 innerLoop += 1
 
+                if iterationsWithoutImprovement >= self.maxIterationsWithoutImprovement:
+                    print(f"The limit of {self.maxIterationsWithoutImprovement} iterations without improvement has been reached.")
+                    currentSolution = bestSolution
+                    lineSolution = currentSolution
+                    iterationsWithoutImprovement = 0
+
             bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
             print(f'\n Overall best solution found in iteration {bestIteration}: \n {bestSolution}')
@@ -471,12 +497,6 @@ class SAILS(IteratedLocalSearch):
             
             temperature = temperature * self.tempDecreaseFactor
 
-            if iterationsWithoutImprovement >= self.maxIterationsWithoutImprovement:
-                print(f"The limit of {self.maxIterationsWithoutImprovement} iterations without improvement has been reached.")
-                currentSolution = bestSolution
-                lineSolution = currentSolution
-                iterationsWithoutImprovement = 0
-            
             iteration += 1
 
             usedTime = time.time() - startTime
@@ -607,7 +627,7 @@ class Adaptive_SAILS(IteratedLocalSearch):
                 if currentSolution.TotalProfit > lineSolution.TotalProfit:
                     lineSolution = currentSolution
                     if currentSolution.TotalProfit > bestSolution.TotalProfit:
-                        bestSolution = currentSolution
+                        bestSolution = deepcopy(currentSolution)
                         iterationsWithoutImprovement = 0
                         bestIteration = iteration
                     else:
@@ -623,6 +643,12 @@ class Adaptive_SAILS(IteratedLocalSearch):
                 
                 innerLoop += 1
 
+                if iterationsWithoutImprovement >= self.maxIterationsWithoutImprovement:
+                    print(f"The limit of {self.maxIterationsWithoutImprovement} iterations without improvement has been reached.")
+                    currentSolution = bestSolution
+                    lineSolution = currentSolution
+                    iterationsWithoutImprovement = 0
+
             bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
             print(f'\n Overall best solution found in iteration {bestIteration}: \n {bestSolution}')
@@ -631,12 +657,6 @@ class Adaptive_SAILS(IteratedLocalSearch):
             
             temperature = temperature * self.tempDecreaseFactor
 
-            if iterationsWithoutImprovement >= self.maxIterationsWithoutImprovement:
-                print(f"The limit of {self.maxIterationsWithoutImprovement} iterations without improvement has been reached.")
-                currentSolution = bestSolution
-                lineSolution = currentSolution
-                iterationsWithoutImprovement = 0
-            
             iteration += 1
 
             usedTime = time.time() - startTime
@@ -645,57 +665,6 @@ class Adaptive_SAILS(IteratedLocalSearch):
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
         return bestSolution
-    
-    
-    def Perturbation(self, solution: Solution, types:list[str] = ['remove', 'shake']) -> Solution:
-        ''' Perturbation to escape local optima '''
-
-
-        # choose type of perturbation randomly
-        self.Types = types
-        type = self.RNG.choice(self.Types, replace = False)
-
-        print(f'\n Perturbation type: {type}')
-        
-        if type == 'remove': # Random removal of jobs
-            valid_elements = [(key, sublist_idx, item_idx, item) 
-                            for key, sublists in solution.RoutePlan.items()
-                            for sublist_idx, sublist in enumerate(sublists) 
-                            for item_idx, item in enumerate(sublist) 
-                            if item <= 1000]
-
-            newRoutePlan = deepcopy(solution.RoutePlan)
-            if len(valid_elements) >= self.jobsToRemove :
-                to_remove = self.RNG.choice(valid_elements, self.jobsToRemove, replace = False)
-                for key, sublist_idx, item_idx, item in to_remove:
-                    newRoutePlan[key][sublist_idx].remove(item)
-
-            currentSolution = Solution(newRoutePlan, self.InputData)
-            self.EvaluationLogic.evaluateSolution(currentSolution)
-
-
-        elif type == 'shake': # random removal of consectitive jobs
-            
-            newRoutePlan = deepcopy(solution.RoutePlan)
-
-            all_sublists = [(key, sublist) for key, sublists in newRoutePlan.items() for sublist in sublists]
-            indices = self.RNG.choice(len(all_sublists), min(self.sublists_to_modify, len(all_sublists)), replace=False)
-            selected_sublists = [all_sublists[i] for i in indices]  # Select sublists using the chosen indices
-
-            for key, sublist in selected_sublists:
-                valid_positions = [i for i in range(len(sublist) - self.consecutive_to_remove + 1)
-                                    if all(sublist[i + j] <= 1000 for j in range(self.consecutive_to_remove))]
-
-                if valid_positions:
-                    start_pos = self.RNG.choice(a = valid_positions, replace = False)
-                    del sublist[start_pos:start_pos + self.consecutive_to_remove]
-
-
-            currentSolution = Solution(newRoutePlan, self.InputData)
-            self.EvaluationLogic.evaluateSolution(currentSolution)
-        
-
-        return currentSolution
 
 
 
