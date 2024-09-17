@@ -289,6 +289,25 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
 
     print(f"JSON file has been created at {filepath}")
 
+def write_empty_txt_solution(gp_model, var_x, data:InputData, allTasks, file_path:str):
+    """
+    Writes Empty solution if model is infeasible or no valid solution could be found!
+    """
+     
+    # Retrieve optimization metrics
+    gap = -1
+    runtime = 10800
+    num_constraints = gp_model.NumConstrs
+    num_variables = gp_model.NumVars
+    obj = -1
+    
+    # Write the metrics to the output file
+    with open(file_path, 'w') as file:
+        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
+        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(len(allTasks) - 1) + "\n \n")
+                
+    print(f"Text file has been created at {file_path}")
+
 def write_txt_solution_flexi(gp_model, var_x, data:InputData, allTasks, file_path:str):
     """
     Writes optimization gap, runtime, number of constraints, and number of variables 
