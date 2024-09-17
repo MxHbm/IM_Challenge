@@ -43,7 +43,11 @@ def main():
                 
                 #### MODEL ####
                 print("Start Model \n \n")
-                model = gp.Model()
+                # Create Gurobi environment and model with limited threads
+                env = gp.Env(empty=True)
+                env.setParam('Threads', 16)  # Limit to 16 threads
+                env.start()
+                model = gp.Model(env=env)
 
 
                 #### VARIABLES ####
@@ -104,10 +108,27 @@ def main():
                 model.optimize()
 
                 #### EVALUATION ####
-                model.printAttr(gp.GRB.Attr.ObjVal)
-                #model.printAttr(gp.GRB.Attr.X)
+                if model.status == gp.GRB.Status.OPTIMAL or model.status == gp.GRB.Status.TIME_LIMIT:
+                    # Optimal solution found
+                    model.printAttr(gp.GRB.Attr.ObjVal)
+                    
+                    print("Writing the best feasible solution found.")
+                    
+                    # If a feasible solution is available
+                    if model.SolCount > 0:
+                        # Print the objective value of the best feasible solution
+                        model.printAttr(gp.GRB.Attr.ObjVal)
+                        
+                        # Write the feasible solution found within the time limit
+                        write_txt_solution_flexi(model, x, data, all_tasks, outputFilePath_1)
+                        write_json_solution_mip_flexi(model, x, data, all_tasks, d, outputFilePath_2)
+                    else:
+                        write_empty_txt_solution(model, data, all_tasks,outputFilePath_1)
 
-                write_txt_solution_flexi(model, x, data, all_tasks,outputFilePath_1)
-                write_json_solution_mip_flexi(model,x, data,all_tasks, d, outputFilePath_2)
+
+                else:
+                    print(f"Optimization ended with status {model.status}.")
+
+                    write_empty_txt_solution(model, data, all_tasks,outputFilePath_1)
 
 main()
