@@ -2,10 +2,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2]: #[2,5,8,10]
+    for no_days in [8,10]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
-        for instance_no in [1]:
-            for define_range in [50]: #[50,200,500,1000]
+        for instance_no in [1,2]:
+            for define_range in [1000]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
                 cwd = Path.cwd()
@@ -93,11 +93,15 @@ def main():
                             model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
 
                 
+
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
-                model.Params.TimeLimit = 10800  # 3 hours
-                #model.Params.Threads = 32
-                model.Params.PrePasses = 10000
+                model.Params.TimeLimit = 10800 # 3 hours
+                model.setParam('Threads', 8) 
+                model.Params.PrePasses = 1
+                model.Params.NoRelHeurWork = 600
+                model.Params.NoRelHeurTime = 600
+                model.setParam('NodefileStart', 0.3) 
 
                 #### OPTIMIZE MODEL ####
                 model.optimize()

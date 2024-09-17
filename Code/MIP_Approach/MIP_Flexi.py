@@ -3,10 +3,14 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2,5,8,10]: #[2,5,8,10]
+    for no_days in [5,8,10]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            for define_range in [50,200,500,1000]: #[50,200,500,1000]
+            if no_days == 5:
+                levels = [500,1000]
+            else: 
+                levels = [50,200,500,1000]
+            for define_range in levels: #[50,200,500,1000]
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
@@ -98,7 +102,7 @@ def main():
                 model.Params.PrePasses = 1000000
                 model.Params.NoRelHeurWork = 600
                 model.Params.NoRelHeurTime = 600
-                model.setParam('NodefileStart', 0.5) 
+                model.setParam('NodefileStart', 0.3) 
 
                 #### OPTIMIZE MODEL ####
                 model.optimize()
