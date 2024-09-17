@@ -17,11 +17,13 @@ class EvaluationLogic:
         sum_profit = 0
         sum_tasks = 0
 
+        all_Tasks = self._data.allTasks
+
         for day in range(self._data.days):
             for cohort in range(self._data.cohort_no):
                 sum_tasks += len(currentSolution.RoutePlan[day][cohort])
                 for task_no in currentSolution.RoutePlan[day][cohort]:
-                    sum_profit += self._data.allTasks[task_no].profit
+                    sum_profit += all_Tasks[task_no].profit
 
         currentSolution.setTotalProfit(sum_profit) 
         currentSolution.setTotalTasks(sum_tasks)
