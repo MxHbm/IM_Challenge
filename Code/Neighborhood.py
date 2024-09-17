@@ -454,10 +454,10 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         """ Generate all possible swaps between tasks in different routes (days and different cohorts). """
 
         # Choose 2 random days to include in the neighborhood
-        days = self.RNG.choice(range(len(self.RoutePlan)), 2)
+        days = range(len(self.RoutePlan))
 
         # Choose 4 random cohorts (since they are the same across all days)
-        cohorts = self.RNG.choice(range(len(self.RoutePlan[0])), 4)
+        cohorts = range(len(self.RoutePlan[0]))
 
         # Pre-filter tasks to only include those that meet the condition task <= 1000
         valid_tasks_by_day_and_cohort = {
