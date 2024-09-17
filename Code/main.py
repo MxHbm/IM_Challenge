@@ -31,20 +31,6 @@ def main():
         data = InputData("Instance"+i+".json")
 
 
-        '''
-        insertionLocalSearch = IterativeImprovement(data, 'FirstImprovement', ['Swap'])
-        iteratedGreedy = IteratedGreedy(
-        data, 
-        numberJobsToRemove=2, 
-        baseTemperature=1, 
-        maxIterations=10, 
-        localSearchAlgorithm=insertionLocalSearch
-        )
-
-        solver = Solver(data, 1008)
-
-        print('Start IG\n')
-        '''
         solver = Solver(data, 1008)
 
         
@@ -77,21 +63,20 @@ def main():
                                 threshold1 = 2,
                                 score_threshold= 1000,
                                 consecutive_to_remove=3,
-                                neighborhoodEvaluationStrategyDelta = 'FirstImprovement',
-                                neighborhoodEvaluationStrategyProfit = 'FirstImprovement',
+                                neighborhoodEvaluationStrategyDelta = 'BestImprovement',
+                                neighborhoodEvaluationStrategyProfit = 'BestImprovement',
                                 neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
                                 neighborhoodTypesProfit= ['Insert','ReplaceProfit'])
         
         SA_LS = SimulatedAnnealingLocalSearch(
             inputData=data,
             start_temperature = 1000,
-            min_temperature = 1e-50,
+            min_temperature = 1e-40,
             temp_decrease_factor=0.99,
-            maxRunTime=30,
+            maxRunTime=60*60*4,
             neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
-            neighborhoodTypesProfit = ['Insert','ReplaceProfit']
+            neighborhoodTypesProfit= ['Insert','ReplaceProfit']
         )
-
 
 
       
@@ -128,12 +113,14 @@ def main():
                                 neighborhoodTypesDelta =['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
-       
-        solver.RunAlgorithm(
+
+        iteration = solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
             algorithm = neighborhoodLocalSearch
         )
+
+        print(f'Anzahl Iterationen: {iteration}')
 
         # Define the directory and file name
         output_directory = Path.cwd().parent / "Data" / "Debug"
@@ -154,7 +141,7 @@ def main():
         solver.RunIteratedLocalSearch(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm_LS=neighborhoodLocalSearch2,
+            algorithm_LS=neighborhoodLocalSearch,
             algorithm_ILS=Adaptive_ILS
         )
         '''
@@ -176,14 +163,14 @@ def main():
         '''
 
 '''
-def main_parameterstudy():
+def main_parameterstudy_ILS():
 
     for i in instances:
         print(Path.cwd().parent) 
         print("Instance: ", i)
         data = InputData("Instance"+i+".json")
 
-        solver = Solver(data, 1008)
+        
 
         # Full parameter study
         results = []
@@ -198,7 +185,7 @@ def main_parameterstudy():
 
         # Reduced parameter study
         results = []
-        jobs_to_remove_list = [9]
+        jobs_to_remove_list = [2,4,6,8,10]
         sublists_to_modify_list = [5]
         consecutive_to_remove_list = [3 ,6]
         start_temperature_list = [250,1000]
@@ -221,6 +208,8 @@ def main_parameterstudy():
                                     maxIterationsWithoutImprovement = 15
 
                                 for neighborhoodEvaluationStrategyDelta in neighborhoodEvaluationStrategyDelta_list:
+                                
+                                    solver = Solver(data, 1008)
 
                                     SAILS_algorithm = SAILS(
                                         inputData=data,
@@ -269,15 +258,81 @@ def main_parameterstudy():
         print(df)
 
         df.to_csv('sails_results.csv', index=False)
+'''
+
+def main_parameterstudy_SA_LS():
+
+    for i in instances:
+        print(Path.cwd().parent) 
+        print("Instance: ", i)
+        data = InputData("Instance"+i+".json")
+
+        
+
+        # Full parameter study
+        results = []
+        start_temperature_list = [100,1000,10000]
+        min_temperature_list = [1e-20, 1e-40, 1e-60]
+        temp_decrease_factor_list=[0.9, 0.95, 0.99]
+
+        # Reduced parameter study
 
 
+        start_temperature_list = [100,1000]
+        min_temperature_list = [1e-50, 1e-80]
+        temp_decrease_factor_list=[0.999]
+    
 
+
+        for temp in start_temperature_list:
+            for minTemp in min_temperature_list:
+                for factor in temp_decrease_factor_list:
+
+                    solver = Solver(data, 1008)
+             
+                    SA_LS = SimulatedAnnealingLocalSearch(
+                            inputData=data,
+                            start_temperature = temp,
+                            min_temperature = minTemp,
+                            temp_decrease_factor=factor,
+                            maxRunTime=60*60,
+                            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+                            neighborhoodTypesProfit= ['Insert','ReplaceProfit']
+                            )
+
+
+                    iterationen = solver.RunAlgorithm(
+                        numberParameterCombination=1,
+                        main_tasks=True,
+                        algorithm=SA_LS
+                    )
+
+
+                    highest_profit_solution = solver.SolutionPool.GetHighestProfitSolution()
+                    total_profit = highest_profit_solution.TotalProfit
+                    waiting_time = highest_profit_solution.WaitingTime
+                    total_tasks = highest_profit_solution.TotalTasks
+
+                    results.append({
+                        'start_temperature': temp,
+                        'min_temperature': minTemp,
+                        'temp_decrease_factor': factor,
+                        'TotalIterations': iterationen,
+                        'TotalProfit': total_profit,
+                        'WaitingTime': waiting_time,
+                        'TotalTasks': total_tasks
+                    })
+    df = pd.DataFrame(results)
+
+    print(df)
+
+    df.to_csv('sa_ls_2nd_results.csv', index=False)
 
 
 
 
 # Run single run or parameter study
-main_single_run()
+main()
 
 '''
 # Profile the main function
@@ -285,4 +340,4 @@ if __name__ == '__main__':
     cProfile.run('main()', 'profiling_results.prof')
     p = pstats.Stats('profiling_results.prof')
     p.sort_stats('cumtime').print_stats(240)  # Sort by cumulative time and show the top 10 results
-
+'''
