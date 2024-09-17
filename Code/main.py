@@ -14,7 +14,7 @@ main_tasks_string = str(main_tasks)
 
 if main_tasks:
 
-    instances = ['7_8_1']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
+    instances = ['7_2_1']#, '7_5_1', '7_5_2', '7_8_1', '7_8_2']#, '7_10_1', '7_10_2']
 else:
     instances = ['7_2_1']#, '7_8_1', '7_10_1']
 
@@ -114,11 +114,10 @@ def main():
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
-        solver.RunAlgorithm(
-            numberParameterCombination=1,
-            main_tasks=True,
-            algorithm = SA_LS
-        )
+        solver.ConstructionPhase(
+            numberParameterCombination= 3, 
+            main_tasks= main_tasks,
+            )
 
         #print(f'Anzahl Iterationen: {iteration}')
 
