@@ -455,9 +455,11 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 
         # Choose 2 random days to include in the neighborhood
         days = self.RNG.choice(range(len(self.RoutePlan)), 2)
+        #days = range(len(self.RoutePlan))
 
         # Choose 4 random cohorts (since they are the same across all days)
-        cohorts = self.RNG.choice(range(len(self.RoutePlan[0])), 4)
+        cohorts = self.RNG.choice(range(len(self.RoutePlan[0])), 5)
+        #cohorts = range(len(self.RoutePlan[0]))
 
         # Pre-filter tasks to only include those that meet the condition task <= 1000
         valid_tasks_by_day_and_cohort = {
@@ -468,8 +470,10 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 
         # Generate valid task pairs across different routes (days) and ensure different cohorts
         for (dayA, cohortA), (dayB, cohortB) in itertools.combinations(valid_tasks_by_day_and_cohort.keys(), 2):
+
+           #print(f"{dayA} : {dayB}; {cohortA} : {cohortB}")
             # Ensure different cohorts are selected
-            if cohortA == cohortB:
+            if dayA == dayB and cohortA == cohortB:
                 continue  # Skip if cohorts are the same
             
             tasksA = valid_tasks_by_day_and_cohort[(dayA, cohortA)]
@@ -556,7 +560,10 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 
         
         dayA, dayB = self.RNG.choice(len(solution.RoutePlan), size=2, replace=True)
-        cohortA, cohortB = self.RNG.choice(len(solution.RoutePlan[dayB]), size=2, replace=False)
+        if dayA == dayB:
+            cohortA, cohortB = self.RNG.choice(len(solution.RoutePlan[dayB]), size=2, replace=False)
+        else:
+            cohortA, cohortB = self.RNG.choice(len(solution.RoutePlan[dayB]), size=2, replace=True)
 
         #TODO: Also main tasks can be selected! 
         validTasksA = [task for task in solution.RoutePlan[dayA][cohortA] if task <= 1000]
@@ -600,9 +607,9 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
 class TwoEdgeExchangeMove(BaseMove):
     """ Represents the swap of the element at IndexA with the element at IndexB for a given permutation (= solution). """
 
-    def __init__(self, initialRoutePlan, day:int, cohort:int, taskA:int, taskB:int):
+    def __init__(self, initialRoutePlan, waiting_time_old_route:int, day:int, cohort:int, taskA:int, taskB:int):
         self.RouteDayCohort = initialRoutePlan.copy()  # Create a copy for RouteDayCohort
-        self.OldRouteDayCohort = initialRoutePlan.copy()  # Create a separate copy for OldRouteDayCohort
+        self.OldWaitingTime = waiting_time_old_route  # Create a separate copy for OldRouteDayCohort
         self.Day = day
         self.Cohort = cohort
         self.TaskA = taskA
@@ -618,6 +625,8 @@ class TwoEdgeExchangeMove(BaseMove):
             # If indexA is after indexB, still reverse, but handle the indices correctly
             self.RouteDayCohort[self.indexB:self.indexA+1] = reversed(self.RouteDayCohort[self.indexB:self.indexA+1])
 
+    
+
 class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):         
 
     """ Contains all $n choose 2$ swap moves for a given permutation (= solution). """
@@ -627,7 +636,7 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
 
         self.Type = 'TwoEdgeExchange'
 
-    def DiscoverMoves(self):
+    def DiscoverMoves(self, waiting_times):
         """ Generate all $n choose 2$ moves. """
 
 
@@ -639,6 +648,8 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
                     # Filter tasks that are <= 1000 to reduce unnecessary checks
                     valid_tasks = [task for task in cohort_tasks if task <= 1000]
 
+                    waiting_time_old_route = waiting_times[day,cohort]
+
                     # Iterate over combinations of task indices (i, j) such that i < j
                     for i in range(len(valid_tasks)):
                         for j in range(i + 1, len(valid_tasks)):
@@ -646,7 +657,7 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
                             task_j = valid_tasks[j]
                             
                             # Create the move
-                            self.Moves.append(TwoEdgeExchangeMove(self.RoutePlan[day][cohort], day, cohort, task_i, task_j))
+                            self.Moves.append(TwoEdgeExchangeMove(self.RoutePlan[day][cohort], waiting_time_old_route, day, cohort, task_i, task_j))
 
         
         #Shuffles the Moves
@@ -673,6 +684,36 @@ class TwoEdgeExchangeNeighborhood(DeltaNeighborhood):
         task_i, task_j = self.RNG.choice(valid_tasks, size=2, replace=False)
 
         return TwoEdgeExchangeMove(cohort_tasks, day, cohort, task_i, task_j)
+    
+    def LocalSearch(self, neighborhoodEvaluationStrategy: str, solution: Solution) -> Solution:
+        ''' Own Definition to avoid string comparisons'''
+
+        hasSolutionImproved = True
+        bestNeighborhoodSolution = Solution(solution.RoutePlan, self.InputData)
+        self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
+
+        while hasSolutionImproved:# and iterator < 50:
+            
+            self.Update(bestNeighborhoodSolution.RoutePlan)
+            self.DiscoverMoves(bestNeighborhoodSolution.WaitingTimes)
+            self.EvaluateMoves(neighborhoodEvaluationStrategy)
+
+            bestNeighborhoodMove = self.MakeBestMove()
+
+            if bestNeighborhoodMove is not None and bestNeighborhoodMove.Delta < 0:
+                #print(f"\nIteration: {iterator} in neighborhood {self.Type}")
+                #print("New best solution has been found!")
+                #print("Time Delta:" , bestNeighborhoodMove.Delta)
+                completeRoute = self.constructCompleteRoute(bestNeighborhoodMove)
+                bestNeighborhoodSolution = Solution(completeRoute, self.InputData)
+                self.EvaluationLogic.evaluateSolution(bestNeighborhoodSolution)
+                #print("New Waiting Time:" , bestNeighborhoodSolution.WaitingTime)
+                self.SolutionPool.AddSolution(bestNeighborhoodSolution)
+            else:
+                #print(f"\nReached local optimum of {self.Type} neighborhood in iteration {iterator}. Stop local search.\n")
+                hasSolutionImproved = False
+
+        return bestNeighborhoodSolution
 
 
 class ReplaceMove(BaseMove):

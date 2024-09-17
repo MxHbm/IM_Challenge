@@ -65,7 +65,7 @@ class EvaluationLogic:
     def WaitingTimeDifferenceOneRoute(self, move) -> int:
         ''' Calculates the Difference of the Waiting Time for old and new Two Edge Exchange Route'''
 
-        difference =self.WaitingTimeOneRoute(move.OldRouteDayCohort) - self.WaitingTimeOneRoute(move.RouteDayCohort)
+        difference = move.OldWaitingTime - self.WaitingTimeOneRoute(move.RouteDayCohort)
 
         return difference
 

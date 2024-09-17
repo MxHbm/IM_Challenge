@@ -49,7 +49,7 @@ def main():
 
         
         neighborhoodLocalSearch = IterativeImprovement(inputData=data,
-                                                    neighborhoodEvaluationStrategy= 'FirstImprovement',
+                                                    neighborhoodEvaluationStrategy= 'BestImprovement',
                                                     neighborhoodTypes=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta','Insert','ReplaceProfit'])
         
 
@@ -63,8 +63,8 @@ def main():
                                 sublists_to_modify=3,
                                 threshold1 = 2,
                                 consecutive_to_remove=3,
-                                neighborhoodEvaluationStrategyDelta = 'FirstImprovement',
-                                neighborhoodEvaluationStrategyProfit = 'FirstImprovement',
+                                neighborhoodEvaluationStrategyDelta = 'BestImprovement',
+                                neighborhoodEvaluationStrategyProfit = 'BestImprovement',
                                 neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
                                 neighborhoodTypesProfit= ['Insert','ReplaceProfit']
         )
@@ -132,7 +132,7 @@ def main():
         solver.RunAlgorithm(
             numberParameterCombination=1,
             main_tasks=True,
-            algorithm = SA_LS
+            algorithm = neighborhoodLocalSearch
         )
 
         # Define the directory and file name
