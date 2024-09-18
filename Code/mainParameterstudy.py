@@ -5,6 +5,7 @@ from Solver import *
 import time
 import pstats
 import pandas as pd
+import argparse
 
 
 main_tasks = True
@@ -14,8 +15,6 @@ if main_tasks:
     instances = ['7_2_1', '7_5_1', '7_8_1']
 else:
     instances = ['7_5_1']
-
-
 
 
 def main_parameterstudy_SAILS():
@@ -122,16 +121,10 @@ def main_parameterstudy_SA_LS():
     # Full parameter study
     results = []
     start_temperature_list = [100,1000,10000]
-    min_temperature_list = [1e-20, 1e-40, 1e-60]
-    temp_decrease_factor_list=[0.9, 0.95, 0.99]
+    min_temperature_list = [1e-20, 1e-40]
+    temp_decrease_factor_list=[0.95, 0.99]
 
     # Reduced parameter study
-
-
-    start_temperature_list = [100,1000]
-    min_temperature_list = [1e-50, 1e-80]
-    temp_decrease_factor_list=[0.999]
-    
 
     for i in instances:
         print(Path.cwd().parent) 
@@ -156,7 +149,7 @@ def main_parameterstudy_SA_LS():
                             )
 
 
-                    solver.RunAlgorithm(
+                    iterations = solver.RunAlgorithm(
                         numberParameterCombination=1,
                         main_tasks=main_tasks,
                         algorithm=SA_LS
@@ -176,13 +169,26 @@ def main_parameterstudy_SA_LS():
                         'TotalProfit': total_profit,
                         'WaitingTime': waiting_time,
                         'TotalTasks': total_tasks,
-                        'RunTime': runtimePerParameterCombination
+                        'Iterations' : iterations,
+                        'RunTime' : round(solver.RunTime,4),
+                        'TimeLimit': runtimePerParameterCombination
                     })
     df = pd.DataFrame(results)
-
-    print(df)
 
     df.to_csv('sa_ls_results.csv', index=False)
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run parameter study scripts.")
+    parser.add_argument(
+        "--function", 
+        choices=["SAILS", "SA_LS"], 
+        required=True, 
+        help="Specify which parameter study function to run: 'SAILS' or 'SA_LS'"
+    )
+    args = parser.parse_args()
 
+    if args.function == "SAILS":
+        main_parameterstudy_SAILS()
+    elif args.function == "SA_LS":
+        main_parameterstudy_SA_LS()
