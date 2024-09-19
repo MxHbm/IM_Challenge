@@ -40,7 +40,7 @@ def main():
     else:
         print(f"No pair index provided. Running the first pair by default.")
         instances = all_instance_pairs[0]
-        main
+        main_tasks = True
 
 
     for i in instances:
@@ -92,6 +92,7 @@ def main():
             min_temperature = 1e-20,
             temp_decrease_factor=0.95,
             maxRunTime=7200,
+            maxRandomMoves=10000,
             neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit= ['Insert','ReplaceProfit']
         )
