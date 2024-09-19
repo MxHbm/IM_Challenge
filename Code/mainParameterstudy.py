@@ -12,7 +12,7 @@ main_tasks = True
 
 if main_tasks:
 
-    instances = ['7_2_1', '7_5_1', '7_8_1']
+    instances = ['7_2_1',]
 else:
     instances = ['7_5_1']
 
@@ -120,9 +120,25 @@ def main_parameterstudy_SA_LS():
 
     # Full parameter study
     results = []
-    start_temperature_list = [100,1000,10000]
-    min_temperature_list = [1e-20, 1e-40]
-    temp_decrease_factor_list=[0.95, 0.99]
+    start_temperature_list = [100]#[100,1000,10000]
+    min_temperature_list = [1e-10]#[1e-10, 1e-20, 1e-40]
+    temp_decrease_factor_list= [0.99]#[0.9, 0.95, 0.99]
+
+    combinations_not_run_yet = [(100, 1e-10, 0.9),
+                            (100, 1e-10, 0.95),
+                            (100, 1e-10, 0.99),
+                            (100, 1e-20, 0.9),
+                            (100, 1e-40, 0.9),
+                            (1000, 1e-10, 0.9),
+                            (1000, 1e-10, 0.95),
+                            (1000, 1e-10, 0.99),
+                            (1000, 1e-20, 0.9),
+                            (1000, 1e-40, 0.9),
+                            (10000, 1e-10, 0.9),
+                            (10000, 1e-10, 0.95),
+                            (10000, 1e-10, 0.99),
+                            (10000, 1e-20, 0.9),
+                            (10000, 1e-40, 0.9)]
 
     # Reduced parameter study
 
@@ -131,13 +147,12 @@ def main_parameterstudy_SA_LS():
         print("Instance: ", i)
         data = InputData("Instance"+i+".json")
 
-
         for temp in start_temperature_list:
             for minTemp in min_temperature_list:
                 for factor in temp_decrease_factor_list:
 
                     solver = Solver(data, 1008)
-             
+                
                     SA_LS = SimulatedAnnealingLocalSearch(
                             inputData=data,
                             start_temperature = temp,
@@ -173,9 +188,10 @@ def main_parameterstudy_SA_LS():
                         'RunTime' : round(solver.RunTime,4),
                         'TimeLimit': runtimePerParameterCombination
                     })
+
     df = pd.DataFrame(results)
 
-    df.to_csv('sa_ls_results.csv', index=False)
+    df.to_csv('sa_ls_results_3.csv', index=False)
 
 
 if __name__ == "__main__":
