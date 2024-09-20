@@ -64,7 +64,8 @@ class ConstructiveHeuristics:
             elif numberOfParameterComb == 1:
                 solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
             elif numberOfParameterComb == 'Test':
-                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0)
+                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 2.0, 0)
+                print('Test solution created.')
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
 

@@ -160,6 +160,7 @@ class EvaluationLogic:
         return precessors, successors
 
     
+        
     def get_predecessor_and_succesor(self, route:list[int], index:int):
         ''' Calculates the precessor and successor for one Index'''
 
@@ -172,7 +173,8 @@ class EvaluationLogic:
             else:
                 return route[index - 1], route[index + 1]
         else: 
-            return 0,0 
+            return 0,0
+
     
 
     def CalculateSwapIntraRouteDelta(self, move): 

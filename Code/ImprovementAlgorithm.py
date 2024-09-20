@@ -92,7 +92,7 @@ class IterativeImprovement(ImprovementAlgorithm):
             solution = neighborhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
             print(f'Best solution after {usedTypes}: {solution}')
         
-        return solution
+        return solution, 1
 
 
 
@@ -101,7 +101,7 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         Local Search with iterative steps through many different neighborhoods.
     """
 
-    def __init__(self, inputData: InputData, maxRunTime:int, jobs_to_remove:int, sublists_to_modify:int,consecutive_to_remove:int, threshold1:int = 2,
+    def __init__(self, inputData: InputData, maxRunTime:int, sublists_to_modify:int,consecutive_to_remove:int, threshold1:int = 2,
                     neighborhoodEvaluationStrategyDelta: str = 'BestImprovement',
                     neighborhoodEvaluationStrategyProfit: str = 'BestImprovement',
                       neighborhoodTypesDelta: list[str] = ['SwapWaiting'],
@@ -109,7 +109,7 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         super().__init__(inputData)
 
         self.maxRunTime = maxRunTime
-        self.jobsToRemove = jobs_to_remove 
+        #self.jobsToRemove = jobs_to_remove 
         self.sublists_to_modify = sublists_to_modify
         self.consecutive_to_remove = consecutive_to_remove
         self.NeighborhoodEvaluationStrategyDelta = neighborhoodEvaluationStrategyDelta
@@ -184,7 +184,7 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         print(f'\n Iterated Local Search finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution
+        return bestSolution, iteration
     
     def Perturbation(self, solution: Solution) -> Solution:
         ''' Perturbation to escape local optima '''
@@ -247,6 +247,9 @@ class IteratedLocalSearch(ImprovementAlgorithm):
             if valid_positions:
                 start_pos = self.RNG.choice(a = valid_positions, replace = False)
                 del sublist[start_pos:start_pos + consective_to_remove]
+            else:
+                # Wenn es keine gültigen Positionen gibt, entferne einfach alle Elemente <= 1000
+                sublist[:] = [item for item in sublist if item > 1000]
 
 
         currentSolution = Solution(newRoutePlan, self.InputData)
@@ -262,13 +265,13 @@ class Adaptive_IteratedLocalSearch(IteratedLocalSearch):
         Local Search with iterative steps through many different neighborhoods.
     """
 
-    def __init__(self, inputData: InputData, maxRunTime:int, jobs_to_remove:int, sublists_to_modify:int,consecutive_to_remove:int, threshold1:int, score_threshold:int,
+    def __init__(self, inputData: InputData, maxRunTime:int, sublists_to_modify:int,consecutive_to_remove:int, threshold1:int, score_threshold:int,
                     neighborhoodEvaluationStrategyDelta: str, neighborhoodEvaluationStrategyProfit: str, neighborhoodTypesDelta: list[str], neighborhoodTypesProfit: list[str]):
-        super().__init__(inputData, maxRunTime, jobs_to_remove, sublists_to_modify,consecutive_to_remove, threshold1,neighborhoodEvaluationStrategyDelta,neighborhoodEvaluationStrategyProfit,neighborhoodTypesDelta,
+        super().__init__(inputData, maxRunTime, sublists_to_modify,consecutive_to_remove, threshold1,neighborhoodEvaluationStrategyDelta,neighborhoodEvaluationStrategyProfit,neighborhoodTypesDelta,
                          neighborhoodTypesProfit)
 
         self.maxRunTime = maxRunTime
-        self.jobsToRemove = jobs_to_remove 
+        #self.jobsToRemove = jobs_to_remove 
         self.sublists_to_modify = sublists_to_modify
         self.consecutive_to_remove = consecutive_to_remove
         self.NeighborhoodEvaluationStrategyDelta = neighborhoodEvaluationStrategyDelta
@@ -369,15 +372,14 @@ class Adaptive_IteratedLocalSearch(IteratedLocalSearch):
         print(f'\n Iterated Local Search finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution
+        return bestSolution, iteration
 
 
 class SAILS(IteratedLocalSearch):
     """ A combination of Simulated Annealing and Iterative local search.."""
 
     def __init__(self, inputData: InputData, 
-                 maxRunTime: int,  # Add the missing parameter
-                 jobs_to_remove: int,  # Add the missing parameter
+                 maxRunTime: int,  # Add the missing parameter 
                  sublists_to_modify: int,  # Add the missing parameter
                  consecutive_to_remove: int,  # Add the missing parameter
                  start_temperature: int,
@@ -389,7 +391,7 @@ class SAILS(IteratedLocalSearch):
                  neighborhoodEvaluationStrategyProfit: str = 'BestImprovement',
                  neighborhoodTypesDelta: list[str] = ['SwapWaiting'],
                  neighborhoodTypesProfit: list[str] = ['SwapWaiting']):
-        super().__init__(inputData, maxRunTime, jobs_to_remove, sublists_to_modify,consecutive_to_remove)
+        super().__init__(inputData, maxRunTime, sublists_to_modify,consecutive_to_remove)
 
         self.startTemperature = start_temperature
         self.tempDecreaseFactor = temp_decrease_factor
@@ -504,7 +506,7 @@ class SAILS(IteratedLocalSearch):
         print(f'\n SAILS finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution
+        return bestSolution, iteration
 
 
 
@@ -513,7 +515,6 @@ class Adaptive_SAILS(IteratedLocalSearch):
 
     def __init__(self, inputData: InputData, 
                  maxRunTime: int,  # Add the missing parameter
-                 jobs_to_remove: int,  # Add the missing parameter
                  sublists_to_modify: int,  # Add the missing parameter
                  consecutive_to_remove: int,  # Add the missing parameter
                  start_temperature: int,
@@ -526,7 +527,7 @@ class Adaptive_SAILS(IteratedLocalSearch):
                  neighborhoodEvaluationStrategyProfit: str = 'BestImprovement',
                  neighborhoodTypesDelta: list[str] = ['SwapWaiting'],
                  neighborhoodTypesProfit: list[str] = ['SwapWaiting']):
-        super().__init__(inputData, maxRunTime, jobs_to_remove, sublists_to_modify,consecutive_to_remove)
+        super().__init__(inputData, maxRunTime, sublists_to_modify,consecutive_to_remove)
 
         self.startTemperature = start_temperature
         self.tempDecreaseFactor = temp_decrease_factor
@@ -664,7 +665,7 @@ class Adaptive_SAILS(IteratedLocalSearch):
         print(f'\n SAILS finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution
+        return bestSolution, iteration
 
 
 
