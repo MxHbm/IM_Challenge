@@ -4,7 +4,6 @@ import numpy
 from OutputData import *
 from MIP_initial_routeplan import * # MIP for initial route plan in in the same folder
 from EvaluationLogic import *
-import concurrent.futures 
 
 class ConstructiveHeuristics:
     ''' Class for creating objects to run different constructive heuristics'''
@@ -83,7 +82,7 @@ class ConstructiveHeuristics:
         # Add the first solution to the solution pool
         if solution:
             self._SolutionPool.AddSolution(solution)
-            
+
 
     def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''

@@ -173,10 +173,10 @@ class BaseNeighborhood:
         return feasible
 
         
-    def SingleMove(self, solution: Solution) -> Solution:
+    def SingleMove(self, solution: Solution, maxAttempts) -> Solution:
         ''' Overwritten to avoid comparisons of strings'''
         
-        MAX_ATTEMPTS = 10000  # Maximum attempts limit
+        MAX_ATTEMPTS = maxAttempts  # Maximum attempts limit
         feasible = False
         attempt = 0
         move = None  # Placeholder for the move
@@ -189,6 +189,9 @@ class BaseNeighborhood:
         # If a feasible move is found, evaluate and return it
         if feasible:
             self.EvaluateMove(move)
+        
+        else: 
+            move = None
 
         else:
             move = None
@@ -486,10 +489,10 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         self.RNG.shuffle(self.Moves)
 
     
-    def SingleMove(self, solution: Solution) -> Solution:
+    def SingleMove(self, solution: Solution, maxAttempts) -> Solution:
         ''' Overwritten to avoid comparisons of strings'''
         
-        MAX_ATTEMPTS = 10000  # Maximum attempts limit
+        MAX_ATTEMPTS = maxAttempts  # Maximum attempts limit
         feasible = False
         attempt = 0
         move = None  # Placeholder for the move
@@ -503,6 +506,8 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         # If a feasible move is found, evaluate and return it
         if feasible:
             self.EvaluateMove(move)
+        else: 
+            move = None
 
         else:
             move = None

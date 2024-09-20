@@ -174,6 +174,7 @@ class EvaluationLogic:
                 return route[index - 1], route[index + 1]
         else: 
             return 0,0
+
     
 
     def CalculateSwapIntraRouteDelta(self, move): 

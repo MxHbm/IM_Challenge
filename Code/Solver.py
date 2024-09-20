@@ -44,9 +44,9 @@ class Solver:
         ''' Start the improvement phase by choosing a algorithm'''
 
         algorithm.Initialize(self.EvaluationLogic, self.SolutionPool, self.RNG)
-        bestSolution = algorithm.Run(startSolution)
+        bestSolution, iterations= algorithm.Run(startSolution)
 
-        return bestSolution
+        return bestSolution, iterations
 
     def RunAlgorithm(self, numberParameterCombination, main_tasks, algorithm:ImprovementAlgorithm) -> None:
         ''' Run local search with chosen algorithm and neighborhoods'''
@@ -56,13 +56,14 @@ class Solver:
 
         bestSolution, iteration= self.ImprovementPhase(startSolution, algorithm)
 
+
         print("Best found Solution.")
         print(bestSolution)
 
         endtime = time.time()
         self.RunTime = endtime - starttime
 
-        return iteration
+        return iterations
 
     
     def RunIteratedLocalSearch(self, numberParameterCombination, main_tasks, algorithm_LS:ImprovementAlgorithm, algorithm_ILS:ImprovementAlgorithm) -> None: 

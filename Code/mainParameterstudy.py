@@ -92,6 +92,14 @@ def main_parameterstudy_SAILS():
      
     runTimePerParameterCombination = 60*15
     
+import argparse
+import itertools
+
+def main_parameterstudy_SAILS():
+     
+    main_tasks = True
+    instances = ['7_2_1', '7_5_1', '7_8_1']
+    # Full parameter study
     results = []
     sublists_to_modify_list = [2]
     consecutive_to_remove_list = [3]
@@ -381,75 +389,111 @@ def main_parameterstudy_SAILS5():
 
     df.to_csv('sails_results5.csv', index=False)
 
-def main_parameterstudy_SA_LS():
+def main_parameterstudy_SA_LS(pair_index):
 
-
-    runtimePerParameterCombination = 60*15
-
-    # Full parameter study
-    results = []
+    instances = ['7_2_1', '7_5_1', '7_8_1']
     start_temperature_list = [100,1000,10000]
-    min_temperature_list = [1e-20, 1e-40, 1e-60]
-    temp_decrease_factor_list=[0.9, 0.95, 0.99]
+    min_temperature_list = [1e-10, 1e-20, 1e-40]
+    temp_decrease_factor_list= [0.9, 0.95, 0.99]
+    maxRandomAttempts = [100,1000]
 
-    # Reduced parameter study
+    # Create all combinations of parameters excluding maxRandomAttempts=10000
+    parameter_combinations = list(itertools.product(instances,start_temperature_list, min_temperature_list, temp_decrease_factor_list, maxRandomAttempts))
 
+    # Divide the list into 4 parts
+    # Dynamically divide the list of combinations into 4 roughly equal parts
+    part1 = parameter_combinations[:40]
+    part2 = parameter_combinations[40:80]
+    part3 = parameter_combinations[80:121]
+    part4 = parameter_combinations[121:]
+    parts = [part1,part2,part3,part4]
 
-    start_temperature_list = [100,1000]
-    min_temperature_list = [1e-50, 1e-80]
-    temp_decrease_factor_list=[0.999]
+    # Ensure the provided pair_index is valid
+    if pair_index < 0 or pair_index > 3:
+        print("ERROR: Please provide a pair index between 0 and 3.")
+        sys.exit(1)
     
+    # Get the combinations for the specified part
+    combinations = parts[pair_index]
 
-    for i in instances:
-        print(Path.cwd().parent) 
-        print("Instance: ", i)
-        data = InputData("Instance"+i+".json")
+    main_tasks = True
+    runtimePerParameterCombination = 60 * 15  # 15 minutes
 
+    print(f"Running part {pair_index}, {len(combinations)} combinations.")
+    print(Path.cwd().parent)
+    results = []
 
-        for temp in start_temperature_list:
-            for minTemp in min_temperature_list:
-                for factor in temp_decrease_factor_list:
+    for instance,temp, minTemp,factor, maxMoves in combinations:
 
-                    solver = Solver(data, 1008)
-             
-                    SA_LS = SimulatedAnnealingLocalSearch(
-                            inputData=data,
-                            start_temperature = temp,
-                            min_temperature = minTemp,
-                            temp_decrease_factor=factor,
-                            maxRunTime= runtimePerParameterCombination,
-                            neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
-                            neighborhoodTypesProfit= ['Insert','ReplaceProfit']
-                            )
+        print("Instance: ", instance)
+        data = InputData("Instance"+instance+".json")
 
+        solver = Solver(data, 1008)
 
-                    solver.RunAlgorithm(
-                        numberParameterCombination=1,
-                        main_tasks=main_tasks,
-                        algorithm=SA_LS
-                    )
+        SA_LS = SimulatedAnnealingLocalSearch(
+                inputData=data,
+                start_temperature = temp,
+                min_temperature = minTemp,
+                temp_decrease_factor=factor,
+                maxRunTime= runtimePerParameterCombination,
+                maxRandomMoves=maxMoves,
+                neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
+                neighborhoodTypesProfit= ['Insert','ReplaceProfit']
+        )
 
 
-                    highest_profit_solution = solver.SolutionPool.GetHighestProfitSolution()
-                    total_profit = highest_profit_solution.TotalProfit
-                    waiting_time = highest_profit_solution.WaitingTime
-                    total_tasks = highest_profit_solution.TotalTasks
+        iterations = solver.RunAlgorithm(
+            numberParameterCombination=1,
+            main_tasks=main_tasks,
+            algorithm=SA_LS
+        )
 
-                    results.append({
-                        'Instance': i,
-                        'start_temperature': temp,
-                        'min_temperature': minTemp,
-                        'temp_decrease_factor': factor,
-                        'TotalProfit': total_profit,
-                        'WaitingTime': waiting_time,
-                        'TotalTasks': total_tasks,
-                        'RunTime': runtimePerParameterCombination
-                    })
+
+        highest_profit_solution = solver.SolutionPool.GetHighestProfitSolution()
+        total_profit = highest_profit_solution.TotalProfit
+        waiting_time = highest_profit_solution.WaitingTime
+        total_tasks = highest_profit_solution.TotalTasks
+
+        results.append({
+            'Instance': instance,
+            'start_temperature': temp,
+            'min_temperature': minTemp,
+            'temp_decrease_factor': factor,
+            'TotalProfit': total_profit,
+            'WaitingTime': waiting_time,
+            'TotalTasks': total_tasks,
+            'Iterations' : iterations,
+            'RunTime' : round(solver.RunTime,4),
+            'TimeLimit': runtimePerParameterCombination,
+            'MaxRandomMoves': maxMoves
+        })
+
+
     df = pd.DataFrame(results)
 
-    print(df)
-
-    df.to_csv('sa_ls_results.csv', index=False)
+    df.to_csv(f'sa_ls_results_{pair_index}.csv', index=False)
 
 
-main_parameterstudy_SAILS()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run parameter study scripts.")
+    parser.add_argument(
+        "--function", 
+        choices=["SAILS", "SA_LS"], 
+        required=True, 
+        help="Specify which parameter study function to run: 'SAILS' or 'SA_LS'"
+    )
+    parser.add_argument(
+        "--index", 
+        type=int, 
+        choices=range(0, 4), 
+        required=True, 
+        help="Specify the part index (0-3) to run the parameter study."
+    )
+
+    args = parser.parse_args()
+
+    if args.function == "SAILS":
+        main_parameterstudy_SAILS(args.index)
+    elif args.function == "SA_LS":
+        main_parameterstudy_SA_LS(args.index)
+
