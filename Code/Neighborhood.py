@@ -190,6 +190,9 @@ class BaseNeighborhood:
         if feasible:
             self.EvaluateMove(move)
 
+        else:
+            move = None
+
         return move
     
 #_______________________________________________________________________________________________________________________
@@ -437,7 +440,7 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         days = self.RNG.choice(range(len(self.RoutePlan)), 2)
         #days = range(len(self.RoutePlan))
 
-        # Choose 4 random cohorts (since they are the same across all days)
+        # Choose 5 random cohorts (since they are the same across all days)
         cohorts = self.RNG.choice(range(len(self.RoutePlan[0])), 5)
         #cohorts = range(len(self.RoutePlan[0]))
 
@@ -500,6 +503,9 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         # If a feasible move is found, evaluate and return it
         if feasible:
             self.EvaluateMove(move)
+
+        else:
+            move = None
 
         return move
     

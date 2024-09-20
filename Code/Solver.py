@@ -28,11 +28,15 @@ class Solver:
     def ConstructionPhase(self, numberParameterCombination:int = 3, main_tasks:bool = True) -> Solution:
         ''' Find one start solution by using the chosen constructive heuristic'''
 
+        starttime = time.time()
         self.ConstructiveHeuristic.Run(self.InputData, numberParameterCombination, main_tasks)
 
         bestInitalSolution = self.SolutionPool.GetHighestProfitSolution()
         print("Constructive solution found.")
         print(bestInitalSolution)
+
+        endtime = time.time()
+        self.RunTime = endtime - starttime
 
         return bestInitalSolution
 
@@ -50,7 +54,7 @@ class Solver:
         starttime = time.time()
         startSolution = self.ConstructionPhase(numberParameterCombination, main_tasks)
 
-        bestSolution= self.ImprovementPhase(startSolution, algorithm)
+        bestSolution, iteration= self.ImprovementPhase(startSolution, algorithm)
 
         print("Best found Solution.")
         print(bestSolution)
@@ -58,7 +62,7 @@ class Solver:
         endtime = time.time()
         self.RunTime = endtime - starttime
 
-        return None
+        return iteration
 
     
     def RunIteratedLocalSearch(self, numberParameterCombination, main_tasks, algorithm_LS:ImprovementAlgorithm, algorithm_ILS:ImprovementAlgorithm) -> None: 
@@ -70,13 +74,15 @@ class Solver:
 
         LS_after_StartSolution = self.ImprovementPhase(startSolution, algorithm_LS)
 
-        final_Solution = self.ImprovementPhase(LS_after_StartSolution,algorithm_ILS)
+        final_Solution, iteration = self.ImprovementPhase(LS_after_StartSolution,algorithm_ILS)
 
         print("Final best found Solution.")
         print(final_Solution)
 
         endtime = time.time()
         self.RunTime = endtime - starttime
+
+        return iteration
 
 
 

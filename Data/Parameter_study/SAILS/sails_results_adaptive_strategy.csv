@@ -1,0 +1,7 @@
+Instance,MainTasks,sublists_to_modify,consecutive_to_remove,start_temperature,temp_decrease_factor,maxInnerLoop,maxIterationsWithoutImprovement,neighborhoodEvaluationStrategyDelta,AdaptiveStrategy,TotalProfit,WaitingTime,TotalTasks,Iterations,RunTime,TimeLimit
+7_2_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,False,777,5078.0,274,92,909.6794,900
+7_5_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,False,1659,10118.0,636,70,907.4427,900
+7_8_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,False,2156,17318.0,928,98,916.8702,900
+7_2_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,True,777,4477.0,276,116,907.532,900
+7_5_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,True,1648,11066.0,634,87,918.3533,900
+7_8_1,True,2,3,1000,0.95,10,3.0,FirstImprovement,True,2150,19033.0,918,93,920.8514,900

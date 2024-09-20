@@ -1,0 +1,9 @@
+Instance,MainTasks,sublists_to_modify,consecutive_to_remove,start_temperature,temp_decrease_factor,maxInnerLoop,maxIterationsWithoutImprovement,TotalProfit,WaitingTime,TotalTasks,Iterations,RunTime,TimeLimit
+7_8_1,True,1,2,100,0.975,5,2.5,2156,17814.0,931,133,377.4878,360
+7_8_1,True,1,4,100,0.975,5,2.5,2151,19805.0,921,81,377.3737,360
+7_8_1,True,3,2,100,0.975,5,2.5,2143,23961.0,920,48,378.7578,360
+7_8_1,True,3,4,100,0.975,5,2.5,2148,18617.0,920,37,380.8932,360
+7_5_1,False,1,2,100,0.975,5,2.5,2039,4152.0,790,143,378.73,360
+7_5_1,False,1,4,100,0.975,5,2.5,2037,4847.0,788,108,379.1315,360
+7_5_1,False,3,2,100,0.975,5,2.5,2037,5391.0,792,61,382.9684,360
+7_5_1,False,3,4,100,0.975,5,2.5,2034,5330.0,789,36,385.9152,360

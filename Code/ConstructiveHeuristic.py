@@ -47,7 +47,7 @@ class ConstructiveHeuristics:
         # Rewriting any present solution
         solution = None
 
-        # Prepare a list of tasks (combinations of parameters) for parallel execution
+        # Prepare a list of tasks (combinations of parameters) for sequential execution
         tasks = []
 
         if main_tasks:
@@ -65,20 +65,18 @@ class ConstructiveHeuristics:
             elif numberOfParameterComb == 1:
                 solution = self._Greedy(inputData, 'OnePerDay', 'WithDistanceToMainTask', 1.0, 0)
             elif numberOfParameterComb == 'Test':
-                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 1.0, 0)
+                solution = self._Greedy(inputData, 'MIP', 'OnlyDistanceToNextTask', 2.0, 0)
+                print('Test solution created.')
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
 
-        # If we have tasks to run in parallel, execute them
+        # If we have tasks to run, execute them sequentially
         if tasks:
-            # Use ProcessPoolExecutor to parallelize the greedy solutions
-            with concurrent.futures.ProcessPoolExecutor() as executor:
-                # Submit all tasks to the executor for parallel execution
-                futures = [executor.submit(self._Greedy, inputData, task[0], task[1], task[2], task[3]) for task in tasks]
-                
-                # Wait for all futures to complete and collect the solutions
-                solutions = [future.result() for future in concurrent.futures.as_completed(futures)]
-            
+            solutions = []
+            for task in tasks:
+                task_solution = self._Greedy(inputData, task[0], task[1], task[2], task[3])
+                solutions.append(task_solution)
+
             # Select the solution with the maximum profit
             solution = max(solutions, key=lambda x: x.TotalProfit)
 
