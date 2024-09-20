@@ -676,8 +676,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
                  min_temperature:float,
                  temp_decrease_factor:float,
                  maxRunTime:int,
-                 #'SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'
-                 #Replace Delta select tasks more than once! 
+                 maxRandomMoves:int,
                  neighborhoodTypesDelta: list[str] = ['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute',"ReplaceDelta"],
                  neighborhoodTypesProfit: list[str] = ['Insert','ReplaceProfit']):
         super().__init__(inputData)
@@ -690,6 +689,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
         self.minTemp = min_temperature
         self.DeltaNeighborhoods = {}
         self.ProfitNeighborhoods = {}
+        self.MaxRandomMoves = maxRandomMoves
 
     def Run(self, currentSolution: Solution) -> Solution:
 
@@ -725,7 +725,7 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
           
                 delta_neighborhood = self.RNG.choice(list(self.DeltaNeighborhoods.values()), p = probabilities)
 
-                move = delta_neighborhood.SingleMove(currentSolution)
+                move = delta_neighborhood.SingleMove(currentSolution, self.MaxRandomMoves)
 
                 if move is not None: #Break MakeOneMove, when Iterations is about 10000
                     if move.Delta < 0:

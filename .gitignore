@@ -26,6 +26,14 @@
 Data/**/*.txt
 Data/**/*.json
 
+#Ignore MIP Files, because final 
+!Data/Results_Flexi_MIP/*.json
+!Data/Results_Main_MIP/*.json
+
+#Ignore SALS files 
+!Data/SA_LS/*.json
+!Data/SA_LS_Flexi/*.json
+
 # But don't ignore .json files in the Instanzen folder
 !Data/Instanzen/*.json
 

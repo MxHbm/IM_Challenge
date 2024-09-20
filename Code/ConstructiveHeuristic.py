@@ -4,7 +4,6 @@ import numpy
 from OutputData import *
 from MIP_initial_routeplan import * # MIP for initial route plan in in the same folder
 from EvaluationLogic import *
-import concurrent.futures 
 
 class ConstructiveHeuristics:
     ''' Class for creating objects to run different constructive heuristics'''
@@ -47,7 +46,7 @@ class ConstructiveHeuristics:
         # Rewriting any present solution
         solution = None
 
-        # Prepare a list of tasks (combinations of parameters) for parallel execution
+        # Prepare a list of tasks (combinations of parameters) for sequential execution
         tasks = []
 
         if main_tasks:
@@ -69,23 +68,20 @@ class ConstructiveHeuristics:
         else:
             solution = self._Greedy(inputData, None, 'OnlyDistanceToNextTask', 1.0, 0)
 
-        # If we have tasks to run in parallel, execute them
+        # If we have tasks to run, execute them sequentially
         if tasks:
-            # Use ProcessPoolExecutor to parallelize the greedy solutions
-            with concurrent.futures.ProcessPoolExecutor() as executor:
-                # Submit all tasks to the executor for parallel execution
-                futures = [executor.submit(self._Greedy, inputData, task[0], task[1], task[2], task[3]) for task in tasks]
-                
-                # Wait for all futures to complete and collect the solutions
-                solutions = [future.result() for future in concurrent.futures.as_completed(futures)]
-            
+            solutions = []
+            for task in tasks:
+                task_solution = self._Greedy(inputData, task[0], task[1], task[2], task[3])
+                solutions.append(task_solution)
+
             # Select the solution with the maximum profit
             solution = max(solutions, key=lambda x: x.TotalProfit)
 
         # Add the first solution to the solution pool
         if solution:
             self._SolutionPool.AddSolution(solution)
-            
+
 
     def _Greedy(self, inputData:InputData, mainTaskPlanner, attractivenessFunction, a, b) -> Solution:
         ''' Greedy heuristic to create a first feasible solution - fills blank spots between main tasks with optional tasks'''

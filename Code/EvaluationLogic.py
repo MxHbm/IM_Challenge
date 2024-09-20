@@ -164,12 +164,15 @@ class EvaluationLogic:
         ''' Calculates the precessor and successor for one Index'''
 
         # Determine predecessor and successor
-        if index == 0:
-            return 0, route[1]
-        elif index == len(route) - 1:
-            return route[index - 1], 0
-        else:
-            return route[index - 1], route[index + 1]
+        if len(route) > 1:
+            if index == 0:
+                return 0, route[1]
+            elif index == len(route) - 1:
+                return route[index - 1], 0
+            else:
+                return route[index - 1], route[index + 1]
+        else: 
+            return 0,0 
     
 
     def CalculateSwapIntraRouteDelta(self, move): 
