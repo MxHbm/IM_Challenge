@@ -193,8 +193,6 @@ class BaseNeighborhood:
         else: 
             move = None
 
-        else:
-            move = None
 
         return move
     
@@ -507,9 +505,6 @@ class SwapInterRouteNeighborhood(DeltaNeighborhood):
         if feasible:
             self.EvaluateMove(move)
         else: 
-            move = None
-
-        else:
             move = None
 
         return move
