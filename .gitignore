@@ -34,6 +34,9 @@ Data/**/*.json
 !Data/SA_LS/*.json
 !Data/SA_LS_Flexi/*.json
 
+## IOgnore final ressults 
+!Data/Final\ Results/*.json
+
 # But don't ignore .json files in the Instanzen folder
 !Data/Instanzen/*.json
 
