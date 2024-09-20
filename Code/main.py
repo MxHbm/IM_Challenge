@@ -18,8 +18,7 @@ all_instance_pairs = [
     ['7_2_1', '7_2_2'],
     ['7_5_1', '7_5_2'],
     ['7_8_1', '7_8_2'],
-    ['7_2_1', '7_5_1'],
-    ['7_8_1']
+    ['7_2_1', '7_5_1']
 ]
 
 def main():
@@ -91,7 +90,7 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-20,
             temp_decrease_factor=0.95,
-            maxRunTime=7200,
+            maxRunTime=14400,
             maxRandomMoves=10000,
             neighborhoodTypesDelta=['SwapIntraRoute','TwoEdgeExchange','SwapInterRoute','ReplaceDelta'],
             neighborhoodTypesProfit= ['Insert','ReplaceProfit']
@@ -166,7 +165,8 @@ def main():
             'WaitingTime': waiting_time,
             'TotalTasks': total_tasks,
             'RunTime' : round(solver.RunTime,4),
-            'Iterations' : iterations
+            'Iterations' : iterations,
+            'MainTask': main_tasks
         })
 
     df = pd.DataFrame(results)
