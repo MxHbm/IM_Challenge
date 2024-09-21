@@ -44,9 +44,9 @@ class Solver:
         ''' Start the improvement phase by choosing a algorithm'''
 
         algorithm.Initialize(self.EvaluationLogic, self.SolutionPool, self.RNG)
-        bestSolution, iterations= algorithm.Run(startSolution)
+        bestSolution, profit_over_time= algorithm.Run(startSolution)
 
-        return bestSolution, iterations
+        return bestSolution, profit_over_time
 
     def RunAlgorithm(self, numberParameterCombination, main_tasks, algorithm:ImprovementAlgorithm) -> None:
         ''' Run local search with chosen algorithm and neighborhoods'''
@@ -54,7 +54,7 @@ class Solver:
         starttime = time.time()
         startSolution = self.ConstructionPhase(numberParameterCombination, main_tasks)
 
-        bestSolution, iteration= self.ImprovementPhase(startSolution, algorithm)
+        bestSolution, profit_over_time= self.ImprovementPhase(startSolution, algorithm)
 
 
         print("Best found Solution.")
@@ -63,19 +63,20 @@ class Solver:
         endtime = time.time()
         self.RunTime = endtime - starttime
 
-        return iterations
+        return profit_over_time
 
-    
+
+'''  
     def RunIteratedLocalSearch(self, numberParameterCombination, main_tasks, algorithm_LS:ImprovementAlgorithm, algorithm_ILS:ImprovementAlgorithm) -> None: 
-        ''' Run iterated local search with chosen algorithm and neighborhoods'''
+        Run iterated local search with chosen algorithm and neighborhoods
 
         starttime = time.time()
         
         startSolution = self.ConstructionPhase(numberParameterCombination, main_tasks)
 
-        LS_after_StartSolution = self.ImprovementPhase(startSolution, algorithm_LS)
+        LS_after_StartSolution, placeholder = self.ImprovementPhase(startSolution, algorithm_LS)
 
-        final_Solution, iteration = self.ImprovementPhase(LS_after_StartSolution,algorithm_ILS)
+        final_Solution, profit_over_time = self.ImprovementPhase(LS_after_StartSolution,algorithm_ILS)
 
         print("Final best found Solution.")
         print(final_Solution)
@@ -83,11 +84,10 @@ class Solver:
         endtime = time.time()
         self.RunTime = endtime - starttime
 
-        return iteration
+        return profit_over_time
 
 
 
-'''
 if __name__ == '__main__':
 
     data = InputData("TestInstancesJson/Large/VFR100_20_1_SIST.json") # TestInstances/Small/VFR40_10_3_SIST.txt 
