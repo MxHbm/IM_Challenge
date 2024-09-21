@@ -54,7 +54,7 @@ class Solver:
         starttime = time.time()
         startSolution = self.ConstructionPhase(numberParameterCombination, main_tasks)
 
-        bestSolution, iteration= self.ImprovementPhase(startSolution, algorithm)
+        bestSolution, iterations = self.ImprovementPhase(startSolution, algorithm)
 
 
         print("Best found Solution.")
