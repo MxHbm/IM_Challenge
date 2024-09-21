@@ -36,7 +36,7 @@ Data/**/*.json
 
 
 ## IOgnore final ressults 
-!Data/Final_Results/*.json
+!Data/Final_Results/**/*.json
 
 # But don't ignore .json files in the Instanzen folder
 !Data/Instanzen/*.json
