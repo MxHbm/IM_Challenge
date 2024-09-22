@@ -8,12 +8,12 @@ import pstats
 import pandas as pd
 import sys
 
-main_tasks = True
+main_tasks = False
 
 if main_tasks:
     instances = ['7_5_1', '7_5_2']
 else:
-    instances = ['7_2_1', '7_5_1']
+    instances = ['7_5_1']
  
 operative_instances = ['7_2_1', '7_2_2', '7_5_1', '7_5_2', '7_8_1', '7_8_2', '7_10_1', '7_10_2']
 flexi_instances = ['7_2_1', '7_5_1', '7_8_1', '7_10_1']
@@ -60,12 +60,12 @@ def main():
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
-        SA_LS = SimulatedAnnealingLocalSearch(
+        ISA_LS = SimulatedAnnealingLocalSearch(
             inputData=data,
             start_temperature = 1000,
             min_temperature = 1e-20,
             temp_decrease_factor=0.95,
-            maxRunTime=14400,
+            maxRunTime=28800,
             maxRandomMoves=10000,
             neighborhoodTypesDelta=['SwapIntraRoute','SwapInterRoute','TwoEdgeExchange','ReplaceDelta'],
             neighborhoodTypesProfit= ['Insert','ReplaceProfit']
@@ -76,7 +76,7 @@ def main():
         profit_over_time = solver.RunAlgorithm(
             numberParameterCombination=3,
             main_tasks=main_tasks,
-            algorithm = SA_LS
+            algorithm = ISA_LS
         )
 
         
@@ -84,7 +84,7 @@ def main():
 
 
         # Define the directory and file name
-        output_directory = Path.cwd().parent / "Data" / "Testing" / "ISA_LS"
+        output_directory = Path.cwd().parent / "Data" / "Testing" / "Flexi" / "ISA_LS"
 
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, main_tasks)
     
