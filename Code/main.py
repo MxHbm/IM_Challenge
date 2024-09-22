@@ -11,7 +11,7 @@ import sys
 main_tasks = True
 
 if main_tasks:
-    instances = ['7_2_1', '7_2_2']
+    instances = ['7_5_1', '7_5_2']
 else:
     instances = ['7_2_1', '7_5_1']
  
@@ -76,7 +76,7 @@ def main():
         profit_over_time = solver.RunAlgorithm(
             numberParameterCombination=3,
             main_tasks=main_tasks,
-            algorithm = SAILS_algorithm
+            algorithm = SA_LS
         )
 
         
@@ -84,7 +84,7 @@ def main():
 
 
         # Define the directory and file name
-        output_directory = Path.cwd().parent / "Data" / "Testing" / "Operative"
+        output_directory = Path.cwd().parent / "Data" / "Testing" / "ISA_LS"
 
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, main_tasks)
     
@@ -93,7 +93,7 @@ def main():
         df = pd.DataFrame.from_dict(profit_over_time, orient='index', columns=['RunTime', 'Profit'])
         df = df.reset_index().rename(columns={'index': 'Iteration'})
         df = df[['Iteration', 'RunTime', 'Profit']]
-        df.to_csv(output_directory/f"profit_over_time_{i}.csv", index=False)
+        df.to_csv(output_directory/f"{i}_profit_over_time.csv", index=False)
 
 
 main()
