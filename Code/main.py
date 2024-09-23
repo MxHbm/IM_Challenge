@@ -11,7 +11,7 @@ import sys
 main_tasks = False
 
 if main_tasks:
-    instances = ['7_5_1', '7_5_2']
+    instances = ['7_2_1']
 else:
     instances = ['7_5_1']
  
@@ -65,7 +65,7 @@ def main():
             start_temperature = 1000,
             min_temperature = 1e-20,
             temp_decrease_factor=0.95,
-            maxRunTime=28800,
+            maxRunTime=14400,
             maxRandomMoves=10000,
             neighborhoodTypesDelta=['SwapIntraRoute','SwapInterRoute','TwoEdgeExchange','ReplaceDelta'],
             neighborhoodTypesProfit= ['Insert','ReplaceProfit']
@@ -76,7 +76,7 @@ def main():
         profit_over_time = solver.RunAlgorithm(
             numberParameterCombination=3,
             main_tasks=main_tasks,
-            algorithm = ISA_LS
+            algorithm = ILS
         )
 
         
@@ -84,7 +84,7 @@ def main():
 
 
         # Define the directory and file name
-        output_directory = Path.cwd().parent / "Data" / "Testing" / "Flexi" / "ISA_LS"
+        output_directory = Path.cwd().parent / "Data" / "Testing" / "Flexi" / "ILS"
 
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, main_tasks)
     
