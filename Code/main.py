@@ -9,13 +9,20 @@ import pandas as pd
 import sys
 
 
+'''
+Important Information:
+This script needs to be run from the Terminal
+Direct youself to the working directory Code
+Run the following command: python main.py
+'''
+
 
 # Choose Szenrio Type --> True = Szenario Operative, False = Szenario Flexi
 main_tasks = False
 
-# Choose the instances to run
+# Choose the instances to run --> multiple selection possible
 if main_tasks:
-    instances = ['7_2_1']
+    instances = ['7_2_1', '7_8_1']
 else:
     instances = ['7_5_1']
 
@@ -25,13 +32,16 @@ flexi_instances = ['7_2_1', '7_5_1', '7_8_1', '7_10_1']
 
 
 # Define the runTime per instance (in seconds)
-runTime = 60
+runTime = 10
 
 # Define the number of parameter combinations for constructive heuristic
 paraCombo = 3
 
 # Define if you ONLY want to run the constructive heuristic
 only_constructive = False
+
+# Decide if you want to profile the main function
+profile_function = False
 
 
 # Main function for the project
@@ -113,14 +123,14 @@ def main():
                                     start_temperature = 1000,
                                     min_temperature = 1e-20,
                                     temp_decrease_factor=0.95,
-                                    maxRunTime=14400,
+                                    maxRunTime=runTime,
                                     maxRandomMoves=10000,
                                     neighborhoodTypesDelta=['SwapIntraRoute','SwapInterRoute','TwoEdgeExchange','ReplaceDelta'],
                                     neighborhoodTypesProfit= ['Insert','ReplaceProfit'])
 
 
         # Choose the algorithm to run
-        algo = ILS
+        algo = neighborhoodLocalSearch
 
         if only_constructive:
             # Run ONLY the constructive heuristic
@@ -130,41 +140,52 @@ def main():
                 )
         else:
             # Run the algorithm
-            profit_over_time = solver.RunAlgorithm(
+            solver.RunAlgorithm(
                 numberParameterCombination= paraCombo,
                 main_tasks=main_tasks,
                 algorithm = algo
             )
-       
+    
         # Define the directory and file name
-        output_directory = Path.cwd().parent / "Data" / "Testing" / "Flexi" / "ILS"
+        if main_tasks:
+            base_directory = Path.cwd().parent / "Data" / "New_Results" / "Operative"
+        else:
+            base_directory = Path.cwd().parent / "Data" / "New_Results" / "Flexi"
+
+        if only_constructive:
+            output_directory = base_directory / "0_Constructive"
+
+        elif algo == neighborhoodLocalSearch:
+            output_directory = base_directory / "1_LocalSearch"
+        
+        elif algo == ILS:
+            output_directory = base_directory / "2_ILS"
+        
+        elif algo == Adaptive_ILS:
+            output_directory = base_directory / "2a_Adaptive_ILS"
+        
+        elif algo == SAILS_algorithm:
+            output_directory = base_directory / "3_SAILS"
+        
+        elif algo == Adaptive_SAILS_algorithm:
+            output_directory = base_directory / "3a_Adaptive_SAILS"
+        
+        elif algo == ISA_LS:
+            output_directory = base_directory / "4_ISA_LS"
+        
+        else:
+            raise ValueError("Algorithm not found")
+
 
         # Save the solution to a json file to visualize the solution on streamlit website
         solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, main_tasks)
-    
-        if only_constructive == False:
-            # Save the profit over time for further analysis
-            df = pd.DataFrame.from_dict(profit_over_time, orient='index', columns=['RunTime', 'Profit'])
-            df = df.reset_index().rename(columns={'index': 'Iteration'})
-            df = df[['Iteration', 'RunTime', 'Profit']]
-            df.to_csv(output_directory/f"{i}_profit_over_time.csv", index=False)
-
-
-main()
 
 
 
-
-# For only running constructive heuristic
-'''
-
-
-'''
-
-# Profile the main function
-'''
-if __name__ == '__main__':
-    cProfile.run('main()', 'profiling_results.prof')
-    p = pstats.Stats('profiling_results.prof')
-    p.sort_stats('cumtime').print_stats(80)  # Sort by cumulative time and show the top 10 results
-'''
+if profile_function:
+    if __name__ == '__main__':
+        cProfile.run('main()', 'profiling_results.prof')
+        p = pstats.Stats('profiling_results.prof')
+        p.sort_stats('cumtime').print_stats(80)  # Sort by cumulative time and show the top 10 results
+else:
+    main()
