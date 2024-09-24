@@ -83,8 +83,8 @@ class IterativeImprovement(ImprovementAlgorithm):
         # sequential variable neighborhood descent with a pipe neighborhood change step.
 
         usedTypes = []
-        profit_over_time = {}
-        profit_over_time[0] = 0, solution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, solution.TotalProfit
         start_time = time.time()
         used_time = 0
 
@@ -94,12 +94,12 @@ class IterativeImprovement(ImprovementAlgorithm):
             neighborhood = self.Neighborhoods[neighborhoodType]
             used_time = time.time() - start_time
             iteration = len(usedTypes)
-            profit_over_time[iteration] = used_time, solution.TotalProfit
+            #profit_over_time[iteration] = used_time, solution.TotalProfit
 
             solution = neighborhood.LocalSearch(self.NeighborhoodEvaluationStrategy, solution)
             print(f'Best solution after {usedTypes}: {solution}')
         
-        return solution, profit_over_time
+        return solution#, profit_over_time
 
 
 
@@ -138,8 +138,8 @@ class IteratedLocalSearch(ImprovementAlgorithm):
         startTime = time.time()
         usedTime = 0
 
-        profit_over_time = {}
-        profit_over_time[0] = 0, currentSolution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, currentSolution.TotalProfit
 
 
         print('\nStarting Iterated Local Search')
@@ -201,14 +201,14 @@ class IteratedLocalSearch(ImprovementAlgorithm):
             
             usedTime = time.time() - startTime
 
-            profit_over_time[iteration] = usedTime, bestSolution.TotalProfit
+            #profit_over_time[iteration] = usedTime, bestSolution.TotalProfit
 
             iteration += 1
 
         print(f'\n Iterated Local Search finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution, profit_over_time
+        return bestSolution#, profit_over_time
     
     def Perturbation(self, solution: Solution) -> Solution:
         ''' Perturbation to escape local optima '''
@@ -316,8 +316,8 @@ class Adaptive_IteratedLocalSearch(IteratedLocalSearch):
         startTime = time.time()
         usedTime = 0
 
-        profit_over_time = {}
-        profit_over_time[0] = 0, currentSolution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, currentSolution.TotalProfit
 
 
         print('\nStarting Iterated Local Search')
@@ -407,7 +407,7 @@ class Adaptive_IteratedLocalSearch(IteratedLocalSearch):
             usedTime = time.time() - startTime
 
 
-            profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
+            #profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
 
 
             iteration += 1
@@ -463,8 +463,8 @@ class SAILS(IteratedLocalSearch):
         startTime = time.time()
         usedTime = 0
 
-        profit_over_time = {}
-        profit_over_time[0] = 0, solution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, solution.TotalProfit
         
         
         for delta_neighbor_name, delta_neighbor in self.DeltaNeighborhoods.items():
@@ -551,12 +551,12 @@ class SAILS(IteratedLocalSearch):
 
             iteration += 1
 
-            profit_over_time[iteration] = usedTime, bestSolution.TotalProfit
+            #profit_over_time[iteration] = usedTime, bestSolution.TotalProfit
 
         print(f'\n SAILS finished after {iteration} iterations and {usedTime} seconds')
         bestSolution = self.SolutionPool.GetHighestProfitSolution()
 
-        return bestSolution, profit_over_time
+        return bestSolution#, profit_over_time
 
 
 
@@ -602,8 +602,8 @@ class Adaptive_SAILS(IteratedLocalSearch):
         startTime = time.time()
         usedTime = 0
 
-        profit_over_time = {}
-        profit_over_time[0] = 0, solution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, solution.TotalProfit
 
         for neighborhoodType in self.NeighborhoodTypesDelta + self.NeighborhoodTypesProfit:    
             print(f' Running neighborhood {neighborhoodType}')
@@ -714,7 +714,7 @@ class Adaptive_SAILS(IteratedLocalSearch):
 
             usedTime = time.time() - startTime
 
-            profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
+            #profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
 
             iteration += 1
 
@@ -764,8 +764,8 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
 
         probabilities = [1/len(self.DeltaNeighborhoods) for i in range(len(self.DeltaNeighborhoods))]
 
-        profit_over_time = {}
-        profit_over_time[0] = 0, currentSolution.TotalProfit
+        #profit_over_time = {}
+        #profit_over_time[0] = 0, currentSolution.TotalProfit
 
         while self.maxRunTime > usedTime:
             
@@ -843,12 +843,12 @@ class SimulatedAnnealingLocalSearch(ImprovementAlgorithm):
 
             usedTime = time.time() - startTime
 
-            profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
+            #profit_over_time[iteration] = usedTime, self.SolutionPool.GetHighestProfitSolution().TotalProfit
  
             iteration += 1
 
 
 
         print(f'Number of total iterations: {iteration}')
-        return self.SolutionPool.GetHighestProfitSolution(), profit_over_time
+        return self.SolutionPool.GetHighestProfitSolution()#, profit_over_time
 
