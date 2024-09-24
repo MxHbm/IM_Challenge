@@ -20,26 +20,27 @@
 *.tar
 *.zip
 
+
 # Sub Folders #
 ############
 # Ignore .txt and .json files in the subdirectories of data 
-Data/**/*.txt
-Data/**/*.json
+#Data/**/*.txt
+#Data/**/*.json
 
 #Ignore MIP Files, because final 
-!Data/Results_Flexi_MIP/*.json
-!Data/Results_Main_MIP/*.json
+#!Data/Results_Flexi_MIP/*.json
+#!Data/Results_Main_MIP/*.json
 
 #Ignore SALS files 
-!Data/SA_LS/*.json
-!Data/SA_LS_2/*.json
+#!Data/SA_LS/*.json
+#!Data/SA_LS_2/*.json
 
 
 ## IOgnore final ressults 
-!Data/Final_Results/**/*.json
+#!Data/Final_Results/**/*.json
 
 # But don't ignore .json files in the Instanzen folder
-!Data/Instanzen/*.json
+#!Data/Instanzen/*.json
 
 # Logs and databases #
 ######################
