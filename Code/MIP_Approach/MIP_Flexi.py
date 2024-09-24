@@ -3,14 +3,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [5,8,10]: #[2,5,8,10]
+    for no_days in [2,5,8,10]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
         for instance_no in [1]:
-            if no_days == 5:
-                levels = [500,1000]
-            else: 
-                levels = [50,200,500,1000]
-            for define_range in levels: #[50,200,500,1000]
+            for define_range in [50,200,500,1000]: #[50,200,500,1000]
 
                 ### SETUP FOLDER STRUCTURE ### 
                 
@@ -48,10 +44,8 @@ def main():
                 #### MODEL ####
                 print("Start Model \n \n")
                 # Create Gurobi environment and model with limited threads
-                env = gp.Env(empty=True)
-                env.setParam('Threads', 16)  # Limit to 16 threads
-                env.start()
-                model = gp.Model(env=env)
+
+                model = gp.Model()
 
 
                 #### VARIABLES ####
@@ -103,7 +97,7 @@ def main():
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
                 model.Params.TimeLimit = 10800 # 3 hours
                 model.setParam('Threads', 8)  # Limit to 2 threads, or another small number
-                model.Params.PrePasses = 1000000
+                model.Params.PrePasses = 1000
                 model.Params.NoRelHeurWork = 600
                 model.Params.NoRelHeurTime = 600
                 model.setParam('NodefileStart', 0.3) 
@@ -114,7 +108,7 @@ def main():
                 #### EVALUATION ####
                 if model.status == gp.GRB.Status.OPTIMAL or model.status == gp.GRB.Status.TIME_LIMIT:
                     # Optimal solution found
-                    model.printAttr(gp.GRB.Attr.ObjVal)
+                    #model.printAttr(gp.GRB.Attr.ObjVal)
                     
                     print("Writing the best feasible solution found.")
                     
