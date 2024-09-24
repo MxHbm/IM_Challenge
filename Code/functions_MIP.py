@@ -271,7 +271,7 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
         days[str(day + 1)] = day_list
     
     results = {
-        "Instance": data.main_tasks_path.stem,
+        "Instance": data.main_tasks_path,
         "Objective": round(gp_model.getAttr("ObjVal")),
         "NumberOfAllTasks": number_all_tasks,
         "UseMainTasks": False,
@@ -572,7 +572,7 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
         days[str(day + 1)] = day_list
     
     results = {
-        "Instance": data.main_tasks_path.stem,
+        "Instance": data.main_tasks_path,
         "Objective": objVal,
         "NumberOfAllTasks": number_all_tasks,
         "UseMainTasks": True,

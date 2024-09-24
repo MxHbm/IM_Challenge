@@ -1,5 +1,13 @@
 from functions_MIP import *
 
+'''
+Important Information:
+This script needs to be run from the Terminal
+Direct youself to the working directory "Code" in the terminal
+Run the following command: python MIP_Main.py
+'''
+
+
 def main():
 
     for no_days in[2,5,8,10]: #[2,5,8,10]
@@ -8,7 +16,7 @@ def main():
             for define_range in[50,200,500,1000]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
-                cwd = Path.cwd()
+                cwd = Path.cwd().parent
 
                 # Define the output folder path relative to the script location
                 outputFilePath_1 = cwd / "Data" / "Results_Main_MIP" / f"solution7_{no_days}_{instance_no}_{define_range}.txt"

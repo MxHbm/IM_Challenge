@@ -1,5 +1,12 @@
 from functions_MIP import *
 
+'''
+Important Information:
+This script needs to be run from the Terminal
+Direct youself to the working directory "Code" in the terminal
+Run the following command: python MIP_Flexi.py
+'''
+
 
 def main():
 
@@ -11,7 +18,7 @@ def main():
                 ### SETUP FOLDER STRUCTURE ### 
                 
                 # Get the current working directory (cwd)
-                cwd = Path.cwd()
+                cwd = Path.cwd().parent
                 
                 # Define the output folder path relative to the script location
                 outputFilePath_1 = cwd / "Data" / "Results_Flexi_MIP" / f"solution_{no_days}_{instance_no}_{define_range}.txt"

@@ -1,7 +1,7 @@
 import gurobipy as gp
 from InputData import *
 from typing import List, Dict
-from MIP_Approach.functions_MIP import *
+from functions_MIP import *
 
 
 def get_initial_route_plan(var_x: gp.Var, allTasks, data: InputData) -> Dict[str, List[List[int]]]:

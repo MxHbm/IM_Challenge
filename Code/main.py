@@ -12,7 +12,7 @@ import sys
 '''
 Important Information:
 This script needs to be run from the Terminal
-Direct youself to the working directory Code
+Direct youself to the working directory "Code" in the terminal
 Run the following command: python main.py
 '''
 
@@ -32,7 +32,7 @@ flexi_instances = ['7_2_1', '7_5_1', '7_8_1', '7_10_1']
 
 
 # Define the runTime per instance (in seconds)
-runTime = 10
+runTime = 60
 
 # Define the number of parameter combinations for constructive heuristic
 paraCombo = 3
