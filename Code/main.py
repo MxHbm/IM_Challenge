@@ -8,17 +8,15 @@ import pstats
 import pandas as pd
 import sys
 
-main_tasks = True
+main_tasks = False
 
 if main_tasks:
-    instances = ['7_8_1']#, '7_2_2','7_5_1' ,'7_5_2','7_8_1' ,'7_8_2','7_10_1' ,'7_10_2']
-    #instances = ['7_5_1' ,'7_5_2'] 
-    #instances = ['7_8_1', '7_8_2']
+    instances = ['7_2_1']
 else:
-    instances = ['7_2_1', '7_5_1','7_8_1' ,'7_10_1']
-    
-
-print('______________________________________________________________________________________________________________________________________________________')
+    instances = ['7_5_1']
+ 
+operative_instances = ['7_2_1', '7_2_2', '7_5_1', '7_5_2', '7_8_1', '7_8_2', '7_10_1', '7_10_2']
+flexi_instances = ['7_2_1', '7_5_1', '7_8_1', '7_10_1']
 
 
 
@@ -62,7 +60,7 @@ def main():
                                 neighborhoodTypesProfit = ['Insert','ReplaceProfit']
         )
 
-        SA_LS = SimulatedAnnealingLocalSearch(
+        ISA_LS = SimulatedAnnealingLocalSearch(
             inputData=data,
             start_temperature = 1000,
             min_temperature = 1e-20,
@@ -78,7 +76,7 @@ def main():
         profit_over_time = solver.RunAlgorithm(
             numberParameterCombination=3,
             main_tasks=main_tasks,
-            algorithm = SA_LS
+            algorithm = ILS
         )
 
         
@@ -86,16 +84,16 @@ def main():
 
 
         # Define the directory and file name
-        output_directory = Path.cwd().parent / "Data" / "Final_Results" / "SA_LS" / "Operative"
+        output_directory = Path.cwd().parent / "Data" / "Testing" / "Flexi" / "ILS"
 
-        #solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, True)
+        solver.SolutionPool.GetHighestProfitSolution().WriteSolToJson(output_directory, data, main_tasks)
     
 
 
-    df = pd.DataFrame.from_dict(profit_over_time, orient='index', columns=['RunTime', 'Profit'])
-    df = df.reset_index().rename(columns={'index': 'Iteration'})
-    df = df[['Iteration', 'RunTime', 'Profit']]
-    df.to_csv(output_directory/f"profit_over_time_{i}.csv", index=False)
+        df = pd.DataFrame.from_dict(profit_over_time, orient='index', columns=['RunTime', 'Profit'])
+        df = df.reset_index().rename(columns={'index': 'Iteration'})
+        df = df[['Iteration', 'RunTime', 'Profit']]
+        df.to_csv(output_directory/f"{i}_profit_over_time.csv", index=False)
 
 
 main()
