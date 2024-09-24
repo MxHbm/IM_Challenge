@@ -205,7 +205,7 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
         # Collect tasks selected by the cohort on the given day
         for i in range(len(allTasks)):
             for j in range(len(allTasks)):
-                if var_x[day,cohort, i, j].X > 0:
+                if var_x[cohort, i, j].X > 0:
                     all_tuples.append((i, j))
 
         subtours = create_subtours(all_tuples)
@@ -257,7 +257,7 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
             }
             
             cohort_lists.append(cohort_dict)
-            print(len(cohort_lists))
+            #print(len(cohort_lists))
 
             cohort_no += 1
     
@@ -283,6 +283,25 @@ def write_json_solution_mip_flexi(gp_model, var_x, data: InputData, allTasks, di
         json.dump(results, json_file, indent=2)
 
     print(f"JSON file has been created at {filepath}")
+
+def write_empty_txt_solution(gp_model, var_x, data:InputData, allTasks, file_path:str):
+    """
+    Writes Empty solution if model is infeasible or no valid solution could be found!
+    """
+     
+    # Retrieve optimization metrics
+    gap = -1
+    runtime = 10800
+    num_constraints = gp_model.NumConstrs
+    num_variables = gp_model.NumVars
+    obj = -1
+    
+    # Write the metrics to the output file
+    with open(file_path, 'w') as file:
+        file.write(str(obj) + "\t" + str(gap) + "\t" + str(runtime) + "\t" + str(num_constraints) + "\t" + str(num_variables) + "\n")
+        file.write(str(data.days) + " " + str(data.cohort_no) + " " + str(len(allTasks) - 1) + "\n \n")
+                
+    print(f"Text file has been created at {file_path}")
 
 def write_txt_solution_flexi(gp_model, var_x, data:InputData, allTasks, file_path:str):
     """
@@ -325,7 +344,7 @@ def write_txt_solution_flexi(gp_model, var_x, data:InputData, allTasks, file_pat
             # Collect tasks selected by the cohort on the given day
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
-                    if var_x[day,cohort, i, j].X > 0:
+                    if var_x[cohort, i, j].X > 0:
                         all_tuples.append((i, j))
 
             subtours = create_subtours(all_tuples)
@@ -499,7 +518,7 @@ def write_json_solution(gp_model, var_s, var_x, data: InputData, allTasks: List[
             # Collect tasks selected by the cohort on the given day
             for i in range(len(allTasks)):
                 for j in range(len(allTasks)):
-                    if var_x[day, day,cohort, i, j].X > 0:
+                    if var_x[day,cohort, i, j].X > 0:
                         all_tuples.append((i, j))
             subtours = create_subtours(all_tuples)
             if len(subtours) >= 1: 

@@ -2,10 +2,10 @@ from functions_MIP import *
 
 def main():
 
-    for no_days in [2]: #[2,5,8,10]
+    for no_days in[2,5,8,10]: #[2,5,8,10]
         # One Instance is enough because basic values dont change! 
-        for instance_no in [1]:
-            for define_range in [50]: #[50,200,500,1000]
+        for instance_no in [1,2]:
+            for define_range in[50,200,500,1000]: #[50,200,500,1000]
 
                 # Get the current working directory (cwd)
                 cwd = Path.cwd()
@@ -93,20 +93,45 @@ def main():
                             model.addConstr(s[t, m, i] <= C[t][i] * y[t, m, i], "Constraint 3.8b")
 
                 
+
                 #### DEFINE OPTIMIZATION PARAMS ###
                 model.Params.MIPGap = 0.01 # Gap is 1%! 
-                model.Params.TimeLimit = 10800  # 3 hours
-                #model.Params.Threads = 32
-                model.Params.PrePasses = 10000
+                model.Params.TimeLimit = 10800 # 3 hours
+                model.setParam('Threads', 8) 
+                model.Params.PrePasses = 1
+                model.Params.NoRelHeurWork = 600
+                model.Params.NoRelHeurTime = 600
+                model.setParam('NodefileStart', 0.3) 
+
+                #### OPTIMIZE MODEL ####
+                model.optimize()
 
                 #### OPTIMIZE MODEL ####
                 model.optimize()
 
                 #### EVALUATION ####
-                model.printAttr(gp.GRB.Attr.ObjVal)
-                model.printAttr(gp.GRB.Attr.X)
-                
-                write_txt_solution(model, x, data, all_tasks, outputFilePath_1)
-                write_json_solution(model,s,x,data,all_tasks,outputFilePath_2)
+                if model.status == gp.GRB.Status.OPTIMAL or model.status == gp.GRB.Status.TIME_LIMIT:
+                    # Optimal solution found
+                    #model.printAttr(gp.GRB.Attr.ObjVal)
+                    
+                    print("Writing the best feasible solution found.")
+                    
+                    # If a feasible solution is available
+                    if model.SolCount > 0:
+                        # Print the objective value of the best feasible solution
+                        model.printAttr(gp.GRB.Attr.ObjVal)
+                        
+                        # Write the feasible solution found within the time limit
+                        write_txt_solution(model, x, data, all_tasks, outputFilePath_1)
+                        write_json_solution(model, s,x, data, all_tasks, outputFilePath_2)
+                    else:
+                        write_empty_txt_solution(model, data, all_tasks,outputFilePath_1)
+
+
+                else:
+                    print(f"Optimization ended with status {model.status}.")
+
+                    write_empty_txt_solution(model, data, all_tasks,outputFilePath_1)
+
 
 main()
