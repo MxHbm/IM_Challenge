@@ -1,0 +1,648 @@
+{
+  "Instance": "Instance7_5_2",
+  "Objective": 104,
+  "NumberOfAllTasks": 84,
+  "UseMainTasks": true,
+  "Days": {
+    "1": [
+      {
+        "CohortID": 0,
+        "Profit": 5,
+        "Route": [
+          {
+            "StartTime": 1432,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-4329"
+          },
+          {
+            "StartTime": 16516,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-6950"
+          },
+          {
+            "StartTime": 19601,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-3-3204"
+          }
+        ]
+      },
+      {
+        "CohortID": 1,
+        "Profit": 13,
+        "Route": [
+          {
+            "StartTime": 654,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-4-1988"
+          },
+          {
+            "StartTime": 4706,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-1-1655"
+          },
+          {
+            "StartTime": 6300,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-24"
+          },
+          {
+            "StartTime": 14069,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-4101"
+          },
+          {
+            "StartTime": 17937,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-5950"
+          },
+          {
+            "StartTime": 20007,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-4-850"
+          }
+        ]
+      },
+      {
+        "CohortID": 2,
+        "Profit": 4,
+        "Route": [
+          {
+            "StartTime": 6300,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-33"
+          },
+          {
+            "StartTime": 12098,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-4-7953"
+          },
+          {
+            "StartTime": 20466,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-3-3852"
+          }
+        ]
+      },
+      {
+        "CohortID": 3,
+        "Profit": 7,
+        "Route": [
+          {
+            "StartTime": 9000,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-5"
+          },
+          {
+            "StartTime": 13775,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-4073"
+          },
+          {
+            "StartTime": 16953,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-2359"
+          },
+          {
+            "StartTime": 19147,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-1-6181"
+          }
+        ]
+      },
+      {
+        "CohortID": 4,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 8100,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-1"
+          }
+        ]
+      },
+      {
+        "CohortID": 5,
+        "Profit": 3,
+        "Route": [
+          {
+            "StartTime": 63,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-3-4789"
+          },
+          {
+            "StartTime": 6607,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-2-2814"
+          },
+          {
+            "StartTime": 8100,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-21"
+          }
+        ]
+      },
+      {
+        "CohortID": 6,
+        "Profit": 4,
+        "Route": [
+          {
+            "StartTime": 929,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-1-5786"
+          },
+          {
+            "StartTime": 2648,
+            "SelectedDay": 1,
+            "ID": "PE-FWI-3-4778"
+          },
+          {
+            "StartTime": 6300,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-23"
+          },
+          {
+            "StartTime": 11700,
+            "SelectedDay": 1,
+            "ID": "MT-FWI-18"
+          }
+        ]
+      }
+    ],
+    "2": [
+      {
+        "CohortID": 0,
+        "Profit": 1,
+        "Route": [
+          {
+            "StartTime": 19556,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-3-4048"
+          }
+        ]
+      },
+      {
+        "CohortID": 1,
+        "Profit": 1,
+        "Route": [
+          {
+            "StartTime": 378,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-3-6208"
+          },
+          {
+            "StartTime": 6300,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-27"
+          }
+        ]
+      },
+      {
+        "CohortID": 2,
+        "Profit": 4,
+        "Route": [
+          {
+            "StartTime": 1017,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-1-3889"
+          },
+          {
+            "StartTime": 20221,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-3-5292"
+          }
+        ]
+      },
+      {
+        "CohortID": 3,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 5400,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-26"
+          },
+          {
+            "StartTime": 10800,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-3"
+          }
+        ]
+      },
+      {
+        "CohortID": 4,
+        "Profit": 13,
+        "Route": [
+          {
+            "StartTime": 4500,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-11"
+          },
+          {
+            "StartTime": 10606,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-4-7571"
+          },
+          {
+            "StartTime": 12305,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-2-5570"
+          },
+          {
+            "StartTime": 13822,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-4-9608"
+          },
+          {
+            "StartTime": 18224,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-4-3577"
+          },
+          {
+            "StartTime": 19921,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-2-6066"
+          }
+        ]
+      },
+      {
+        "CohortID": 5,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 4500,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-15"
+          },
+          {
+            "StartTime": 12600,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-2"
+          }
+        ]
+      },
+      {
+        "CohortID": 6,
+        "Profit": 3,
+        "Route": [
+          {
+            "StartTime": 6300,
+            "SelectedDay": 2,
+            "ID": "MT-FWI-12"
+          },
+          {
+            "StartTime": 20269,
+            "SelectedDay": 2,
+            "ID": "PE-FWI-1-3289"
+          }
+        ]
+      }
+    ],
+    "3": [
+      {
+        "CohortID": 0,
+        "Profit": 2,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-28"
+          },
+          {
+            "StartTime": 10872,
+            "SelectedDay": 3,
+            "ID": "PE-FWI-2-758"
+          }
+        ]
+      },
+      {
+        "CohortID": 1,
+        "Profit": 2,
+        "Route": [
+          {
+            "StartTime": 5400,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-10"
+          },
+          {
+            "StartTime": 19844,
+            "SelectedDay": 3,
+            "ID": "PE-FWI-2-7312"
+          }
+        ]
+      },
+      {
+        "CohortID": 2,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-35"
+          }
+        ]
+      },
+      {
+        "CohortID": 3,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-32"
+          }
+        ]
+      },
+      {
+        "CohortID": 4,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 6300,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-9"
+          }
+        ]
+      },
+      {
+        "CohortID": 5,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-31"
+          }
+        ]
+      },
+      {
+        "CohortID": 6,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 3,
+            "ID": "MT-FWI-34"
+          }
+        ]
+      }
+    ],
+    "4": [
+      {
+        "CohortID": 0,
+        "Profit": 1,
+        "Route": [
+          {
+            "StartTime": 9900,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-16"
+          },
+          {
+            "StartTime": 15930,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-3-3591"
+          }
+        ]
+      },
+      {
+        "CohortID": 1,
+        "Profit": 3,
+        "Route": [
+          {
+            "StartTime": 1665,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-4-147"
+          },
+          {
+            "StartTime": 9900,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-25"
+          }
+        ]
+      },
+      {
+        "CohortID": 2,
+        "Profit": 4,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-14"
+          },
+          {
+            "StartTime": 12746,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-2-5144"
+          },
+          {
+            "StartTime": 19610,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-2-6919"
+          }
+        ]
+      },
+      {
+        "CohortID": 3,
+        "Profit": 11,
+        "Route": [
+          {
+            "StartTime": 3600,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-29"
+          },
+          {
+            "StartTime": 8593,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-4-7458"
+          },
+          {
+            "StartTime": 9416,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-2-9813"
+          },
+          {
+            "StartTime": 13800,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-4-5369"
+          },
+          {
+            "StartTime": 18434,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-4-2610"
+          }
+        ]
+      },
+      {
+        "CohortID": 4,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 7200,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-30"
+          }
+        ]
+      },
+      {
+        "CohortID": 5,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 9900,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-8"
+          }
+        ]
+      },
+      {
+        "CohortID": 6,
+        "Profit": 1,
+        "Route": [
+          {
+            "StartTime": 6300,
+            "SelectedDay": 4,
+            "ID": "MT-FWI-13"
+          },
+          {
+            "StartTime": 12876,
+            "SelectedDay": 4,
+            "ID": "PE-FWI-3-2483"
+          }
+        ]
+      }
+    ],
+    "5": [
+      {
+        "CohortID": 0,
+        "Profit": 1,
+        "Route": [
+          {
+            "StartTime": 2871,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-3-2270"
+          },
+          {
+            "StartTime": 4500,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-4"
+          }
+        ]
+      },
+      {
+        "CohortID": 1,
+        "Profit": 2,
+        "Route": [
+          {
+            "StartTime": 944,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-5625"
+          },
+          {
+            "StartTime": 7200,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-20"
+          }
+        ]
+      },
+      {
+        "CohortID": 2,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 8100,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-17"
+          }
+        ]
+      },
+      {
+        "CohortID": 3,
+        "Profit": 4,
+        "Route": [
+          {
+            "StartTime": 3400,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-7618"
+          },
+          {
+            "StartTime": 5400,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-22"
+          },
+          {
+            "StartTime": 13515,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-4202"
+          }
+        ]
+      },
+      {
+        "CohortID": 4,
+        "Profit": 7,
+        "Route": [
+          {
+            "StartTime": 8100,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-7"
+          },
+          {
+            "StartTime": 13235,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-6809"
+          },
+          {
+            "StartTime": 14770,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-4-8811"
+          },
+          {
+            "StartTime": 20283,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-1593"
+          }
+        ]
+      },
+      {
+        "CohortID": 5,
+        "Profit": 8,
+        "Route": [
+          {
+            "StartTime": 844,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-3-3868"
+          },
+          {
+            "StartTime": 2299,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-8505"
+          },
+          {
+            "StartTime": 3213,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-4-4523"
+          },
+          {
+            "StartTime": 5794,
+            "SelectedDay": 5,
+            "ID": "PE-FWI-2-4346"
+          },
+          {
+            "StartTime": 7200,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-19"
+          }
+        ]
+      },
+      {
+        "CohortID": 6,
+        "Profit": 0,
+        "Route": [
+          {
+            "StartTime": 8100,
+            "SelectedDay": 5,
+            "ID": "MT-FWI-6"
+          }
+        ]
+      }
+    ]
+  }
+}
