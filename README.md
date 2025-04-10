@@ -1,35 +1,76 @@
 # IM_Challenge
 Git Repo for cracking the IM Challenge
 
-## Data Description
+# Optimization of Inspection Routes in the District Heating Network of Dresden
 
-### Main Tasks
-One main task per day per cohort for the planning horizont, which has to be in the time limtiations [start_time, start_time+service_time]
+This project was developed as part of the **IM Challenge** at Technische Universität Dresden. It focuses on optimizing maintenance and inspection routes in Dresden's urban district heating network.
 
-### Optional Tasks
- List of thousand extra maintenance visits, which are optional and increase the profit, when visited for each tour
+## 📘 Project Description
 
-## Solution Approach
+The goal is to develop and analyze mathematical models and heuristic algorithms for efficiently planning inspection routes for service teams of SachsenEnergie AG. The project considers real-world constraints such as:
 
-### Constructive Heuristic
+- Fixed time windows for certain tasks (Main Tasks)
+- Limited working time per day
+- Maximizing the collected profit through completed tasks
 
-1. First plan one main task to each day to each cohort
-2. Use adapted greedy algorithm to add optional tasks around the main task or on the way from the depot
-3. Every route is split into two subtour one before and one after the main task, starting ending at the depot/ main task location respectively
-4. Order optional tasks with c_1 and c_2 respectively the min_time and max_profit algorithm
-5. Consider the stochastic selection of possible optional tasks with algorithm from Vansteenwegen2019_OrienteeringProblems
+## 🧩 Problem Definition
 
-### Iterative Improvement / SA 
+We distinguish between two problem scenarios:
 
-1. Define Neigborhoods
-2. Change solution and check for feasibility!
-3. Change until no improvements possible!
+- **Flexi**: No fixed main tasks (pure Multi-Period Team Orienteering Problem, MP-TOP)
+- **Operative**: Includes fixed-time main tasks (Multi-Period Team Orienteering Problem with Time Windows, MP-TOPTW)
 
-## :construction: What needs to be implemented 
+Both are variants of the Team Orienteering Problem (TOP), solved using exact and heuristic methods.
 
-1. Constructive Heuristic
-2. Solution class
-3. Class to assess solution
-4. Output class
+## 🛠️ Applied Methods
 
+- **Mathematical Models** using Gurobi (Mixed Integer Programming)
+- **Constructive Heuristics** (Greedy algorithm with parameter tuning)
+- **Metaheuristics**:
+  - Iterated Local Search (ILS)
+  - Simulated Annealing Iterated Local Search (SAILS)
+  - Iterated Simulated Annealing Local Search (ISALS)
 
+## ⚙️ Features
+
+- Multi-period scheduling with multiple service teams
+- Time windows and maximum working time constraints
+- Start solutions generated via customizable greedy heuristics
+- Multi-layered local search with neighborhood operators:
+  - Swap, Insert, Replace, Two-Edge-Exchange
+- Analysis of search strategies (First vs. Best Improvement, Adaptive behavior)
+
+## 📊 Results Summary
+
+- MIP solutions become infeasible for large instances (long runtimes, poor optimality gap)
+- Heuristic and metaheuristic approaches deliver high-quality solutions within minutes
+- ISALS outperforms other methods on larger planning horizons
+
+## 📁 Repository Structure
+
+```text
+├── data/                   # Test instances (optional/examples)
+├── models/                # Mathematical model implementations
+├── heuristics/            # Heuristic and metaheuristic algorithms
+├── analysis/              # Result evaluation scripts
+├── figures/               # Visualizations (gap, profit trends, etc.)
+├── README.md              # This file
+└── report/                # PDF report (project documentation)
+
+## 📝 Future Work
+
+- Include additional or real-world instances
+- Perform deeper parameter tuning, especially for the Flexi scenario
+- Explore alternative objective functions (e.g., minimization of idle or waiting time)
+- Implement and compare additional metaheuristics (e.g., NSGA-II, Large Neighborhood Search)
+- Develop a user interface or visualization tool for the route schedules
+
+## 👥 Authors
+
+**Max Hubmann**  
+Student of Industrial Engineering  
+Technische Universität Dresden
+
+**Niklas Wolfrum**  
+Student of Industrial Engineering  
+Technische Universität Dresden
