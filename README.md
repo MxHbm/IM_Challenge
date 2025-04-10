@@ -48,29 +48,41 @@ Both are variants of the Team Orienteering Problem (TOP), solved using exact and
 
 ## 📁 Repository Structure
 
-- `data/`  
-  Contains the input instances (task data, parameters, etc.)
+- `main.py`  
+  Main entry point for running experiments
 
-- `models/`  
-  Mathematical models for the Flexi and Operative scenarios (MP-TOP and MP-TOPTW)
+- `mainParameterstudy.py`  
+  Script for running parameter studies on heuristic algorithms
 
-- `heuristics/`  
-  Implementation of constructive heuristics and metaheuristics (ILS, SAILS, ISALS)
+- `InputData.py` & `OutputData.py`  
+  Data import/export functions
 
-- `analysis/`  
-  Scripts for analyzing and comparing algorithm performance
+- `ConstructiveHeuristic.py`  
+  Generates initial feasible solutions (Greedy + rule-based)
 
-- `figures/`  
-  Result visualizations such as gap plots, runtime charts, and profit curves
+- `ImprovementAlgorithm.py`  
+  Contains logic for metaheuristics like ILS, SAILS, and ISALS
 
-- `report/`  
-  Final project report (PDF), including methodology and results
+- `Neighborhood.py`  
+  Neighborhood operators for local search (Swap, Insert, Replace, etc.)
+
+- `EvaluationLogic.py`  
+  Tools for analyzing solution quality (profit, time, etc.)
+
+- `functions_MIP.py`  
+  Helper functions for solving MIP models
+
+- `MIP_Flexi.py`, `MIP_Main.py`, `MIP_initial_routeplan.py`  
+  Scripts to solve the mathematical models (Flexi and Operative scenarios)
+
+- `Solver.py`  
+  Central control logic for launching and comparing solution methods
 
 ## 📝 Future Work
 
-- Include additional or real-world instances
+- Include additional instances
 - Perform deeper parameter tuning, especially for the Flexi scenario
-- Explore alternative objective functions (e.g., minimization of idle or waiting time)
+- Explore alternative objective functions
 - Implement and compare additional metaheuristics (e.g., NSGA-II, Large Neighborhood Search)
 - Develop a user interface or visualization tool for the route schedules
 
