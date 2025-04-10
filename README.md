@@ -48,7 +48,7 @@ Both are variants of the Team Orienteering Problem (TOP), solved using exact and
 
 ## 📁 Repository Structure
 
-```text
+
 ├── data/                   # Test instances (optional/examples)
 ├── models/                # Mathematical model implementations
 ├── heuristics/            # Heuristic and metaheuristic algorithms
