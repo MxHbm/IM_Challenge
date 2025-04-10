@@ -48,14 +48,23 @@ Both are variants of the Team Orienteering Problem (TOP), solved using exact and
 
 ## 📁 Repository Structure
 
+- `data/`  
+  Contains the input instances (task data, parameters, etc.)
 
-├── data/                   # Test instances (optional/examples)
-├── models/                # Mathematical model implementations
-├── heuristics/            # Heuristic and metaheuristic algorithms
-├── analysis/              # Result evaluation scripts
-├── figures/               # Visualizations (gap, profit trends, etc.)
-├── README.md              # This file
-└── report/                # PDF report (project documentation)
+- `models/`  
+  Mathematical models for the Flexi and Operative scenarios (MP-TOP and MP-TOPTW)
+
+- `heuristics/`  
+  Implementation of constructive heuristics and metaheuristics (ILS, SAILS, ISALS)
+
+- `analysis/`  
+  Scripts for analyzing and comparing algorithm performance
+
+- `figures/`  
+  Result visualizations such as gap plots, runtime charts, and profit curves
+
+- `report/`  
+  Final project report (PDF), including methodology and results
 
 ## 📝 Future Work
 
